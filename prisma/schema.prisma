@@ -22,7 +22,8 @@ enum SourceStatus {
 
 enum JobStatus {
   NEW
-  REVIEW
+  READY_TO_REVIEW
+  TRIAGE
   APPLY
   APPLIED
   INTERVIEW
@@ -88,6 +89,7 @@ model JobPosting {
   descriptionNormalized String      @db.Text
   status                JobStatus   @default(NEW)
   match                 JobMatch?
+  statusEvents          JobStatusEvent[]
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
 
@@ -112,6 +114,17 @@ model JobMatch {
   candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
 
   @@index([candidateProfileId, score])
+}
+
+model JobStatusEvent {
+  id        String    @id @default(cuid())
+  jobId     String
+  status    JobStatus
+  note      String?   @db.Text
+  createdAt DateTime  @default(now())
+  job       JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
 }
 
 model DailyDigest {

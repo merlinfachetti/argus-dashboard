@@ -10,22 +10,18 @@ import {
   type ParsedJob,
 } from "@/lib/job-intake";
 import type { CandidateProfile, PortalSource } from "@/lib/profile";
+import {
+  createHistoryEntry,
+  DASHBOARD_STATUS_LANES,
+  STATUS_OPTIONS,
+  type JobHistoryEntry,
+  type TrackedJob,
+} from "@/lib/radar-types";
 
 type ArgusWorkbenchProps = {
   profile: CandidateProfile;
   sources: PortalSource[];
   initialJobDescription: string;
-};
-
-type TrackedJob = ParsedJob & {
-  id: string;
-  score: number;
-  verdict: MatchAnalysis["verdict"];
-  status: string;
-  intakeMode: string;
-  sourceUrl?: string;
-  externalId?: string;
-  family?: string;
 };
 
 type DiscoveryPreview = {
@@ -39,21 +35,6 @@ type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "message" | "history";
 
 const STORAGE_KEY = "argus-workbench-state";
-const STATUS_OPTIONS = [
-  "Nova",
-  "Pronta para revisar",
-  "Requer triagem",
-  "Aplicar",
-  "Aplicada",
-  "Entrevista",
-] as const;
-const DASHBOARD_STATUS_LANES = [
-  "Nova",
-  "Pronta para revisar",
-  "Aplicar",
-  "Aplicada",
-  "Entrevista",
-] as const;
 
 function toTrackedJob(
   job: ParsedJob,
@@ -65,6 +46,9 @@ function toTrackedJob(
     family?: string;
   },
 ): TrackedJob {
+  const initialStatus =
+    analysis.score >= 70 ? "Pronta para revisar" : "Requer triagem";
+
   return {
     ...job,
     id:
@@ -73,11 +57,12 @@ function toTrackedJob(
       `${job.company}-${job.title}-${Date.now()}`,
     score: analysis.score,
     verdict: analysis.verdict,
-    status: analysis.score >= 70 ? "Pronta para revisar" : "Requer triagem",
+    status: initialStatus,
     intakeMode: metadata.intakeMode,
     sourceUrl: metadata.sourceUrl,
     externalId: metadata.externalId,
     family: metadata.family,
+    history: [createHistoryEntry(initialStatus)],
   };
 }
 
@@ -154,6 +139,12 @@ export function ArgusWorkbench({
   const [discoveryQuery, setDiscoveryQuery] = useState("");
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("discovery");
   const [activePanel, setActivePanel] = useState<ActivePanel>("summary");
+  const [syncState, setSyncState] = useState<
+    "checking" | "connected" | "offline" | "error"
+  >("checking");
+  const [syncMessage, setSyncMessage] = useState(
+    "Conectando radar persistente...",
+  );
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -178,6 +169,8 @@ export function ArgusWorkbench({
         discoveryQuery?: string;
         workspaceMode?: WorkspaceMode;
         activePanel?: ActivePanel;
+        syncState?: "checking" | "connected" | "offline" | "error";
+        syncMessage?: string;
       };
 
       if (parsedState.jobDescription) setJobDescription(parsedState.jobDescription);
@@ -199,10 +192,81 @@ export function ArgusWorkbench({
       if (parsedState.discoveryQuery) setDiscoveryQuery(parsedState.discoveryQuery);
       if (parsedState.workspaceMode) setWorkspaceMode(parsedState.workspaceMode);
       if (parsedState.activePanel) setActivePanel(parsedState.activePanel);
+      if (parsedState.syncState) setSyncState(parsedState.syncState);
+      if (parsedState.syncMessage) setSyncMessage(parsedState.syncMessage);
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     }
-  }, []);
+  }, [profile]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPersistedRadar() {
+      try {
+        const response = await fetch("/api/radar/jobs", {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as {
+          available: boolean;
+          reason?: string | null;
+          jobs: TrackedJob[];
+        };
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (!response.ok || !payload.available) {
+          setSyncState("offline");
+          setSyncMessage(payload.reason ?? "Banco ainda nao configurado");
+          return;
+        }
+
+        setSyncState("connected");
+        setSyncMessage("Radar persistente conectado");
+
+        if (payload.jobs.length > 0) {
+          const nextActiveJob = payload.jobs[0];
+          const nextParsedJob: ParsedJob = {
+            title: nextActiveJob.title,
+            company: nextActiveJob.company,
+            location: nextActiveJob.location,
+            seniority: nextActiveJob.seniority,
+            workModel: nextActiveJob.workModel,
+            employmentType: nextActiveJob.employmentType,
+            languages: nextActiveJob.languages,
+            skills: nextActiveJob.skills,
+            summary: nextActiveJob.summary,
+          };
+
+          setTrackedJobs(payload.jobs);
+          setActiveTrackedJobId(nextActiveJob.id);
+          setActiveDiscoveryId(nextActiveJob.externalId ?? null);
+          setJobDescription(nextActiveJob.summary);
+          const nextAnalysis = analyzeJobMatch(nextParsedJob, profile);
+          setParsedJob(nextParsedJob);
+          setAnalysis(nextAnalysis);
+          setRecruiterMessage(
+            buildRecruiterMessage(nextParsedJob, profile, nextAnalysis),
+          );
+        }
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setSyncState("error");
+        setSyncMessage("Falha ao carregar estado persistido do radar");
+      }
+    }
+
+    void loadPersistedRadar();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [profile]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -221,6 +285,8 @@ export function ArgusWorkbench({
         discoveryQuery,
         workspaceMode,
         activePanel,
+        syncState,
+        syncMessage,
       }),
     );
   }, [
@@ -237,6 +303,8 @@ export function ArgusWorkbench({
     discoveryQuery,
     workspaceMode,
     activePanel,
+    syncState,
+    syncMessage,
   ]);
 
   const totalOpportunities = trackedJobs.length;
@@ -288,6 +356,94 @@ export function ArgusWorkbench({
     activeTrackedJob?.intakeMode ?? (activeDiscovery ? "Siemens crawler" : "Input manual");
   const matchMeterWidth = `${Math.max(10, Math.min(analysis.score, 100))}%`;
 
+  function mergePersistedJob(nextJob: TrackedJob) {
+    setTrackedJobs((currentJobs) => {
+      const nextJobs = currentJobs.map((job) => {
+        const sameIdentity =
+          job.id === nextJob.id ||
+          (job.externalId && job.externalId === nextJob.externalId) ||
+          (job.sourceUrl && job.sourceUrl === nextJob.sourceUrl);
+
+        return sameIdentity ? nextJob : job;
+      });
+
+      const alreadyIncluded = nextJobs.some((job) => job.id === nextJob.id);
+      return alreadyIncluded ? nextJobs : [nextJob, ...nextJobs].slice(0, 20);
+    });
+    setActiveTrackedJobId((currentId) => {
+      if (
+        currentId === nextJob.id ||
+        currentId === nextJob.externalId ||
+        currentId === activeTrackedJob?.id
+      ) {
+        return nextJob.id;
+      }
+
+      return currentId;
+    });
+  }
+
+  async function persistTrackedJob(nextJob: TrackedJob, rawDescription?: string) {
+    try {
+      const response = await fetch("/api/radar/jobs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          job: nextJob,
+          rawDescription,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? "Falha ao persistir vaga");
+      }
+
+      const payload = (await response.json()) as { job: TrackedJob };
+      mergePersistedJob(payload.job);
+      setSyncState("connected");
+      setSyncMessage("Radar persistido no banco");
+    } catch (error) {
+      setSyncState("offline");
+      setSyncMessage(
+        error instanceof Error
+          ? error.message
+          : "Banco indisponivel, mantendo estado local",
+      );
+    }
+  }
+
+  async function persistTrackedJobStatus(jobId: string, status: TrackedJob["status"]) {
+    try {
+      const response = await fetch(`/api/radar/jobs/${jobId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        throw new Error(payload.error ?? "Falha ao atualizar status");
+      }
+
+      const payload = (await response.json()) as { job: TrackedJob };
+      mergePersistedJob(payload.job);
+      setSyncState("connected");
+      setSyncMessage("Status sincronizado com o banco");
+    } catch (error) {
+      setSyncState("offline");
+      setSyncMessage(
+        error instanceof Error
+          ? error.message
+          : "Falha ao sincronizar status, mantendo alteracao local",
+      );
+    }
+  }
+
   useEffect(() => {
     if (!activeTrackedJob && trackedJobs[0]) {
       setActiveTrackedJobId(trackedJobs[0].id);
@@ -316,6 +472,7 @@ export function ArgusWorkbench({
       setActiveDiscoveryId(null);
       setWorkspaceMode("manual");
       setActivePanel("summary");
+      void persistTrackedJob(nextTrackedJob, jobDescription);
     });
   }
 
@@ -370,6 +527,7 @@ export function ArgusWorkbench({
       }
       setWorkspaceMode("discovery");
       setActivePanel("summary");
+      const jobsToPersist: TrackedJob[] = [];
       setTrackedJobs((currentJobs) => {
         const seenIds = new Set(currentJobs.map((job) => job.id));
         const additions = nextDiscoveries
@@ -383,7 +541,14 @@ export function ArgusWorkbench({
             }),
           );
 
+        jobsToPersist.push(...additions);
         return [...additions, ...currentJobs].slice(0, 12);
+      });
+      jobsToPersist.forEach((job) => {
+        const matchingDiscovery = nextDiscoveries.find(
+          (discovery) => discovery.listing.externalId === job.externalId,
+        );
+        void persistTrackedJob(job, matchingDiscovery?.listing.descriptionText);
       });
     } catch (error) {
       setDiscoveryError(
@@ -430,9 +595,31 @@ export function ArgusWorkbench({
 
   function handleUpdateTrackedJobStatus(jobId: string, nextStatus: string) {
     setTrackedJobs((currentJobs) =>
-      currentJobs.map((job) =>
-        job.id === jobId ? { ...job, status: nextStatus } : job,
-      ),
+      currentJobs.map((job) => {
+        if (job.id !== jobId) {
+          return job;
+        }
+
+        const status = nextStatus as TrackedJob["status"];
+        const nextHistory: JobHistoryEntry[] =
+          job.status === status
+            ? job.history
+            : [createHistoryEntry(status), ...job.history].slice(0, 12);
+
+        const nextJob = {
+          ...job,
+          status,
+          updatedAt: new Date().toISOString(),
+          history: nextHistory,
+        };
+
+        if (job.createdAt) {
+          void persistTrackedJobStatus(jobId, status);
+        } else {
+          void persistTrackedJob(nextJob, job.summary);
+        }
+        return nextJob;
+      }),
     );
   }
 
@@ -467,7 +654,7 @@ export function ArgusWorkbench({
     }
   }
 
-  const activeHistory = activeTrackedJob
+  const activeSnapshot = activeTrackedJob
     ? [
         {
           label: "Origem",
@@ -499,6 +686,12 @@ export function ArgusWorkbench({
           : []),
       ]
     : [];
+  const activeTimeline =
+    activeTrackedJob?.history.length && activeTrackedJob.history.length > 0
+      ? activeTrackedJob.history
+      : activeTrackedJob
+        ? [createHistoryEntry(activeTrackedJob.status)]
+        : [];
   const comparisonJobs = [...filteredTrackedJobs]
     .sort((left, right) => right.score - left.score)
     .slice(0, 3);
@@ -554,6 +747,18 @@ export function ArgusWorkbench({
               Itens vindos de discovery real contra {manualJobs} manuais.
             </p>
           </div>
+        </div>
+
+        <div
+          className={`rounded-[28px] border px-5 py-4 text-sm ${
+            syncState === "connected"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : syncState === "checking"
+                ? "border-sky-200 bg-sky-50 text-sky-800"
+                : "border-amber-200 bg-amber-50 text-amber-800"
+          }`}
+        >
+          <span className="font-semibold">Persistencia do radar:</span> {syncMessage}
         </div>
 
         <div className="rounded-[36px] border border-white/60 bg-white/88 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
@@ -838,18 +1043,45 @@ export function ArgusWorkbench({
                   <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
                     Linha do tempo
                   </p>
-                  <div className="mt-4 space-y-3">
-                    {activeHistory.map((item) => (
-                      <div
-                        key={`${item.label}-${item.value}`}
-                        className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200"
-                      >
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                          {item.label}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-700">{item.value}</p>
-                      </div>
-                    ))}
+                  <div className="mt-4 grid gap-4">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {activeSnapshot.map((item) => (
+                        <div
+                          key={`${item.label}-${item.value}`}
+                          className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200"
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                            {item.label}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-700">{item.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-3">
+                      {activeTimeline.map((entry, index) => (
+                        <div
+                          key={`${entry.status}-${entry.changedAt}-${index}`}
+                          className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ring-1 ${statusTone(
+                                entry.status,
+                              )}`}
+                            >
+                              {entry.status}
+                            </span>
+                            <span className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                              {new Date(entry.changedAt).toLocaleString("de-DE")}
+                            </span>
+                          </div>
+                          {entry.note ? (
+                            <p className="mt-2 text-sm text-slate-600">{entry.note}</p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
