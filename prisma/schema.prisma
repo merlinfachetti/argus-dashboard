@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum SourceKind {
+  CAREER_SITE
+  MANUAL
+}
+
+enum SourceStatus {
+  DISCOVERY
+  READY
+  DEGRADED
+  PAUSED
+}
+
+enum JobStatus {
+  NEW
+  REVIEW
+  APPLY
+  APPLIED
+  INTERVIEW
+  REJECTED
+  ARCHIVED
+}
+
+enum MatchVerdict {
+  HIGH_PRIORITY
+  GOOD_FIT
+  PARTIAL_FIT
+}
+
+model CandidateProfile {
+  id              String      @id @default(cuid())
+  name            String
+  headline        String
+  location        String
+  availability    String?
+  summary         String      @db.Text
+  languages       Json
+  coreStack       Json
+  targetRoles     Json
+  strengthSignals Json
+  jobMatches      JobMatch[]
+  dailyDigests    DailyDigest[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model JobSource {
+  id            String       @id @default(cuid())
+  company       String
+  slug          String       @unique
+  baseUrl       String
+  discoveryUrl  String
+  strategy      String
+  status        SourceStatus @default(DISCOVERY)
+  enabled       Boolean      @default(true)
+  lastCheckedAt DateTime?
+  jobs          JobPosting[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model JobPosting {
+  id                    String      @id @default(cuid())
+  sourceId              String?
+  source                JobSource?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  externalId            String?
+  intakeMode            SourceKind
+  sourceUrl             String?
+  title                 String
+  company               String
+  location              String
+  seniority             String
+  workModel             String
+  employmentType        String
+  languages             Json
+  skills                Json
+  summary               String      @db.Text
+  descriptionRaw        String      @db.Text
+  descriptionNormalized String      @db.Text
+  status                JobStatus   @default(NEW)
+  match                 JobMatch?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([company, createdAt])
+  @@index([status, createdAt])
+  @@index([sourceId, createdAt])
+  @@unique([sourceId, externalId])
+}
+
+model JobMatch {
+  id                 String           @id @default(cuid())
+  jobId              String           @unique
+  candidateProfileId String
+  score              Int
+  verdict            MatchVerdict
+  strengths          Json
+  risks              Json
+  recruiterMessage   String?          @db.Text
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  job                JobPosting       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+
+  @@index([candidateProfileId, score])
+}
+
+model DailyDigest {
+  id                 String           @id @default(cuid())
+  candidateProfileId String
+  digestDate         DateTime
+  subject            String
+  summary            String           @db.Text
+  items              Json
+  sentAt             DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateProfileId, digestDate])
+}
