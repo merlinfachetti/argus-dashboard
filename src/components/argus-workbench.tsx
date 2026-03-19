@@ -35,6 +35,7 @@ type DiscoveryPreview = {
 type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "message" | "history";
+type JobsSort = "updated" | "score" | "company";
 
 const STORAGE_KEY = "argus-workbench-state";
 
@@ -143,6 +144,10 @@ export function ArgusWorkbench({
   const [discoveryQuery, setDiscoveryQuery] = useState("");
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("discovery");
   const [activePanel, setActivePanel] = useState<ActivePanel>("summary");
+  const [jobsSourceFilter, setJobsSourceFilter] = useState("all");
+  const [jobsSeniorityFilter, setJobsSeniorityFilter] = useState("all");
+  const [jobsMinimumScore, setJobsMinimumScore] = useState("all");
+  const [jobsSort, setJobsSort] = useState<JobsSort>("updated");
   const [syncState, setSyncState] = useState<
     "checking" | "connected" | "offline" | "error"
   >("checking");
@@ -176,6 +181,10 @@ export function ArgusWorkbench({
         discoveryQuery?: string;
         workspaceMode?: WorkspaceMode;
         activePanel?: ActivePanel;
+        jobsSourceFilter?: string;
+        jobsSeniorityFilter?: string;
+        jobsMinimumScore?: string;
+        jobsSort?: JobsSort;
         syncState?: "checking" | "connected" | "offline" | "error";
         syncMessage?: string;
       };
@@ -199,6 +208,16 @@ export function ArgusWorkbench({
       if (parsedState.discoveryQuery) setDiscoveryQuery(parsedState.discoveryQuery);
       if (parsedState.workspaceMode) setWorkspaceMode(parsedState.workspaceMode);
       if (parsedState.activePanel) setActivePanel(parsedState.activePanel);
+      if (parsedState.jobsSourceFilter) {
+        setJobsSourceFilter(parsedState.jobsSourceFilter);
+      }
+      if (parsedState.jobsSeniorityFilter) {
+        setJobsSeniorityFilter(parsedState.jobsSeniorityFilter);
+      }
+      if (parsedState.jobsMinimumScore) {
+        setJobsMinimumScore(parsedState.jobsMinimumScore);
+      }
+      if (parsedState.jobsSort) setJobsSort(parsedState.jobsSort);
       if (parsedState.syncState) setSyncState(parsedState.syncState);
       if (parsedState.syncMessage) setSyncMessage(parsedState.syncMessage);
     } catch {
@@ -298,6 +317,10 @@ export function ArgusWorkbench({
         discoveryQuery,
         workspaceMode,
         activePanel,
+        jobsSourceFilter,
+        jobsSeniorityFilter,
+        jobsMinimumScore,
+        jobsSort,
         syncState,
         syncMessage,
       }),
@@ -316,6 +339,10 @@ export function ArgusWorkbench({
     discoveryQuery,
     workspaceMode,
     activePanel,
+    jobsSourceFilter,
+    jobsSeniorityFilter,
+    jobsMinimumScore,
+    jobsSort,
     syncState,
     syncMessage,
   ]);
@@ -349,6 +376,34 @@ export function ArgusWorkbench({
 
     return matchesQuery;
   });
+  const jobsFilteredTrackedJobs = [...filteredTrackedJobs]
+    .filter((job) =>
+      jobsSourceFilter === "all"
+        ? true
+        : job.intakeMode.toLowerCase().includes(jobsSourceFilter.toLowerCase()),
+    )
+    .filter((job) =>
+      jobsSeniorityFilter === "all"
+        ? true
+        : job.seniority.toLowerCase() === jobsSeniorityFilter.toLowerCase(),
+    )
+    .filter((job) =>
+      jobsMinimumScore === "all" ? true : job.score >= Number(jobsMinimumScore),
+    )
+    .sort((left, right) => {
+      if (jobsSort === "score") {
+        return right.score - left.score;
+      }
+
+      if (jobsSort === "company") {
+        return left.company.localeCompare(right.company);
+      }
+
+      return (
+        new Date(right.updatedAt ?? 0).getTime() -
+        new Date(left.updatedAt ?? 0).getTime()
+      );
+    });
   const filteredDiscoveredJobs = discoveredJobs.filter((job) =>
     discoveryQuery.trim().length === 0
       ? true
@@ -713,6 +768,18 @@ export function ArgusWorkbench({
     count: trackedJobs.filter((job) => job.status === status).length,
     jobs: trackedJobs.filter((job) => job.status === status).slice(0, 3),
   }));
+  const jobsSourceOptions = [
+    "all",
+    ...new Set(
+      trackedJobs.map((job) =>
+        job.intakeMode.toLowerCase().includes("crawler") ? "crawler" : "manual",
+      ),
+    ),
+  ];
+  const jobsSeniorityOptions = [
+    "all",
+    ...new Set(trackedJobs.map((job) => job.seniority).filter(Boolean)),
+  ];
 
   return (
     <div
@@ -1215,6 +1282,91 @@ export function ArgusWorkbench({
             ))}
           </div>
 
+          {isJobsPage ? (
+            <div className="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+              <div className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-6 text-white">
+                <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+                  Jobs Explorer
+                </p>
+                <p className="mt-3 text-3xl font-semibold">
+                  {jobsFilteredTrackedJobs.length}
+                </p>
+                <p className="mt-3 text-sm leading-7 text-slate-300">
+                  vagas apos busca do header, filtros locais e ordenacao.
+                </p>
+              </div>
+              <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <label className="grid gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                      Origem
+                    </span>
+                    <select
+                      value={jobsSourceFilter}
+                      onChange={(event) => setJobsSourceFilter(event.target.value)}
+                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-sky-300"
+                    >
+                      {jobsSourceOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option === "all"
+                            ? "Todas"
+                            : option === "crawler"
+                              ? "Crawler"
+                              : "Manual"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                      Senioridade
+                    </span>
+                    <select
+                      value={jobsSeniorityFilter}
+                      onChange={(event) => setJobsSeniorityFilter(event.target.value)}
+                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-sky-300"
+                    >
+                      {jobsSeniorityOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option === "all" ? "Todas" : option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                      Score minimo
+                    </span>
+                    <select
+                      value={jobsMinimumScore}
+                      onChange={(event) => setJobsMinimumScore(event.target.value)}
+                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-sky-300"
+                    >
+                      <option value="all">Todos</option>
+                      <option value="60">60+</option>
+                      <option value="70">70+</option>
+                      <option value="80">80+</option>
+                    </select>
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                      Ordenar por
+                    </span>
+                    <select
+                      value={jobsSort}
+                      onChange={(event) => setJobsSort(event.target.value as JobsSort)}
+                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-sky-300"
+                    >
+                      <option value="updated">Atualizacao</option>
+                      <option value="score">Score</option>
+                      <option value="company">Empresa</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           {isDashboardPage ? (
             <div className="mt-6 grid gap-4 xl:grid-cols-5">
             {dashboardLanes.map((lane) => (
@@ -1369,24 +1521,30 @@ export function ArgusWorkbench({
           <div className="mt-6 overflow-hidden rounded-[28px] border border-slate-200">
             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <input
-                  value={radarQuery}
-                  onChange={(event) => setRadarQuery(event.target.value)}
-                  className="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100 sm:max-w-md"
-                  placeholder="Buscar no radar por titulo, empresa, local ou origem..."
-                />
+                {isJobsPage ? (
+                  <div className="text-sm leading-7 text-slate-600">
+                    A busca principal fica no header e atualiza esta pagina.
+                  </div>
+                ) : (
+                  <input
+                    value={radarQuery}
+                    onChange={(event) => setRadarQuery(event.target.value)}
+                    className="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100 sm:max-w-md"
+                    placeholder="Buscar no radar por titulo, empresa, local ou origem..."
+                  />
+                )}
                 <div className="text-sm text-slate-500">
-                  {filteredTrackedJobs.length} item(ns) visivel(is)
+                  {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).length} item(ns) visivel(is)
                 </div>
               </div>
             </div>
-            {filteredTrackedJobs.length === 0 ? (
+            {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).length === 0 ? (
               <div className="bg-white px-4 py-10 text-center text-sm text-slate-500">
                 Nenhuma vaga encontrada com os filtros atuais.
               </div>
             ) : null}
             <div className="divide-y divide-slate-100 bg-white md:hidden">
-              {filteredTrackedJobs.map((job) => (
+              {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).map((job) => (
                 <article
                   key={job.id}
                   className={`space-y-4 px-4 py-4 transition ${
@@ -1454,7 +1612,7 @@ export function ArgusWorkbench({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {filteredTrackedJobs.map((job) => (
+                {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).map((job) => (
                   <tr
                     key={job.id}
                     className={`cursor-pointer transition ${
