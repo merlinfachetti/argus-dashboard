@@ -233,6 +233,7 @@ export function ArgusWorkbench({
   const activeDiscovery = discoveredJobs.find(
     (job) => job.listing.externalId === activeDiscoveryId,
   );
+  const activeSourceLabel = activeDiscovery ? "Siemens crawler" : "Input manual";
 
   function applyAnalysisState(nextParsedJob: ParsedJob, nextAnalysis: MatchAnalysis) {
     setParsedJob(nextParsedJob);
@@ -410,7 +411,7 @@ export function ArgusWorkbench({
           </div>
 
           <div className="rounded-[28px] border border-white/60 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-            <p className="text-sm font-medium text-slate-500">Média atual</p>
+            <p className="text-sm font-medium text-slate-500">Discovery real</p>
             <p className="mt-2 text-3xl font-semibold text-slate-950">
               {crawlerJobs}
             </p>
@@ -474,6 +475,29 @@ export function ArgusWorkbench({
                 {parsedJob.employmentType}
               </p>
             </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <div className="rounded-full bg-slate-50 px-4 py-2 text-sm text-slate-600 ring-1 ring-slate-200">
+              Origem ativa: {activeSourceLabel}
+            </div>
+            {activeDiscovery?.listing.sourceUrl ? (
+              <a
+                className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-medium text-sky-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                href={activeDiscovery.listing.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Abrir vaga original
+              </a>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleCopyRecruiterMessage}
+              className="inline-flex items-center justify-center rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+            >
+              {copiedState === "copied" ? "Mensagem copiada" : "Copiar abordagem"}
+            </button>
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.92fr]">
@@ -579,168 +603,10 @@ export function ArgusWorkbench({
             </div>
           </div>
         </div>
-
-        <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-                Intake manual
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                Cole qualquer job description e transforme em vaga acionável
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={handleProcessDescription}
-              className="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-              disabled={isPending}
-            >
-              {isPending ? "Processando..." : "Estruturar e pontuar"}
-            </button>
-          </div>
-
-          <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_0.95fr]">
-            <label className="block">
-              <span className="mb-3 block text-sm font-medium text-slate-600">
-                Texto bruto do JD
-              </span>
-              <textarea
-                value={jobDescription}
-                onChange={(event) => setJobDescription(event.target.value)}
-                className="min-h-[420px] w-full rounded-[28px] border border-slate-200 bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-4 focus:ring-sky-100"
-                placeholder="Cole aqui a vaga inteira, mesmo desorganizada."
-              />
-            </label>
-
-            <div className="space-y-5">
-              <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                      Vaga estruturada
-                    </p>
-                    <h3 className="mt-2 text-2xl font-semibold text-slate-950">
-                      {parsedJob.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {parsedJob.company} · {parsedJob.location}
-                    </p>
-                    <p className="mt-2 text-sm text-slate-500">
-                      Fonte ativa:{" "}
-                      {activeDiscoveryId
-                        ? `Siemens Job ID ${activeDiscoveryId}`
-                        : "Input manual"}
-                    </p>
-                  </div>
-                  <span
-                    className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
-                      analysis.score,
-                    )}`}
-                  >
-                    {analysis.score}% match
-                  </span>
-                </div>
-
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      Senioridade
-                    </p>
-                    <p className="mt-2 text-sm text-slate-700">
-                      {parsedJob.seniority}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      Modelo
-                    </p>
-                    <p className="mt-2 text-sm text-slate-700">
-                      {parsedJob.workModel}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      Idiomas
-                    </p>
-                    <p className="mt-2 text-sm text-slate-700">
-                      {parsedJob.languages.join(", ")}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      Tipo de contrato
-                    </p>
-                    <p className="mt-2 text-sm text-slate-700">
-                      {parsedJob.employmentType}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                    Skills detectadas
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {parsedJob.skills.map((skill) => (
-                      <span
-                        key={skill}
-                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-[28px] border border-slate-200 bg-slate-950 p-5 text-white">
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                  Match vs. perfil
-                </p>
-                <p className="mt-3 text-2xl font-semibold">{analysis.verdict}</p>
-                <div className="mt-5 space-y-4 text-sm leading-7 text-slate-300">
-                  <div>
-                    <p className="font-medium text-white">Por que essa vaga sobe</p>
-                    <ul className="mt-2 space-y-1">
-                      {analysis.strengths.map((item) => (
-                        <li key={item}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="font-medium text-white">Riscos e gaps</p>
-                    <ul className="mt-2 space-y-1">
-                      {analysis.risks.map((item) => (
-                        <li key={item}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-[28px] border border-slate-200 bg-white p-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                    Mensagem sugerida ao recruiter
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleCopyRecruiterMessage}
-                    className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                  >
-                    {copiedState === "copied" ? "Copiada" : "Copiar mensagem"}
-                  </button>
-                </div>
-                <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-700">
-                  {recruiterMessage}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+        <div
+          id="radar"
+          className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"
+        >
           <div className="flex flex-col gap-2 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
@@ -791,7 +657,74 @@ export function ArgusWorkbench({
                 </div>
               </div>
             </div>
-            <table className="min-w-full divide-y divide-slate-200 text-left">
+            {filteredTrackedJobs.length === 0 ? (
+              <div className="bg-white px-4 py-10 text-center text-sm text-slate-500">
+                Nenhuma vaga encontrada com os filtros atuais.
+              </div>
+            ) : null}
+            <div className="divide-y divide-slate-100 bg-white md:hidden">
+              {filteredTrackedJobs.map((job) => (
+                <article
+                  key={job.id}
+                  className="space-y-4 px-4 py-4"
+                  onClick={() => handleInspectTrackedJob(job)}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-slate-900">{job.title}</p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {job.company} · {job.location}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
+                        job.score,
+                      )}`}
+                    >
+                      {job.score}%
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                    <span className="rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
+                      {job.intakeMode}
+                    </span>
+                    {job.sourceUrl ? (
+                      <a
+                        className="rounded-full bg-white px-3 py-1 text-sky-700 ring-1 ring-slate-200"
+                        href={job.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        Abrir fonte
+                      </a>
+                    ) : null}
+                  </div>
+                  <select
+                    value={job.status}
+                    onChange={(event) =>
+                      handleUpdateTrackedJobStatus(job.id, event.target.value)
+                    }
+                    onClick={(event) => event.stopPropagation()}
+                    className="w-full rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-300"
+                  >
+                    {[
+                      "Nova",
+                      "Pronta para revisar",
+                      "Requer triagem",
+                      "Aplicar",
+                      "Aplicada",
+                      "Entrevista",
+                    ].map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </article>
+              ))}
+            </div>
+            <table className="hidden min-w-full divide-y divide-slate-200 text-left md:table">
               <thead className="bg-slate-50">
                 <tr className="text-xs uppercase tracking-[0.22em] text-slate-500">
                   <th className="px-4 py-3 font-semibold">Vaga</th>
@@ -867,7 +800,10 @@ export function ArgusWorkbench({
       </section>
 
       <aside className="space-y-6">
-        <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+        <div
+          id="profile"
+          className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"
+        >
           <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-5">
             <button
               type="button"
@@ -934,6 +870,10 @@ export function ArgusWorkbench({
                     Traga vagas reais para este painel. A ideia aqui e manter o
                     discovery num lugar proprio e sem competir com o restante da
                     tela.
+                  </div>
+                ) : filteredDiscoveredJobs.length === 0 ? (
+                  <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/70 px-5 py-6 text-sm leading-7 text-slate-500">
+                    Nenhuma vaga descoberta bate com o filtro atual.
                   </div>
                 ) : (
                   filteredDiscoveredJobs.map((job) => (
