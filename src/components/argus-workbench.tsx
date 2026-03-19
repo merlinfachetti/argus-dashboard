@@ -1940,7 +1940,7 @@ export function ArgusWorkbench({
         <aside className="space-y-6">
         <div
           id="profile"
-          className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"
+          className="rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(239,246,255,0.9))] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"
         >
           <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-5">
             <button
@@ -1965,32 +1965,53 @@ export function ArgusWorkbench({
 
           {workspaceMode === "discovery" ? (
             <div className="mt-5 space-y-5">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="rounded-[28px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(14,165,233,0.72))] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
                     Siemens Germany
                   </p>
-                  <p className="mt-2 text-sm leading-7 text-slate-600">
+                  <p className="mt-2 text-sm leading-7 text-slate-300">
                     Busca publica + enriquecimento do detalhe real da vaga.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleRunSiemensDiscovery}
-                  className="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+                  className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-300"
                   disabled={isDiscovering}
                 >
                   {isDiscovering ? "Coletando..." : "Buscar vagas Siemens"}
                 </button>
               </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Discovery mode
+                    </p>
+                    <p className="mt-2 text-sm text-slate-200">
+                      Traz cards reais e enriquece o detalhe quando a fonte permite.
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Objetivo
+                    </p>
+                    <p className="mt-2 text-sm text-slate-200">
+                      Escolher rapido o que merece virar vaga ativa.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {discoveryError ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div className="rounded-[24px] border border-rose-200 bg-[linear-gradient(90deg,rgba(255,241,242,0.96),rgba(255,255,255,0.94))] px-4 py-3 text-sm text-rose-700">
                   {discoveryError}
                 </div>
               ) : null}
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="rounded-[28px] border border-slate-200 bg-white/88 p-4 shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <input
                   value={discoveryQuery}
                   onChange={(event) => setDiscoveryQuery(event.target.value)}
@@ -2001,26 +2022,27 @@ export function ArgusWorkbench({
                   {filteredDiscoveredJobs.length} vaga(s)
                 </div>
               </div>
+              </div>
 
               <div className="space-y-3">
                 {discoveredJobs.length === 0 ? (
-                  <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/70 px-5 py-6 text-sm leading-7 text-slate-500">
+                  <div className="rounded-[28px] border border-dashed border-slate-300 bg-white/75 px-5 py-6 text-sm leading-7 text-slate-500">
                     Traga vagas reais para este painel. A ideia aqui e manter o
                     discovery num lugar proprio e sem competir com o restante da
                     tela.
                   </div>
                 ) : filteredDiscoveredJobs.length === 0 ? (
-                  <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/70 px-5 py-6 text-sm leading-7 text-slate-500">
+                  <div className="rounded-[28px] border border-dashed border-slate-300 bg-white/75 px-5 py-6 text-sm leading-7 text-slate-500">
                     Nenhuma vaga descoberta bate com o filtro atual.
                   </div>
                 ) : (
                   filteredDiscoveredJobs.map((job) => (
                     <article
                       key={job.listing.externalId}
-                      className={`rounded-[24px] border p-4 transition ${
+                      className={`rounded-[28px] border p-4 shadow-[0_16px_40px_rgba(15,23,42,0.05)] transition ${
                         activeDiscoveryId === job.listing.externalId
                           ? "border-sky-300 bg-sky-50/80 shadow-[0_18px_40px_rgba(14,165,233,0.12)]"
-                          : "border-slate-200 bg-slate-50/80"
+                          : "border-slate-200 bg-white/88"
                       }`}
                     >
                       <div className="flex flex-col gap-3">
@@ -2057,12 +2079,12 @@ export function ArgusWorkbench({
                           <button
                             type="button"
                             onClick={() => handleInspectDiscovery(job)}
-                            className="rounded-full bg-slate-950 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                            className="rounded-full bg-[linear-gradient(135deg,#0f172a,#1e293b)] px-3 py-2 text-sm font-medium text-white shadow-[0_12px_26px_rgba(15,23,42,0.16)] transition hover:brightness-105"
                           >
                             Tornar ativa
                           </button>
                           <a
-                            className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-sky-800 ring-1 ring-slate-300 transition hover:bg-slate-50"
+                            className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-sky-800 shadow-[0_10px_22px_rgba(15,23,42,0.04)] transition hover:bg-slate-50"
                             href={job.listing.sourceUrl}
                             target="_blank"
                             rel="noreferrer"
@@ -2078,12 +2100,13 @@ export function ArgusWorkbench({
             </div>
           ) : (
             <div className="mt-5 space-y-5">
-              <div className="flex items-start justify-between gap-4">
+              <div className="rounded-[28px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(249,115,22,0.7))] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
+                <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-amber-300">
                     JD manual
                   </p>
-                  <p className="mt-2 text-sm leading-7 text-slate-600">
+                  <p className="mt-2 text-sm leading-7 text-slate-300">
                     Cole qualquer descricao de vaga sem formatacao. O Argus
                     estrutura, pontua e joga para o radar.
                   </p>
@@ -2091,24 +2114,43 @@ export function ArgusWorkbench({
                 <button
                   type="button"
                   onClick={handleProcessDescription}
-                  className="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-300"
                   disabled={isPending}
                 >
                   {isPending ? "Processando..." : "Estruturar"}
                 </button>
               </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Fallback inteligente
+                    </p>
+                    <p className="mt-2 text-sm text-slate-200">
+                      Quando o crawler nao entra, o fluxo manual continua sem travar a operacao.
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Resultado
+                    </p>
+                    <p className="mt-2 text-sm text-slate-200">
+                      O texto vira estrutura, score, mensagem e item no radar.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               <textarea
                 value={jobDescription}
                 onChange={(event) => setJobDescription(event.target.value)}
-                className="min-h-[420px] w-full rounded-[28px] border border-slate-200 bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-4 focus:ring-sky-100"
+                className="min-h-[420px] w-full rounded-[30px] border border-slate-200 bg-white/90 px-5 py-4 text-sm leading-7 text-slate-700 shadow-[0_16px_40px_rgba(15,23,42,0.04)] outline-none transition focus:border-sky-300 focus:bg-white focus:ring-4 focus:ring-sky-100"
                 placeholder="Cole aqui a vaga inteira, mesmo desorganizada."
               />
             </div>
           )}
         </div>
 
-        <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+        <div className="rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,248,243,0.9))] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
           <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
             Perfil e fontes
           </p>
@@ -2119,7 +2161,15 @@ export function ArgusWorkbench({
             {profile.location} · {profile.availability}
           </p>
 
-          <div className="mt-5">
+          <div className="mt-5 grid gap-4">
+            <div className="rounded-[24px] border border-slate-200 bg-white/90 px-4 py-4 shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                Headline
+              </p>
+              <p className="mt-2 text-sm leading-7 text-slate-600">
+                {profile.headline}
+              </p>
+            </div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
               Stack principal
             </p>
@@ -2135,11 +2185,27 @@ export function ArgusWorkbench({
             </div>
           </div>
 
+          <div className="mt-6 rounded-[28px] border border-slate-200 bg-white/88 p-4 shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+              Idiomas
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {profile.languages.map((language) => (
+                <span
+                  key={language}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700"
+                >
+                  {language}
+                </span>
+              ))}
+            </div>
+          </div>
+
           <div className="mt-6 space-y-3">
             {sources.map((source) => (
               <article
                 key={source.company}
-                className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4"
+                className="rounded-[26px] border border-slate-200 bg-white/90 p-4 shadow-[0_14px_35px_rgba(15,23,42,0.04)]"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
