@@ -39,6 +39,21 @@ type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "message" | "history";
 
 const STORAGE_KEY = "argus-workbench-state";
+const STATUS_OPTIONS = [
+  "Nova",
+  "Pronta para revisar",
+  "Requer triagem",
+  "Aplicar",
+  "Aplicada",
+  "Entrevista",
+] as const;
+const DASHBOARD_STATUS_LANES = [
+  "Nova",
+  "Pronta para revisar",
+  "Aplicar",
+  "Aplicada",
+  "Entrevista",
+] as const;
 
 function toTrackedJob(
   job: ParsedJob,
@@ -421,6 +436,24 @@ export function ArgusWorkbench({
     );
   }
 
+  function handleAdvanceTrackedJob(jobId: string) {
+    const currentJob = trackedJobs.find((job) => job.id === jobId);
+
+    if (!currentJob) {
+      return;
+    }
+
+    const currentIndex = STATUS_OPTIONS.indexOf(
+      currentJob.status as (typeof STATUS_OPTIONS)[number],
+    );
+
+    if (currentIndex === -1 || currentIndex === STATUS_OPTIONS.length - 1) {
+      return;
+    }
+
+    handleUpdateTrackedJobStatus(jobId, STATUS_OPTIONS[currentIndex + 1]);
+  }
+
   async function handleCopyRecruiterMessage() {
     try {
       await navigator.clipboard.writeText(recruiterMessage);
@@ -466,6 +499,14 @@ export function ArgusWorkbench({
           : []),
       ]
     : [];
+  const comparisonJobs = [...filteredTrackedJobs]
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 3);
+  const dashboardLanes = DASHBOARD_STATUS_LANES.map((status) => ({
+    status,
+    count: trackedJobs.filter((job) => job.status === status).length,
+    jobs: trackedJobs.filter((job) => job.status === status).slice(0, 3),
+  }));
 
   return (
     <div className="grid gap-8 xl:grid-cols-[1.12fr_0.88fr]">
@@ -611,14 +652,7 @@ export function ArgusWorkbench({
                 }
                 className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 outline-none focus:border-sky-300"
               >
-                {[
-                  "Nova",
-                  "Pronta para revisar",
-                  "Requer triagem",
-                  "Aplicar",
-                  "Aplicada",
-                  "Entrevista",
-                ].map((status) => (
+                {STATUS_OPTIONS.map((status) => (
                   <option key={status} value={status}>
                     {status}
                   </option>
@@ -919,6 +953,153 @@ export function ArgusWorkbench({
             ))}
           </div>
 
+          <div className="mt-6 grid gap-4 xl:grid-cols-5">
+            {dashboardLanes.map((lane) => (
+              <section
+                key={lane.status}
+                className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      {lane.status}
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-950">
+                      {lane.count}
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ring-1 ${statusTone(
+                      lane.status,
+                    )}`}
+                  >
+                    Lane
+                  </span>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {lane.jobs.length > 0 ? (
+                    lane.jobs.map((job) => (
+                      <article
+                        key={`${lane.status}-${job.id}`}
+                        className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleInspectTrackedJob(job)}
+                          className="w-full text-left"
+                        >
+                          <p className="text-sm font-semibold text-slate-900">
+                            {job.title}
+                          </p>
+                          <p className="mt-1 text-xs leading-6 text-slate-500">
+                            {job.company} · {job.location}
+                          </p>
+                        </button>
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${badgeTone(
+                              job.score,
+                            )}`}
+                          >
+                            {job.score}%
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleInspectTrackedJob(job)}
+                              className="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition hover:bg-slate-100"
+                            >
+                              Abrir
+                            </button>
+                            {job.status !== "Entrevista" ? (
+                              <button
+                                type="button"
+                                onClick={() => handleAdvanceTrackedJob(job.id)}
+                                className="rounded-full bg-slate-950 px-3 py-1 text-xs font-medium text-white transition hover:bg-slate-800"
+                              >
+                                Avancar
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      </article>
+                    ))
+                  ) : (
+                    <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/70 px-4 py-5 text-sm text-slate-500">
+                      Nenhuma vaga nesta etapa.
+                    </div>
+                  )}
+                </div>
+              </section>
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
+            <div className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-5 text-white">
+              <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+                Comparativo rapido
+              </p>
+              <p className="mt-3 text-sm leading-7 text-slate-300">
+                Leitura horizontal das melhores vagas do radar para decidir qual
+                merece virar foco agora.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {comparisonJobs.length > 0 ? (
+                comparisonJobs.map((job) => (
+                  <article
+                    key={`compare-${job.id}`}
+                    className={`rounded-[28px] border p-5 transition ${
+                      activeTrackedJobId === job.id
+                        ? "border-sky-300 bg-sky-50/80 shadow-[0_18px_40px_rgba(14,165,233,0.12)]"
+                        : "border-slate-200 bg-slate-50/80"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleInspectTrackedJob(job)}
+                      className="w-full text-left"
+                    >
+                      <p className="text-sm font-semibold text-slate-900">
+                        {job.title}
+                      </p>
+                      <p className="mt-1 text-xs leading-6 text-slate-500">
+                        {job.company} · {job.location}
+                      </p>
+                    </button>
+                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        className="h-full rounded-full bg-sky-500"
+                        style={{ width: `${Math.max(8, Math.min(job.score, 100))}%` }}
+                      />
+                    </div>
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${badgeTone(
+                          job.score,
+                        )}`}
+                      >
+                        {job.score}% match
+                      </span>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${statusTone(
+                          job.status,
+                        )}`}
+                      >
+                        {job.status}
+                      </span>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="rounded-[28px] border border-dashed border-slate-300 bg-slate-50/70 px-5 py-6 text-sm text-slate-500 md:col-span-3">
+                  Adicione ou descubra mais vagas para montar o comparativo.
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="mt-6 overflow-hidden rounded-[28px] border border-slate-200">
             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -988,14 +1169,7 @@ export function ArgusWorkbench({
                     onClick={(event) => event.stopPropagation()}
                     className="w-full rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-300"
                   >
-                    {[
-                      "Nova",
-                      "Pronta para revisar",
-                      "Requer triagem",
-                      "Aplicar",
-                      "Aplicada",
-                      "Entrevista",
-                    ].map((status) => (
+                    {STATUS_OPTIONS.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>
@@ -1061,14 +1235,7 @@ export function ArgusWorkbench({
                         onClick={(event) => event.stopPropagation()}
                         className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-300"
                       >
-                        {[
-                          "Nova",
-                          "Pronta para revisar",
-                          "Requer triagem",
-                          "Aplicar",
-                          "Aplicada",
-                          "Entrevista",
-                        ].map((status) => (
+                        {STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>
                             {status}
                           </option>
