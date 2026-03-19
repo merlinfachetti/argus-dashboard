@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import type { DiscoveredJobListing } from "@/lib/connectors/types";
 import {
   analyzeJobMatch,
@@ -35,6 +35,8 @@ type DiscoveryPreview = {
 };
 
 type RadarFilter = "all" | "crawler" | "manual" | "priority";
+
+const STORAGE_KEY = "argus-workbench-state";
 
 function toTrackedJob(
   job: ParsedJob,
@@ -110,7 +112,78 @@ export function ArgusWorkbench({
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
   const [copiedState, setCopiedState] = useState<"idle" | "copied">("idle");
   const [radarFilter, setRadarFilter] = useState<RadarFilter>("all");
+  const [radarQuery, setRadarQuery] = useState("");
+  const [discoveryQuery, setDiscoveryQuery] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    const rawState = window.localStorage.getItem(STORAGE_KEY);
+
+    if (!rawState) {
+      return;
+    }
+
+    try {
+      const parsedState = JSON.parse(rawState) as {
+        jobDescription?: string;
+        parsedJob?: ParsedJob;
+        analysis?: MatchAnalysis;
+        recruiterMessage?: string;
+        trackedJobs?: TrackedJob[];
+        discoveredJobs?: DiscoveryPreview[];
+        activeDiscoveryId?: string | null;
+        radarFilter?: RadarFilter;
+        radarQuery?: string;
+        discoveryQuery?: string;
+      };
+
+      if (parsedState.jobDescription) setJobDescription(parsedState.jobDescription);
+      if (parsedState.parsedJob) setParsedJob(parsedState.parsedJob);
+      if (parsedState.analysis) setAnalysis(parsedState.analysis);
+      if (parsedState.recruiterMessage) {
+        setRecruiterMessage(parsedState.recruiterMessage);
+      }
+      if (parsedState.trackedJobs?.length) setTrackedJobs(parsedState.trackedJobs);
+      if (parsedState.discoveredJobs) setDiscoveredJobs(parsedState.discoveredJobs);
+      if (parsedState.activeDiscoveryId !== undefined) {
+        setActiveDiscoveryId(parsedState.activeDiscoveryId);
+      }
+      if (parsedState.radarFilter) setRadarFilter(parsedState.radarFilter);
+      if (parsedState.radarQuery) setRadarQuery(parsedState.radarQuery);
+      if (parsedState.discoveryQuery) setDiscoveryQuery(parsedState.discoveryQuery);
+    } catch {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        jobDescription,
+        parsedJob,
+        analysis,
+        recruiterMessage,
+        trackedJobs,
+        discoveredJobs,
+        activeDiscoveryId,
+        radarFilter,
+        radarQuery,
+        discoveryQuery,
+      }),
+    );
+  }, [
+    jobDescription,
+    parsedJob,
+    analysis,
+    recruiterMessage,
+    trackedJobs,
+    discoveredJobs,
+    activeDiscoveryId,
+    radarFilter,
+    radarQuery,
+    discoveryQuery,
+  ]);
 
   const totalOpportunities = trackedJobs.length;
   const priorityJobs = trackedJobs.filter((job) => job.score >= 70).length;
@@ -120,20 +193,36 @@ export function ArgusWorkbench({
   const averageScore =
     trackedJobs.reduce((sum, job) => sum + job.score, 0) / totalOpportunities;
   const filteredTrackedJobs = trackedJobs.filter((job) => {
+    const matchesQuery =
+      radarQuery.trim().length === 0 ||
+      `${job.title} ${job.company} ${job.location} ${job.intakeMode}`
+        .toLowerCase()
+        .includes(radarQuery.toLowerCase());
+
     if (radarFilter === "crawler") {
-      return job.intakeMode.toLowerCase().includes("crawler");
+      return job.intakeMode.toLowerCase().includes("crawler") && matchesQuery;
     }
 
     if (radarFilter === "manual") {
-      return job.intakeMode.toLowerCase().includes("manual");
+      return job.intakeMode.toLowerCase().includes("manual") && matchesQuery;
     }
 
     if (radarFilter === "priority") {
-      return job.score >= 70;
+      return job.score >= 70 && matchesQuery;
     }
 
-    return true;
+    return matchesQuery;
   });
+  const filteredDiscoveredJobs = discoveredJobs.filter((job) =>
+    discoveryQuery.trim().length === 0
+      ? true
+      : `${job.listing.title} ${job.listing.company} ${job.listing.location} ${job.listing.family}`
+          .toLowerCase()
+          .includes(discoveryQuery.toLowerCase()),
+  );
+  const activeDiscovery = discoveredJobs.find(
+    (job) => job.listing.externalId === activeDiscoveryId,
+  );
 
   function applyAnalysisState(nextParsedJob: ParsedJob, nextAnalysis: MatchAnalysis) {
     setParsedJob(nextParsedJob);
@@ -237,6 +326,29 @@ export function ArgusWorkbench({
     applyAnalysisState(job.parsedJob, job.analysis);
   }
 
+  function handleInspectTrackedJob(job: TrackedJob) {
+    const nextParsedJob: ParsedJob = {
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      seniority: job.seniority,
+      workModel: job.workModel,
+      employmentType: job.employmentType,
+      languages: job.languages,
+      skills: job.skills,
+      summary: job.summary,
+    };
+
+    const nextAnalysis = analyzeJobMatch(nextParsedJob, profile);
+    setActiveDiscoveryId(job.externalId ?? null);
+    setJobDescription(
+      [job.title, `Company: ${job.company}`, `Location: ${job.location}`, job.summary]
+        .filter(Boolean)
+        .join("\n"),
+    );
+    applyAnalysisState(nextParsedJob, nextAnalysis);
+  }
+
   async function handleCopyRecruiterMessage() {
     try {
       await navigator.clipboard.writeText(recruiterMessage);
@@ -333,6 +445,20 @@ export function ArgusWorkbench({
                 Media atual do radar: {Math.round(averageScore)}%
               </div>
             </div>
+            <div className="mt-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-4">
+              <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                1. Buscar vagas reais
+              </div>
+              <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                2. Selecionar uma vaga
+              </div>
+              <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                3. Revisar o match
+              </div>
+              <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                4. Copiar a abordagem
+              </div>
+            </div>
           </div>
 
           {discoveryError ? (
@@ -342,6 +468,18 @@ export function ArgusWorkbench({
           ) : null}
 
           <div className="mt-6 grid gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <input
+                value={discoveryQuery}
+                onChange={(event) => setDiscoveryQuery(event.target.value)}
+                className="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100 sm:max-w-md"
+                placeholder="Filtrar vagas descobertas por titulo, empresa ou local..."
+              />
+              <div className="text-sm text-slate-500">
+                {filteredDiscoveredJobs.length} vaga(s) visivel(is)
+              </div>
+            </div>
+
             {discoveredJobs.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/70 px-5 py-6 text-sm leading-7 text-slate-500">
                 Ainda sem resultado carregado. Quando você disparar a coleta,
@@ -349,7 +487,7 @@ export function ArgusWorkbench({
                 calcula o match e injeta o resultado no dashboard.
               </div>
             ) : (
-              discoveredJobs.map((job) => (
+              filteredDiscoveredJobs.map((job) => (
                 <article
                   key={job.listing.externalId}
                   className={`rounded-[24px] border p-5 transition ${
@@ -420,6 +558,71 @@ export function ArgusWorkbench({
             )}
           </div>
         </div>
+
+        {activeDiscovery ? (
+          <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+            <div className="flex flex-col gap-2 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
+                  Vaga ativa
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-950">
+                  {activeDiscovery.listing.title}
+                </h2>
+              </div>
+              <span
+                className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
+                  activeDiscovery.analysis.score,
+                )}`}
+              >
+                {activeDiscovery.analysis.score}% {activeDiscovery.analysis.verdict}
+              </span>
+            </div>
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.85fr]">
+              <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                  Snapshot
+                </p>
+                <div className="mt-3 space-y-2 text-sm leading-7 text-slate-600">
+                  <p>{activeDiscovery.listing.company}</p>
+                  <p>{activeDiscovery.listing.location}</p>
+                  <p>{activeDiscovery.listing.family}</p>
+                  <p>
+                    {activeDiscovery.listing.workMode ?? "Work mode n/d"} ·{" "}
+                    {activeDiscovery.listing.employmentType ?? "Contrato n/d"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-5 text-white">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
+                  Checklist rapido
+                </p>
+                <div className="mt-3 space-y-2 text-sm leading-7 text-slate-300">
+                  <p>
+                    {activeDiscovery.analysis.score >= 70 ? "✓" : "•"} Vale
+                    revisar com prioridade
+                  </p>
+                  <p>
+                    {activeDiscovery.listing.detailEnriched ? "✓" : "•"} JD real
+                    carregado do portal
+                  </p>
+                  <p>
+                    {activeDiscovery.parsedJob.languages.includes("German")
+                      ? "• Alemão aparece como sinal importante"
+                      : "✓ Idioma nao parece bloqueio principal"}
+                  </p>
+                  <p>
+                    {activeDiscovery.parsedJob.skills.length > 0
+                      ? `✓ ${activeDiscovery.parsedJob.skills.length} skill(s) detectada(s)`
+                      : "• Ainda com extração de skills limitada"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -619,6 +822,19 @@ export function ArgusWorkbench({
           </div>
 
           <div className="mt-6 overflow-hidden rounded-[28px] border border-slate-200">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <input
+                  value={radarQuery}
+                  onChange={(event) => setRadarQuery(event.target.value)}
+                  className="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100 sm:max-w-md"
+                  placeholder="Buscar no radar por titulo, empresa, local ou origem..."
+                />
+                <div className="text-sm text-slate-500">
+                  {filteredTrackedJobs.length} item(ns) visivel(is)
+                </div>
+              </div>
+            </div>
             <table className="min-w-full divide-y divide-slate-200 text-left">
               <thead className="bg-slate-50">
                 <tr className="text-xs uppercase tracking-[0.22em] text-slate-500">
@@ -630,7 +846,11 @@ export function ArgusWorkbench({
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
                 {filteredTrackedJobs.map((job) => (
-                  <tr key={job.id}>
+                  <tr
+                    key={job.id}
+                    className="cursor-pointer transition hover:bg-slate-50"
+                    onClick={() => handleInspectTrackedJob(job)}
+                  >
                     <td className="px-4 py-4 align-top">
                       <p className="font-semibold text-slate-900">{job.title}</p>
                       <p className="mt-1 text-sm text-slate-500">
