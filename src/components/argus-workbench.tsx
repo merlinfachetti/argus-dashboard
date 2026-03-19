@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import type { DiscoveredJobListing } from "@/lib/connectors/types";
 import {
   analyzeJobMatch,
@@ -24,6 +25,7 @@ type ArgusWorkbenchProps = {
   initialJobDescription: string;
   pageMode?: "control" | "dashboard" | "jobs";
   initialRadarQuery?: string;
+  initialActiveJobId?: string;
 };
 
 type DiscoveryPreview = {
@@ -121,6 +123,7 @@ export function ArgusWorkbench({
   initialJobDescription,
   pageMode = "control",
   initialRadarQuery = "",
+  initialActiveJobId,
 }: ArgusWorkbenchProps) {
   const initialState = buildInitialState(profile, initialJobDescription);
 
@@ -158,6 +161,17 @@ export function ArgusWorkbench({
   const isControlPage = pageMode === "control";
   const isDashboardPage = pageMode === "dashboard";
   const isJobsPage = pageMode === "jobs";
+
+  const applyAnalysisState = useCallback(
+    (nextParsedJob: ParsedJob, nextAnalysis: MatchAnalysis) => {
+      setParsedJob(nextParsedJob);
+      setAnalysis(nextAnalysis);
+      setRecruiterMessage(
+        buildRecruiterMessage(nextParsedJob, profile, nextAnalysis),
+      );
+    },
+    [profile],
+  );
 
   useEffect(() => {
     const rawState = window.localStorage.getItem(STORAGE_KEY);
@@ -230,6 +244,43 @@ export function ArgusWorkbench({
       setRadarQuery(initialRadarQuery);
     }
   }, [initialRadarQuery]);
+
+  useEffect(() => {
+    if (!initialActiveJobId) {
+      return;
+    }
+
+    const matchingJob = trackedJobs.find((job) => job.id === initialActiveJobId);
+    if (matchingJob) {
+      const nextParsedJob: ParsedJob = {
+        title: matchingJob.title,
+        company: matchingJob.company,
+        location: matchingJob.location,
+        seniority: matchingJob.seniority,
+        workModel: matchingJob.workModel,
+        employmentType: matchingJob.employmentType,
+        languages: matchingJob.languages,
+        skills: matchingJob.skills,
+        summary: matchingJob.summary,
+      };
+
+      const nextAnalysis = analyzeJobMatch(nextParsedJob, profile);
+      setActiveDiscoveryId(matchingJob.externalId ?? null);
+      setActiveTrackedJobId(matchingJob.id);
+      setJobDescription(
+        [
+          matchingJob.title,
+          `Company: ${matchingJob.company}`,
+          `Location: ${matchingJob.location}`,
+          matchingJob.summary,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      );
+      applyAnalysisState(nextParsedJob, nextAnalysis);
+      setActivePanel("summary");
+    }
+  }, [applyAnalysisState, initialActiveJobId, profile, trackedJobs]);
 
   useEffect(() => {
     let isMounted = true;
@@ -517,14 +568,6 @@ export function ArgusWorkbench({
       setActiveTrackedJobId(trackedJobs[0].id);
     }
   }, [activeTrackedJob, trackedJobs]);
-
-  function applyAnalysisState(nextParsedJob: ParsedJob, nextAnalysis: MatchAnalysis) {
-    setParsedJob(nextParsedJob);
-    setAnalysis(nextAnalysis);
-    setRecruiterMessage(
-      buildRecruiterMessage(nextParsedJob, profile, nextAnalysis),
-    );
-  }
 
   function handleProcessDescription() {
     startTransition(() => {
@@ -1584,6 +1627,15 @@ export function ArgusWorkbench({
                         Abrir fonte
                       </a>
                     ) : null}
+                    {isJobsPage ? (
+                      <Link
+                        className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white transition hover:bg-slate-800"
+                        href={`/control-center?job=${encodeURIComponent(job.id)}`}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        Abrir no control center
+                      </Link>
+                    ) : null}
                   </div>
                   <select
                     value={job.status}
@@ -1636,6 +1688,15 @@ export function ArgusWorkbench({
                         >
                           Abrir fonte
                         </a>
+                      ) : null}
+                      {isJobsPage ? (
+                        <Link
+                          className="mt-2 inline-flex text-sm font-semibold text-slate-950 hover:text-slate-700"
+                          href={`/control-center?job=${encodeURIComponent(job.id)}`}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          Abrir no control center
+                        </Link>
                       ) : null}
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-600">

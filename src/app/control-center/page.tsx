@@ -5,7 +5,13 @@ import {
   trackedSources,
 } from "@/lib/profile";
 
-export default function ControlCenterPage() {
+export default async function ControlCenterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ job?: string }>;
+}) {
+  const params = await searchParams;
+
   return (
     <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-6 py-10 lg:px-10 lg:py-12">
       <section className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -28,6 +34,7 @@ export default function ControlCenterPage() {
         sources={trackedSources}
         initialJobDescription={defaultJobDescription}
         pageMode="control"
+        initialActiveJobId={params.job}
       />
     </div>
   );
