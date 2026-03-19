@@ -12,6 +12,18 @@ function inferCompany(title: string) {
   return /healthineers/i.test(title) ? "Siemens Healthineers" : "Siemens";
 }
 
+function absoluteUrl(pathOrUrl: string) {
+  if (!pathOrUrl) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(pathOrUrl)) {
+    return pathOrUrl;
+  }
+
+  return `https://jobs.siemens.com${pathOrUrl}`;
+}
+
 function buildDescriptionText({
   title,
   company,
@@ -37,8 +49,8 @@ function buildDescriptionText({
   ].join("\n");
 }
 
-export async function discoverSiemensListings(limit = 6) {
-  const response = await fetch(SIEMENS_GERMANY_SEARCH_URL, {
+async function fetchHtml(url: string) {
+  const response = await fetch(url, {
     headers: {
       "user-agent":
         "Mozilla/5.0 (compatible; ArgusBot/0.1; +https://github.com/merlinfachetti/argus-dashboard)",
@@ -48,10 +60,89 @@ export async function discoverSiemensListings(limit = 6) {
   });
 
   if (!response.ok) {
-    throw new Error(`Siemens search request failed with ${response.status}`);
+    throw new Error(`Siemens request failed with ${response.status}`);
   }
 
-  const html = await response.text();
+  return response.text();
+}
+
+function cleanRichText(html: string) {
+  const $ = cheerio.load(`<div>${html}</div>`);
+  return cleanText($("div").text());
+}
+
+function extractFieldMap($: cheerio.CheerioAPI) {
+  const fields = new Map<string, string>();
+
+  $(".article__content__view__field").each((_, element) => {
+    const label = cleanText(
+      $(element).find(".article__content__view__field__label").text(),
+    );
+    const value = cleanText(
+      $(element).find(".article__content__view__field__value").first().text(),
+    );
+
+    if (label) {
+      fields.set(label, value);
+    }
+  });
+
+  return fields;
+}
+
+export async function enrichSiemensListing(
+  listing: DiscoveredJobListing,
+): Promise<DiscoveredJobListing> {
+  const html = await fetchHtml(listing.sourceUrl);
+  const $ = cheerio.load(html);
+  const fields = extractFieldMap($);
+
+  const title =
+    cleanText($(".section__header__text__title").first().text()) || listing.title;
+  const locations = $(".tf_locations .list--locations .list__item")
+    .map((_, element) => cleanText($(element).text()))
+    .get()
+    .filter(Boolean);
+  const descriptionHtml = $(".tf_replaceFieldVideoTokens .article__content__view__field__value")
+    .first()
+    .html();
+  const descriptionText = descriptionHtml ? cleanRichText(descriptionHtml) : "";
+
+  const company = fields.get("Company") || listing.company;
+  const family = fields.get("Field of work") || listing.family;
+  const location =
+    locations.length > 0
+      ? locations.join(" | ")
+      : fields.get("Location(s)") || listing.location;
+
+  return {
+    ...listing,
+    title,
+    company,
+    location,
+    family,
+    organization: fields.get("Organization"),
+    postedSince: fields.get("Posted since"),
+    experienceLevel: fields.get("Experience level"),
+    jobType: fields.get("Job type"),
+    workMode: fields.get("Work mode"),
+    employmentType: fields.get("Employment type"),
+    locations,
+    detailEnriched: Boolean(descriptionText),
+    descriptionText:
+      descriptionText ||
+      buildDescriptionText({
+        title,
+        company,
+        location,
+        family,
+        sourceUrl: listing.sourceUrl,
+      }),
+  };
+}
+
+export async function discoverSiemensListings(limit = 6, enrich = false) {
+  const html = await fetchHtml(SIEMENS_GERMANY_SEARCH_URL);
   const $ = cheerio.load(html);
   const jobs: DiscoveredJobListing[] = [];
 
@@ -63,15 +154,15 @@ export async function discoverSiemensListings(limit = 6) {
     const title = cleanText(
       $(element).find(".article__header__text__title a.link").first().text(),
     );
-    const sourceUrl = cleanText(
+    const rawSourceUrl = cleanText(
       $(element).find(".article__header__text__title a.link").attr("href") ?? "",
     );
+    const sourceUrl = absoluteUrl(rawSourceUrl);
     const location = cleanText(
       $(element).find(".list-item-location").first().text(),
     );
     const jobIdLabel = cleanText($(element).find(".list-item-jobId").first().text());
     const family = cleanText($(element).find(".list-item-family").first().text());
-
     const externalId = jobIdLabel.replace("Job ID:", "").trim();
 
     if (!title || !sourceUrl || !externalId) {
@@ -99,5 +190,17 @@ export async function discoverSiemensListings(limit = 6) {
     });
   });
 
-  return jobs;
+  if (!enrich) {
+    return jobs;
+  }
+
+  return Promise.all(
+    jobs.map(async (job) => {
+      try {
+        return await enrichSiemensListing(job);
+      } catch {
+        return job;
+      }
+    }),
+  );
 }

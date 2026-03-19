@@ -139,9 +139,12 @@ export function ArgusWorkbench({
     setDiscoveryError(null);
 
     try {
-      const response = await fetch("/api/sources/siemens/discover?limit=6", {
-        cache: "no-store",
-      });
+      const response = await fetch(
+        "/api/sources/siemens/discover?limit=6&enrich=1",
+        {
+          cache: "no-store",
+        },
+      );
 
       const payload = (await response.json()) as {
         error?: string;
@@ -255,10 +258,11 @@ export function ArgusWorkbench({
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm leading-7 text-slate-600">
               Faz discovery na busca publica da Siemens filtrada para Alemanha,
-              normaliza as vagas e injeta no radar local para triagem imediata.
+              abre o detalhe real do JD, normaliza os dados e injeta tudo no
+              radar local para triagem imediata.
             </p>
             <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 ring-1 ring-slate-200">
-              Search page parser
+              Search + detail enrichment
             </span>
           </div>
 
@@ -272,8 +276,8 @@ export function ArgusWorkbench({
             {discoveredJobs.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/70 px-5 py-6 text-sm leading-7 text-slate-500">
                 Ainda sem resultado carregado. Quando você disparar a coleta,
-                as vagas normalizadas da Siemens aparecem aqui com score
-                preliminar e entram no dashboard.
+                o Argus consulta a busca da Siemens, abre o detalhe da vaga,
+                calcula o match e injeta o resultado no dashboard.
               </div>
             ) : (
               discoveredJobs.map((job) => (
@@ -303,6 +307,25 @@ export function ArgusWorkbench({
                     <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
                       Job ID {job.listing.externalId}
                     </span>
+                    {job.listing.detailEnriched ? (
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-200">
+                        JD enriquecido
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700 ring-1 ring-amber-200">
+                        Card-only
+                      </span>
+                    )}
+                    {job.listing.workMode ? (
+                      <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                        {job.listing.workMode}
+                      </span>
+                    ) : null}
+                    {job.listing.experienceLevel ? (
+                      <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                        {job.listing.experienceLevel}
+                      </span>
+                    ) : null}
                     <a
                       className="font-medium text-sky-700 hover:text-sky-900"
                       href={job.listing.sourceUrl}

@@ -8,4 +8,12 @@ export type DiscoveredJobListing = {
   family: string;
   sourceUrl: string;
   descriptionText: string;
+  organization?: string;
+  postedSince?: string;
+  experienceLevel?: string;
+  jobType?: string;
+  workMode?: string;
+  employmentType?: string;
+  locations?: string[];
+  detailEnriched?: boolean;
 };

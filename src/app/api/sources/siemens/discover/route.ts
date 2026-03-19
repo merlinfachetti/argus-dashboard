@@ -7,15 +7,17 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const limitParam = Number(searchParams.get("limit") ?? "6");
+  const enrich = searchParams.get("enrich") === "1";
   const limit = Number.isFinite(limitParam)
     ? Math.max(1, Math.min(limitParam, 12))
     : 6;
 
   try {
-    const jobs = await discoverSiemensListings(limit);
+    const jobs = await discoverSiemensListings(limit, enrich);
 
     return NextResponse.json({
       source: "Siemens",
+      enrich,
       count: jobs.length,
       jobs,
     });
