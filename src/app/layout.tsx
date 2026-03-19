@@ -18,11 +18,12 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="min-h-screen">
-        <div className="flex min-h-screen flex-col">
+        <div className="relative flex min-h-screen flex-col overflow-x-hidden">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.10),transparent_56%)]" />
           <Suspense fallback={null}>
             <AppHeader />
           </Suspense>
-          <main className="flex-1">{children}</main>
+          <main className="relative flex-1">{children}</main>
           <AppFooter />
         </div>
       </body>
