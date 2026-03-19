@@ -117,6 +117,22 @@ function statusTone(status: string) {
   return "bg-slate-100 text-slate-800 ring-slate-300";
 }
 
+function laneTone(status: string) {
+  if (status === "Entrevista") {
+    return "border-emerald-200 bg-[linear-gradient(180deg,rgba(236,253,245,0.95),rgba(255,255,255,0.92))]";
+  }
+
+  if (status === "Aplicada" || status === "Aplicar") {
+    return "border-sky-200 bg-[linear-gradient(180deg,rgba(239,246,255,0.95),rgba(255,255,255,0.92))]";
+  }
+
+  if (status === "Pronta para revisar") {
+    return "border-violet-200 bg-[linear-gradient(180deg,rgba(245,243,255,0.95),rgba(255,255,255,0.92))]";
+  }
+
+  return "border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.92))]";
+}
+
 export function ArgusWorkbench({
   profile,
   sources,
@@ -861,14 +877,17 @@ export function ArgusWorkbench({
       <section className="space-y-8">
         {!isJobsPage ? (
           <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr_0.75fr]">
-          <div className="rounded-[32px] border border-slate-900/80 bg-slate-950 p-6 text-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
-            <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+          <div className="rounded-[36px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(14,165,233,0.78))] p-6 text-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+            <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300">
               Match em foco
             </p>
             <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-5xl font-semibold">{analysis.score}%</p>
                 <p className="mt-2 text-sm text-slate-300">{analysis.verdict}</p>
+                <p className="mt-4 max-w-sm text-sm leading-7 text-slate-200">
+                  Um snapshot rapido da vaga ativa para decidir se ela merece aprofundamento imediato.
+                </p>
               </div>
               <div className="min-w-[14rem] flex-1">
                 <div className="h-3 overflow-hidden rounded-full bg-white/10">
@@ -884,8 +903,8 @@ export function ArgusWorkbench({
             </div>
           </div>
 
-          <div className="rounded-[32px] border border-white/60 bg-white/88 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
-            <p className="text-sm font-medium text-slate-500">Pipeline forte</p>
+          <div className="rounded-[32px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
+            <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">Pipeline forte</p>
             <p className="mt-3 text-4xl font-semibold text-slate-950">
               {priorityJobs}
             </p>
@@ -894,8 +913,8 @@ export function ArgusWorkbench({
             </p>
           </div>
 
-          <div className="rounded-[32px] border border-white/60 bg-white/88 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
-            <p className="text-sm font-medium text-slate-500">Cobertura real</p>
+          <div className="rounded-[32px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,247,237,0.92))] p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
+            <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">Cobertura real</p>
             <p className="mt-3 text-4xl font-semibold text-slate-950">
               {crawlerJobs}
             </p>
@@ -907,19 +926,20 @@ export function ArgusWorkbench({
         ) : null}
 
         <div
-          className={`rounded-[28px] border px-5 py-4 text-sm ${
+          className={`rounded-[30px] border px-5 py-4 text-sm shadow-[0_18px_50px_rgba(15,23,42,0.04)] ${
             syncState === "connected"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              ? "border-emerald-200 bg-[linear-gradient(90deg,rgba(236,253,245,0.96),rgba(255,255,255,0.94))] text-emerald-800"
               : syncState === "checking"
-                ? "border-sky-200 bg-sky-50 text-sky-800"
-                : "border-amber-200 bg-amber-50 text-amber-800"
+                ? "border-sky-200 bg-[linear-gradient(90deg,rgba(239,246,255,0.96),rgba(255,255,255,0.94))] text-sky-800"
+                : "border-amber-200 bg-[linear-gradient(90deg,rgba(255,251,235,0.96),rgba(255,255,255,0.94))] text-amber-800"
           }`}
         >
+          <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-current align-middle opacity-80" />
           <span className="font-semibold">Persistencia do radar:</span> {syncMessage}
         </div>
 
         {!isDashboardPage ? (
-          <div className="rounded-[36px] border border-white/60 bg-white/88 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
+          <div className="rounded-[40px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,248,243,0.9))] p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
@@ -958,7 +978,7 @@ export function ArgusWorkbench({
           </div>
 
           <div className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr]">
-            <div className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-5 text-white">
+            <div className="rounded-[30px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.96)_55%,rgba(14,165,233,0.7))] p-5 text-white">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
                 Leitura de match
               </p>
@@ -981,7 +1001,7 @@ export function ArgusWorkbench({
                 </div>
               </div>
             </div>
-            <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+            <div className="rounded-[30px] border border-slate-200 bg-white/88 p-5 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
                 Senioridade
               </p>
@@ -990,7 +1010,7 @@ export function ArgusWorkbench({
               </p>
               <p className="mt-3 text-sm text-slate-500">{parsedJob.workModel}</p>
             </div>
-            <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+            <div className="rounded-[30px] border border-slate-200 bg-white/88 p-5 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
                 Contrato
               </p>
@@ -1004,7 +1024,7 @@ export function ArgusWorkbench({
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <div className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-800 ring-1 ring-slate-300">
+            <div className="rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-medium text-slate-800 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
               Origem ativa: {activeSourceLabel}
             </div>
             {activeTrackedJob ? (
@@ -1013,7 +1033,7 @@ export function ArgusWorkbench({
                 onChange={(event) =>
                   handleUpdateTrackedJobStatus(activeTrackedJob.id, event.target.value)
                 }
-                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 outline-none focus:border-sky-300"
+                className="rounded-full border border-slate-300 bg-white/95 px-4 py-2 text-sm font-medium text-slate-800 outline-none shadow-[0_10px_24px_rgba(15,23,42,0.04)] focus:border-sky-300"
               >
                 {STATUS_OPTIONS.map((status) => (
                   <option key={status} value={status}>
@@ -1024,7 +1044,7 @@ export function ArgusWorkbench({
             ) : null}
             {activeDiscovery?.listing.sourceUrl ? (
               <a
-                className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-sky-800 ring-1 ring-slate-300 transition hover:bg-slate-50"
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-sm font-semibold text-sky-800 shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition hover:bg-slate-50"
                 href={activeDiscovery.listing.sourceUrl}
                 target="_blank"
                 rel="noreferrer"
@@ -1035,7 +1055,7 @@ export function ArgusWorkbench({
             <button
               type="button"
               onClick={handleCopyRecruiterMessage}
-              className="inline-flex items-center justify-center rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+              className="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#0f172a,#1e293b)] px-4 py-2 text-sm font-medium text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:brightness-105"
             >
               {copiedState === "copied" ? "Mensagem copiada" : "Copiar abordagem"}
             </button>
@@ -1273,7 +1293,7 @@ export function ArgusWorkbench({
         {isDashboardPage || isJobsPage ? (
           <div
           id="radar"
-          className="rounded-[36px] border border-white/60 bg-white/88 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8"
+          className="rounded-[40px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(243,248,255,0.88))] p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8"
         >
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -1294,7 +1314,7 @@ export function ArgusWorkbench({
           </div>
 
           {!isJobsPage ? (
-            <div className="mt-6 rounded-[28px] border border-slate-900/80 bg-slate-950 p-5 text-white">
+            <div className="mt-6 rounded-[32px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_50%,rgba(14,165,233,0.62))] p-6 text-white">
             <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
@@ -1306,19 +1326,19 @@ export function ArgusWorkbench({
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">
+                <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
                     Priority
                   </p>
                   <p className="mt-2 text-2xl font-semibold">{priorityJobs}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">
+                <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
                     Crawler
                   </p>
                   <p className="mt-2 text-2xl font-semibold">{crawlerJobs}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">
+                <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
                     Manual
                   </p>
@@ -1353,7 +1373,7 @@ export function ArgusWorkbench({
 
           {isJobsPage ? (
             <div className="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-              <div className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-6 text-white">
+              <div className="rounded-[32px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(14,165,233,0.75))] p-6 text-white shadow-[0_22px_60px_rgba(15,23,42,0.16)]">
                 <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
                   Jobs Explorer
                 </p>
@@ -1364,7 +1384,7 @@ export function ArgusWorkbench({
                   vagas apos busca do header, filtros locais e ordenacao.
                 </p>
               </div>
-              <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+              <div className="rounded-[32px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <label className="grid gap-2">
                     <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
@@ -1438,7 +1458,7 @@ export function ArgusWorkbench({
 
           {isJobsPage ? (
             <div className="mt-6 grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-              <div className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-6 text-white">
+              <div className="rounded-[32px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(14,165,233,0.72))] p-6 text-white shadow-[0_22px_60px_rgba(15,23,42,0.16)]">
                 <div className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
@@ -1537,7 +1557,7 @@ export function ArgusWorkbench({
                 ) : null}
               </div>
 
-              <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+              <div className="rounded-[32px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
                 <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
                   Leitura rapida do radar
                 </p>
@@ -1597,7 +1617,9 @@ export function ArgusWorkbench({
             {dashboardLanes.map((lane) => (
               <section
                 key={lane.status}
-                className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-4"
+                className={`rounded-[30px] border p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05)] ${laneTone(
+                  lane.status,
+                )}`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -1608,11 +1630,7 @@ export function ArgusWorkbench({
                       {lane.count}
                     </p>
                   </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ring-1 ${statusTone(
-                      lane.status,
-                    )}`}
-                  >
+                  <span className="rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
                     Lane
                   </span>
                 </div>
@@ -1622,7 +1640,7 @@ export function ArgusWorkbench({
                     lane.jobs.map((job) => (
                       <article
                         key={`${lane.status}-${job.id}`}
-                        className="rounded-[22px] bg-white p-4 ring-1 ring-slate-200"
+                        className="rounded-[24px] bg-white/92 p-4 ring-1 ring-slate-200 shadow-[0_14px_30px_rgba(15,23,42,0.04)]"
                       >
                         <button
                           type="button"
@@ -1666,7 +1684,7 @@ export function ArgusWorkbench({
                       </article>
                     ))
                   ) : (
-                    <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/70 px-4 py-5 text-sm text-slate-500">
+                    <div className="rounded-[24px] border border-dashed border-slate-300 bg-white/75 px-4 py-5 text-sm text-slate-500">
                       Nenhuma vaga nesta etapa.
                     </div>
                   )}
@@ -1678,7 +1696,7 @@ export function ArgusWorkbench({
 
           {isDashboardPage ? (
             <div className="mt-6 grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
-            <div className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-5 text-white">
+            <div className="rounded-[32px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(14,165,233,0.72))] p-5 text-white shadow-[0_22px_60px_rgba(15,23,42,0.16)]">
               <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
                 Comparativo rapido
               </p>
@@ -1692,10 +1710,10 @@ export function ArgusWorkbench({
                 comparisonJobs.map((job) => (
                   <article
                     key={`compare-${job.id}`}
-                    className={`rounded-[28px] border p-5 transition ${
+                    className={`rounded-[30px] border p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)] transition ${
                       activeTrackedJobId === job.id
                         ? "border-sky-300 bg-sky-50/80 shadow-[0_18px_40px_rgba(14,165,233,0.12)]"
-                        : "border-slate-200 bg-slate-50/80"
+                        : "border-slate-200 bg-white/88"
                     }`}
                   >
                     <button
@@ -1743,8 +1761,8 @@ export function ArgusWorkbench({
             </div>
           ) : null}
 
-          <div className="mt-6 overflow-hidden rounded-[28px] border border-slate-200">
-            <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="mt-6 overflow-hidden rounded-[32px] border border-slate-200 bg-white/80 shadow-[0_22px_60px_rgba(15,23,42,0.05)]">
+            <div className="border-b border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(255,255,255,0.98))] px-4 py-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 {isJobsPage ? (
                   <div className="text-sm leading-7 text-slate-600">
@@ -1764,17 +1782,17 @@ export function ArgusWorkbench({
               </div>
             </div>
             {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).length === 0 ? (
-              <div className="bg-white px-4 py-10 text-center text-sm text-slate-500">
+              <div className="bg-white/95 px-4 py-12 text-center text-sm text-slate-500">
                 Nenhuma vaga encontrada com os filtros atuais.
               </div>
             ) : null}
-            <div className="divide-y divide-slate-100 bg-white md:hidden">
+            <div className="divide-y divide-slate-100 bg-white/95 md:hidden">
               {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).map((job) => (
                 <article
                   key={job.id}
-                  className={`space-y-4 px-4 py-4 transition ${
+                  className={`space-y-4 px-4 py-5 transition ${
                     activeTrackedJobId === job.id
-                      ? "bg-sky-50/70"
+                      ? "bg-[linear-gradient(180deg,rgba(240,249,255,0.9),rgba(255,255,255,0.95))]"
                       : "bg-white hover:bg-slate-50"
                   }`}
                   onClick={() => handleInspectTrackedJob(job)}
@@ -1837,7 +1855,7 @@ export function ArgusWorkbench({
               ))}
             </div>
             <table className="hidden min-w-full divide-y divide-slate-200 text-left md:table">
-              <thead className="bg-slate-50">
+              <thead className="bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(255,255,255,0.98))]">
                 <tr className="text-xs uppercase tracking-[0.22em] text-slate-500">
                   <th className="px-4 py-3 font-semibold">Vaga</th>
                   <th className="px-4 py-3 font-semibold">Origem</th>
@@ -1845,13 +1863,13 @@ export function ArgusWorkbench({
                   <th className="px-4 py-3 font-semibold">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-100 bg-white/95">
                 {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).map((job) => (
                   <tr
                     key={job.id}
                     className={`cursor-pointer transition ${
                       activeTrackedJobId === job.id
-                        ? "bg-sky-50/70"
+                        ? "bg-[linear-gradient(90deg,rgba(240,249,255,0.9),rgba(255,255,255,0.96))]"
                         : "hover:bg-slate-50"
                     }`}
                     onClick={() => handleInspectTrackedJob(job)}
