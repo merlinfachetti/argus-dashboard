@@ -1812,10 +1812,10 @@ export function ArgusWorkbench({
                     {isJobsPage ? (
                       <Link
                         className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white transition hover:bg-slate-800"
-                        href={`/control-center?job=${encodeURIComponent(job.id)}`}
+                        href={`/jobs/${encodeURIComponent(job.id)}`}
                         onClick={(event) => event.stopPropagation()}
                       >
-                        Abrir no control center
+                        Ver detalhe
                       </Link>
                     ) : null}
                   </div>
@@ -1874,10 +1874,10 @@ export function ArgusWorkbench({
                       {isJobsPage ? (
                         <Link
                           className="mt-2 inline-flex text-sm font-semibold text-slate-950 hover:text-slate-700"
-                          href={`/control-center?job=${encodeURIComponent(job.id)}`}
+                          href={`/jobs/${encodeURIComponent(job.id)}`}
                           onClick={(event) => event.stopPropagation()}
                         >
-                          Abrir no control center
+                          Ver detalhe
                         </Link>
                       ) : null}
                     </td>
