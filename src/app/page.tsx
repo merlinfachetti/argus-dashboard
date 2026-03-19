@@ -32,13 +32,13 @@ export default function Home() {
               Control Center
             </a>
             <a
-              className="rounded-full border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-slate-500 hover:bg-slate-900"
+              className="rounded-full border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900"
               href="#radar"
             >
               Dashboard
             </a>
             <a
-              className="rounded-full border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-slate-500 hover:bg-slate-900"
+              className="rounded-full border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-slate-500 hover:bg-slate-900"
               href="#profile"
             >
               Perfil
@@ -48,7 +48,7 @@ export default function Home() {
       </header>
 
       <main className="mx-auto flex w-full max-w-[92rem] flex-1 flex-col gap-14 px-6 py-10 lg:px-10 lg:py-12">
-        <section className="grid gap-8 lg:grid-cols-[1.22fr_0.78fr]">
+        <section className="grid gap-8 lg:grid-cols-[1.35fr_0.65fr]">
           <div className="rounded-[40px] border border-white/60 bg-white/88 p-8 shadow-[0_30px_100px_rgba(15,23,42,0.08)] backdrop-blur sm:p-10">
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
               Argus
@@ -59,14 +59,13 @@ export default function Home() {
 
             <div className="mt-7 space-y-5">
               <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl xl:text-6xl">
-                Um cockpit de candidatura para descobrir vagas, ler match e agir
-                sem friccao.
+                Um cockpit de candidatura para descobrir vagas, comparar match
+                e agir sem friccao.
               </h1>
               <p className="max-w-3xl text-base leading-8 text-slate-600 sm:text-lg">
-                A estrutura agora separa claramente o que e navegacao,
-                workspace, dashboard e contexto de perfil. O objetivo e deixar
-                o core do produto forte: filtrar, comparar, decidir e aplicar
-                com mais velocidade.
+                A home agora funciona como launcher. O conteudo operacional fica
+                distribuido nas secoes certas, com mais separacao, melhor leitura
+                e menos repeticao na entrada do produto.
               </p>
             </div>
 
@@ -78,93 +77,94 @@ export default function Home() {
                 Abrir control center
               </a>
               <a
-                className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-800 ring-1 ring-slate-300 transition hover:bg-slate-50"
                 href="#radar"
               >
                 Ver dashboard
               </a>
               <a
-                className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-800 ring-1 ring-slate-300 transition hover:bg-slate-50"
                 href="#profile"
               >
                 Revisar perfil
               </a>
             </div>
 
-            <div className="mt-10 grid gap-4 xl:grid-cols-[1.1fr_0.6fr_0.7fr]">
-              <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
-                <p className="text-sm font-medium text-slate-500">
-                  Perfil ativo
+            <div className="mt-10 grid gap-4 xl:grid-cols-3">
+              <a
+                href="#workspace"
+                className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
+              >
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
+                  Destino 1
                 </p>
                 <p className="mt-3 text-xl font-semibold text-slate-950">
-                  {candidateProfile.headline}
+                  Control Center
                 </p>
-                <p className="mt-3 text-sm leading-7 text-slate-500">
-                  Perfil base usado para leitura automatica de requisitos,
-                  score de aderencia e sugestao de abordagem.
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  Abra a vaga ativa, revise o match e dispare a proxima acao.
                 </p>
-              </div>
-              <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
-                <p className="text-sm font-medium text-slate-500">
-                  Portais priorizados
+              </a>
+              <a
+                href="#radar"
+                className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_20px_50px_rgba(15,23,42,0.08)]"
+              >
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
+                  Destino 2
                 </p>
-                <p className="mt-3 text-4xl font-semibold text-slate-950">
-                  {trackedSources.length}
+                <p className="mt-3 text-xl font-semibold text-slate-950">
+                  Dashboard
                 </p>
-                <p className="mt-3 text-sm text-slate-500">
-                  Fontes monitoradas no radar privado.
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  Compare vagas, leia prioridades e mova o pipeline por status.
                 </p>
-              </div>
-              <div className="rounded-[28px] border border-slate-200 bg-slate-950 p-5 text-white">
-                <p className="text-sm font-medium text-slate-500">
-                  Foco da entrega
+              </a>
+              <a
+                href="#profile"
+                className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-5 text-white transition hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-[0_20px_50px_rgba(15,23,42,0.16)]"
+              >
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-300">
+                  Destino 3
                 </p>
-                <p className="mt-3 text-2xl font-semibold text-white">
-                  Clareza operacional
+                <p className="mt-3 text-xl font-semibold text-white">
+                  Perfil e Fontes
                 </p>
                 <p className="mt-3 text-sm leading-7 text-slate-300">
-                  Menos blocos brigando entre si, mais decisao por etapa.
+                  Ajuste contexto do perfil e escolha de onde o radar vai puxar.
                 </p>
-              </div>
+              </a>
             </div>
           </div>
 
           <aside className="grid gap-6">
             <div className="rounded-[36px] border border-slate-900/80 bg-slate-950 p-7 text-white shadow-[0_28px_90px_rgba(15,23,42,0.18)]">
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300">
-                Positioning
+                Snapshot
               </p>
-              <h2 className="mt-3 text-3xl font-semibold">Argus</h2>
-              <p className="mt-4 text-sm leading-7 text-slate-300">
-                Vigilancia de multiplas fontes, triagem com score e painel
-                privado para organizar sua proxima melhor candidatura.
-              </p>
-              <div className="mt-6 grid gap-3">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">
-                  Discovery real + intake manual no mesmo fluxo.
+              <div className="mt-5 grid gap-4">
+                <div className="rounded-[24px] border border-slate-800 bg-slate-900/80 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    Perfil ativo
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-white">
+                    {candidateProfile.headline}
+                  </p>
                 </div>
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">
-                  Match e riscos lidos com contexto do seu perfil.
+                <div className="rounded-[24px] border border-slate-800 bg-slate-900/80 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    Portais priorizados
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold text-white">
+                    {trackedSources.length}
+                  </p>
                 </div>
-              </div>
-            </div>
-
-            <div className="rounded-[36px] border border-white/60 bg-white/88 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur">
-              <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-                Sequencia do produto
-              </p>
-              <div className="mt-5 grid gap-3 text-sm text-slate-600">
-                <div className="rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
-                  1. Buscar vagas reais ou colar um JD
-                </div>
-                <div className="rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
-                  2. Tornar uma vaga ativa
-                </div>
-                <div className="rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
-                  3. Revisar match, riscos e abordagem
-                </div>
-                <div className="rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
-                  4. Atualizar status no radar
+                <div className="rounded-[24px] border border-slate-800 bg-slate-900/80 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                    Foco
+                  </p>
+                  <p className="mt-2 text-base font-semibold text-white">
+                    Clareza operacional
+                  </p>
                 </div>
               </div>
             </div>
@@ -182,8 +182,8 @@ export default function Home() {
               </h2>
             </div>
             <p className="max-w-2xl text-sm leading-7 text-slate-500">
-              Cada area abaixo agora precisa cumprir um papel claro: operacao da
-              vaga ativa, leitura do dashboard e configuracao de origem/perfil.
+              Cada area abaixo cumpre um papel claro: operar a vaga ativa, ler
+              o dashboard e ajustar contexto de perfil e fontes.
             </p>
           </div>
           <ArgusWorkbench
@@ -195,40 +195,29 @@ export default function Home() {
       </main>
 
       <footer className="mt-12 border-t border-slate-900/80 bg-slate-950 text-slate-300">
-        <div className="mx-auto grid w-full max-w-[92rem] gap-6 px-6 py-8 lg:grid-cols-[1.1fr_0.9fr] lg:px-10">
+        <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-4 px-6 py-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-sky-300">
               Argus Platform
             </p>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
-              Um portal privado para discovery de vagas, leitura de job
-              description, score de aderencia e operacao de candidatura com
-              menos friccao.
+              Portal privado para discovery de vagas, leitura de job description,
+              score de aderencia e operacao de candidatura.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-[24px] border border-slate-800 bg-slate-900/70 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-                Stack atual
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2 text-sm">
-                <span className="rounded-full border border-slate-700 px-3 py-1">
-                  Next.js
-                </span>
-                <span className="rounded-full border border-slate-700 px-3 py-1">
-                  Prisma
-                </span>
-                <span className="rounded-full border border-slate-700 px-3 py-1">
-                  Vercel
-                </span>
-              </div>
-            </div>
-            <div className="rounded-[24px] border border-slate-800 bg-slate-900/70 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-                Conector real
-              </p>
-              <p className="mt-4 text-sm text-slate-300">Siemens discovery + enrichment</p>
-            </div>
+          <div className="flex flex-wrap gap-2 text-sm text-slate-200">
+            <span className="rounded-full border border-slate-700 px-3 py-1">
+              Next.js
+            </span>
+            <span className="rounded-full border border-slate-700 px-3 py-1">
+              Prisma
+            </span>
+            <span className="rounded-full border border-slate-700 px-3 py-1">
+              Vercel
+            </span>
+            <span className="rounded-full border border-slate-700 px-3 py-1">
+              Siemens connector
+            </span>
           </div>
         </div>
       </footer>
