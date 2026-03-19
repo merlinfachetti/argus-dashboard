@@ -22,6 +22,8 @@ type ArgusWorkbenchProps = {
   profile: CandidateProfile;
   sources: PortalSource[];
   initialJobDescription: string;
+  pageMode?: "control" | "dashboard" | "jobs";
+  initialRadarQuery?: string;
 };
 
 type DiscoveryPreview = {
@@ -116,6 +118,8 @@ export function ArgusWorkbench({
   profile,
   sources,
   initialJobDescription,
+  pageMode = "control",
+  initialRadarQuery = "",
 }: ArgusWorkbenchProps) {
   const initialState = buildInitialState(profile, initialJobDescription);
 
@@ -135,7 +139,7 @@ export function ArgusWorkbench({
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
   const [copiedState, setCopiedState] = useState<"idle" | "copied">("idle");
   const [radarFilter, setRadarFilter] = useState<RadarFilter>("all");
-  const [radarQuery, setRadarQuery] = useState("");
+  const [radarQuery, setRadarQuery] = useState(initialRadarQuery);
   const [discoveryQuery, setDiscoveryQuery] = useState("");
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("discovery");
   const [activePanel, setActivePanel] = useState<ActivePanel>("summary");
@@ -146,6 +150,9 @@ export function ArgusWorkbench({
     "Conectando radar persistente...",
   );
   const [isPending, startTransition] = useTransition();
+  const isControlPage = pageMode === "control";
+  const isDashboardPage = pageMode === "dashboard";
+  const isJobsPage = pageMode === "jobs";
 
   useEffect(() => {
     const rawState = window.localStorage.getItem(STORAGE_KEY);
@@ -198,6 +205,12 @@ export function ArgusWorkbench({
       window.localStorage.removeItem(STORAGE_KEY);
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (initialRadarQuery.trim().length > 0) {
+      setRadarQuery(initialRadarQuery);
+    }
+  }, [initialRadarQuery]);
 
   useEffect(() => {
     let isMounted = true;
@@ -702,9 +715,16 @@ export function ArgusWorkbench({
   }));
 
   return (
-    <div className="grid gap-8 xl:grid-cols-[1.12fr_0.88fr]">
+    <div
+      className={
+        isControlPage
+          ? "grid gap-8 xl:grid-cols-[1.12fr_0.88fr]"
+          : "space-y-8"
+      }
+    >
       <section className="space-y-8">
-        <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr_0.75fr]">
+        {!isJobsPage ? (
+          <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr_0.75fr]">
           <div className="rounded-[32px] border border-slate-900/80 bg-slate-950 p-6 text-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
             <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
               Match em foco
@@ -747,7 +767,8 @@ export function ArgusWorkbench({
               Itens vindos de discovery real contra {manualJobs} manuais.
             </p>
           </div>
-        </div>
+          </div>
+        ) : null}
 
         <div
           className={`rounded-[28px] border px-5 py-4 text-sm ${
@@ -761,7 +782,8 @@ export function ArgusWorkbench({
           <span className="font-semibold">Persistencia do radar:</span> {syncMessage}
         </div>
 
-        <div className="rounded-[36px] border border-white/60 bg-white/88 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
+        {!isDashboardPage ? (
+          <div className="rounded-[36px] border border-white/60 bg-white/88 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
@@ -1110,26 +1132,33 @@ export function ArgusWorkbench({
               </div>
             ) : null}
           </div>
-        </div>
-        <div
+          </div>
+        ) : null}
+        {isDashboardPage || isJobsPage ? (
+          <div
           id="radar"
           className="rounded-[36px] border border-white/60 bg-white/88 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8"
         >
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-                Dashboard
+                {isJobsPage ? "Jobs" : "Dashboard"}
               </p>
               <h2 className="mt-2 text-3xl font-semibold text-slate-950">
-                Pipeline visual de vagas rastreadas
+                {isJobsPage
+                  ? "Vagas rastreadas com foco em busca e selecao"
+                  : "Pipeline visual de vagas rastreadas"}
               </h2>
             </div>
             <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-              Próxima etapa: persistência em banco e atualização automática.
+              {isJobsPage
+                ? "Use a busca do header para filtrar o radar por qualquer termo."
+                : "Próxima etapa: persistência em banco e atualização automática."}
             </div>
           </div>
 
-          <div className="mt-6 rounded-[28px] border border-slate-900/80 bg-slate-950 p-5 text-white">
+          {!isJobsPage ? (
+            <div className="mt-6 rounded-[28px] border border-slate-900/80 bg-slate-950 p-5 text-white">
             <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
@@ -1161,7 +1190,8 @@ export function ArgusWorkbench({
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          ) : null}
 
           <div className="mt-6 flex flex-wrap gap-2">
             {[
@@ -1185,7 +1215,8 @@ export function ArgusWorkbench({
             ))}
           </div>
 
-          <div className="mt-6 grid gap-4 xl:grid-cols-5">
+          {isDashboardPage ? (
+            <div className="mt-6 grid gap-4 xl:grid-cols-5">
             {dashboardLanes.map((lane) => (
               <section
                 key={lane.status}
@@ -1265,9 +1296,11 @@ export function ArgusWorkbench({
                 </div>
               </section>
             ))}
-          </div>
+            </div>
+          ) : null}
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
+          {isDashboardPage ? (
+            <div className="mt-6 grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
             <div className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-5 text-white">
               <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
                 Comparativo rapido
@@ -1330,7 +1363,8 @@ export function ArgusWorkbench({
                 </div>
               )}
             </div>
-          </div>
+            </div>
+          ) : null}
 
           <div className="mt-6 overflow-hidden rounded-[28px] border border-slate-200">
             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
@@ -1479,10 +1513,12 @@ export function ArgusWorkbench({
               </tbody>
             </table>
           </div>
-        </div>
+          </div>
+        ) : null}
       </section>
 
-      <aside className="space-y-6">
+      {isControlPage ? (
+        <aside className="space-y-6">
         <div
           id="profile"
           className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"
@@ -1703,7 +1739,8 @@ export function ArgusWorkbench({
             ))}
           </div>
         </div>
-      </aside>
+        </aside>
+      ) : null}
     </div>
   );
 }
