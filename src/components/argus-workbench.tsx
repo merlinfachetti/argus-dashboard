@@ -471,9 +471,35 @@ export function ArgusWorkbench({
       ? trackedJobs.find((job) => job.externalId === activeDiscoveryId)
       : undefined) ??
     trackedJobs[0];
+  const jobsPreviewJob = isJobsPage
+    ? jobsFilteredTrackedJobs.find((job) => job.id === activeTrackedJobId) ??
+      jobsFilteredTrackedJobs[0] ??
+      null
+    : null;
+  const jobsPreviewAnalysis = jobsPreviewJob
+    ? jobsPreviewJob.id === activeTrackedJob?.id
+      ? analysis
+      : analyzeJobMatch(
+          {
+            title: jobsPreviewJob.title,
+            company: jobsPreviewJob.company,
+            location: jobsPreviewJob.location,
+            seniority: jobsPreviewJob.seniority,
+            workModel: jobsPreviewJob.workModel,
+            employmentType: jobsPreviewJob.employmentType,
+            languages: jobsPreviewJob.languages,
+            skills: jobsPreviewJob.skills,
+            summary: jobsPreviewJob.summary,
+          },
+          profile,
+        )
+      : null;
   const activeSourceLabel =
     activeTrackedJob?.intakeMode ?? (activeDiscovery ? "Siemens crawler" : "Input manual");
   const matchMeterWidth = `${Math.max(10, Math.min(analysis.score, 100))}%`;
+  const jobsPreviewMeterWidth = jobsPreviewAnalysis
+    ? `${Math.max(10, Math.min(jobsPreviewAnalysis.score, 100))}%`
+    : "0%";
 
   function mergePersistedJob(nextJob: TrackedJob) {
     setTrackedJobs((currentJobs) => {
@@ -1405,6 +1431,162 @@ export function ArgusWorkbench({
                       <option value="company">Empresa</option>
                     </select>
                   </label>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {isJobsPage ? (
+            <div className="mt-6 grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
+              <div className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-6 text-white">
+                <div className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+                      Vaga em foco
+                    </p>
+                    <h3 className="mt-2 text-2xl font-semibold">
+                      {jobsPreviewJob?.title ?? "Selecione uma vaga"}
+                    </h3>
+                    <p className="mt-2 text-sm leading-7 text-slate-300">
+                      {jobsPreviewJob
+                        ? `${jobsPreviewJob.company} · ${jobsPreviewJob.location}`
+                        : "Use a busca do header ou os filtros abaixo para abrir uma vaga do radar."}
+                    </p>
+                  </div>
+                  {jobsPreviewJob && jobsPreviewAnalysis ? (
+                    <div className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                        Match atual
+                      </p>
+                      <p className="mt-2 text-3xl font-semibold">
+                        {jobsPreviewAnalysis.score}%
+                      </p>
+                      <p className="mt-1 text-sm text-slate-300">
+                        {jobsPreviewAnalysis.verdict}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+
+                {jobsPreviewJob && jobsPreviewAnalysis ? (
+                  <>
+                    <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-sky-400"
+                        style={{ width: jobsPreviewMeterWidth }}
+                      />
+                    </div>
+                    <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                      <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                          Sinais fortes
+                        </p>
+                        <div className="mt-3 grid gap-2">
+                          {jobsPreviewAnalysis.strengths.slice(0, 3).map((item) => (
+                            <div
+                              key={item}
+                              className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-200"
+                            >
+                              {item}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                          Pontos de atencao
+                        </p>
+                        <div className="mt-3 grid gap-2">
+                          {jobsPreviewAnalysis.risks.slice(0, 3).map((item) => (
+                            <div
+                              key={item}
+                              className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-200"
+                            >
+                              {item}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleInspectTrackedJob(jobsPreviewJob)}
+                        className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
+                      >
+                        Inspecionar no explorer
+                      </button>
+                      <Link
+                        href={`/control-center?job=${encodeURIComponent(jobsPreviewJob.id)}`}
+                        className="rounded-full bg-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
+                      >
+                        Abrir no control center
+                      </Link>
+                      {jobsPreviewJob.sourceUrl ? (
+                        <a
+                          className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                          href={jobsPreviewJob.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Ver vaga original
+                        </a>
+                      ) : null}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+
+              <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
+                <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                  Leitura rapida do radar
+                </p>
+                <div className="mt-4 grid gap-3">
+                  <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                      Resultado visivel
+                    </p>
+                    <p className="mt-2 text-3xl font-semibold text-slate-950">
+                      {jobsFilteredTrackedJobs.length}
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-slate-500">
+                      vagas combinando com a busca principal e filtros locais.
+                    </p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                        Maior match
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-slate-950">
+                        {jobsFilteredTrackedJobs[0]?.score ?? 0}%
+                      </p>
+                    </div>
+                    <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                        Prontas p/ revisar
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-slate-950">
+                        {
+                          jobsFilteredTrackedJobs.filter((job) => job.score >= 70)
+                            .length
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                      Vaga selecionada
+                    </p>
+                    <p className="mt-2 text-base font-semibold text-slate-950">
+                      {jobsPreviewJob?.title ?? "Nenhuma vaga selecionada"}
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-slate-500">
+                      {jobsPreviewJob
+                        ? `${jobsPreviewJob.seniority} · ${jobsPreviewJob.intakeMode} · ${jobsPreviewJob.status}`
+                        : "Selecione uma vaga do radar para abrir a leitura detalhada."}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
