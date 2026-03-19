@@ -68,7 +68,9 @@ function extractTitle(text: string) {
     .filter(Boolean);
 
   const titledLine = lines.find((line) =>
-    /(engineer|developer|manager|lead|architect|specialist)/i.test(line),
+    /(engineer|developer|manager|lead|architect|specialist|entwickler|projektleiter)/i.test(
+      line,
+    ),
   );
 
   return titledLine ?? "Untitled role";
@@ -178,6 +180,7 @@ export function analyzeJobMatch(
   job: ParsedJob,
   profile: CandidateProfile,
 ): MatchAnalysis {
+  const combinedText = `${job.title} ${job.summary}`;
   const profileSkills = new Set(profile.coreStack);
   const matchedSkills = job.skills.filter((skill) => profileSkills.has(skill));
   const skillCoverage =
@@ -208,6 +211,33 @@ export function analyzeJobMatch(
     /reliability|incident|maintainability|observability/i.test(job.summary)
   ) {
     score += 8;
+  }
+
+  if (
+    /software|fullstack|frontend|front-end|backend|web|application|platform|developer|entwickler|engineer/i.test(
+      combinedText,
+    )
+  ) {
+    score += 10;
+  }
+
+  if (
+    /research & development|engineering|information technology|intralogistik software/i.test(
+      combinedText,
+    )
+  ) {
+    score += 6;
+  }
+
+  if (
+    /procurement|marketing|sales|customer services|finance(?! teams)|hr|human resources/i.test(
+      combinedText,
+    ) &&
+    !/software|fullstack|frontend|backend|developer|entwickler|engineer/i.test(
+      combinedText,
+    )
+  ) {
+    score -= 12;
   }
 
   if (/german/i.test(job.languages.join(" "))) {

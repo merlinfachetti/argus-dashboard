@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import type { DiscoveredJobListing } from "@/lib/connectors/types";
 import {
   analyzeJobMatch,
   buildRecruiterMessage,
@@ -22,20 +23,40 @@ type TrackedJob = ParsedJob & {
   verdict: MatchAnalysis["verdict"];
   status: string;
   intakeMode: string;
+  sourceUrl?: string;
+  externalId?: string;
+  family?: string;
+};
+
+type DiscoveryPreview = {
+  listing: DiscoveredJobListing;
+  parsedJob: ParsedJob;
+  analysis: MatchAnalysis;
 };
 
 function toTrackedJob(
   job: ParsedJob,
   analysis: MatchAnalysis,
-  intakeMode: string,
+  metadata: {
+    intakeMode: string;
+    sourceUrl?: string;
+    externalId?: string;
+    family?: string;
+  },
 ): TrackedJob {
   return {
     ...job,
-    id: `${job.company}-${job.title}-${Date.now()}`,
+    id:
+      metadata.externalId ??
+      metadata.sourceUrl ??
+      `${job.company}-${job.title}-${Date.now()}`,
     score: analysis.score,
     verdict: analysis.verdict,
     status: analysis.score >= 70 ? "Pronta para revisar" : "Requer triagem",
-    intakeMode,
+    intakeMode: metadata.intakeMode,
+    sourceUrl: metadata.sourceUrl,
+    externalId: metadata.externalId,
+    family: metadata.family,
   };
 }
 
@@ -43,7 +64,9 @@ function buildInitialState(profile: CandidateProfile, initialJobDescription: str
   const parsedJob = parseJobDescription(initialJobDescription);
   const analysis = analyzeJobMatch(parsedJob, profile);
   const recruiterMessage = buildRecruiterMessage(parsedJob, profile, analysis);
-  const trackedJob = toTrackedJob(parsedJob, analysis, "Input manual");
+  const trackedJob = toTrackedJob(parsedJob, analysis, {
+    intakeMode: "Input manual",
+  });
 
   return {
     parsedJob,
@@ -79,6 +102,9 @@ export function ArgusWorkbench({
     initialState.recruiterMessage,
   );
   const [trackedJobs, setTrackedJobs] = useState(initialState.trackedJobs);
+  const [discoveredJobs, setDiscoveredJobs] = useState<DiscoveryPreview[]>([]);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [discoveryError, setDiscoveryError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const totalOpportunities = trackedJobs.length;
@@ -100,10 +126,73 @@ export function ArgusWorkbench({
       setAnalysis(nextAnalysis);
       setRecruiterMessage(nextRecruiterMessage);
       setTrackedJobs((currentJobs) => [
-        toTrackedJob(nextParsedJob, nextAnalysis, "Input manual"),
+        toTrackedJob(nextParsedJob, nextAnalysis, {
+          intakeMode: "Input manual",
+        }),
         ...currentJobs.slice(0, 5),
       ]);
     });
+  }
+
+  async function handleRunSiemensDiscovery() {
+    setIsDiscovering(true);
+    setDiscoveryError(null);
+
+    try {
+      const response = await fetch("/api/sources/siemens/discover?limit=6", {
+        cache: "no-store",
+      });
+
+      const payload = (await response.json()) as {
+        error?: string;
+        jobs: DiscoveredJobListing[];
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Siemens discovery failed");
+      }
+
+      const nextDiscoveries = payload.jobs.map((listing) => {
+        const baseParsedJob = parseJobDescription(listing.descriptionText);
+        const parsedJob: ParsedJob = {
+          ...baseParsedJob,
+          title: listing.title,
+          company: listing.company,
+          location: listing.location,
+          summary: listing.descriptionText.replace(/\s+/g, " ").trim().slice(0, 280),
+        };
+        const analysis = analyzeJobMatch(parsedJob, profile);
+
+        return {
+          listing,
+          parsedJob,
+          analysis,
+        };
+      });
+
+      setDiscoveredJobs(nextDiscoveries);
+      setTrackedJobs((currentJobs) => {
+        const seenIds = new Set(currentJobs.map((job) => job.id));
+        const additions = nextDiscoveries
+          .filter((job) => !seenIds.has(job.listing.externalId))
+          .map((job) =>
+            toTrackedJob(job.parsedJob, job.analysis, {
+              intakeMode: "Siemens crawler",
+              sourceUrl: job.listing.sourceUrl,
+              externalId: job.listing.externalId,
+              family: job.listing.family,
+            }),
+          );
+
+        return [...additions, ...currentJobs].slice(0, 12);
+      });
+    } catch (error) {
+      setDiscoveryError(
+        error instanceof Error ? error.message : "Discovery request failed",
+      );
+    } finally {
+      setIsDiscovering(false);
+    }
   }
 
   return (
@@ -140,6 +229,92 @@ export function ArgusWorkbench({
             <p className="mt-2 text-sm text-slate-500">
               Ajustaremos o modelo de scoring conforme o produto evoluir.
             </p>
+          </div>
+        </div>
+
+        <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+          <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
+                Discovery manual
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-950">
+                Primeiro conector real: Siemens Germany
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={handleRunSiemensDiscovery}
+              className="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+              disabled={isDiscovering}
+            >
+              {isDiscovering ? "Coletando..." : "Buscar vagas Siemens"}
+            </button>
+          </div>
+
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm leading-7 text-slate-600">
+              Faz discovery na busca publica da Siemens filtrada para Alemanha,
+              normaliza as vagas e injeta no radar local para triagem imediata.
+            </p>
+            <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 ring-1 ring-slate-200">
+              Search page parser
+            </span>
+          </div>
+
+          {discoveryError ? (
+            <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {discoveryError}
+            </div>
+          ) : null}
+
+          <div className="mt-6 grid gap-4">
+            {discoveredJobs.length === 0 ? (
+              <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/70 px-5 py-6 text-sm leading-7 text-slate-500">
+                Ainda sem resultado carregado. Quando você disparar a coleta,
+                as vagas normalizadas da Siemens aparecem aqui com score
+                preliminar e entram no dashboard.
+              </div>
+            ) : (
+              discoveredJobs.map((job) => (
+                <article
+                  key={job.listing.externalId}
+                  className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-950">
+                        {job.listing.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {job.listing.company} · {job.listing.location} ·{" "}
+                        {job.listing.family}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
+                        job.analysis.score,
+                      )}`}
+                    >
+                      {job.analysis.score}% {job.analysis.verdict}
+                    </span>
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                    <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                      Job ID {job.listing.externalId}
+                    </span>
+                    <a
+                      className="font-medium text-sky-700 hover:text-sky-900"
+                      href={job.listing.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Abrir vaga
+                    </a>
+                  </div>
+                </article>
+              ))
+            )}
           </div>
         </div>
 
@@ -321,6 +496,16 @@ export function ArgusWorkbench({
                       <p className="mt-1 text-sm text-slate-500">
                         {job.company} · {job.location}
                       </p>
+                      {job.sourceUrl ? (
+                        <a
+                          className="mt-2 inline-flex text-sm font-medium text-sky-700 hover:text-sky-900"
+                          href={job.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Abrir fonte
+                        </a>
+                      ) : null}
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-600">
                       {job.intakeMode}
