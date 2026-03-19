@@ -229,6 +229,9 @@ export function ArgusWorkbench({
   const crawlerJobs = trackedJobs.filter((job) =>
     job.intakeMode.toLowerCase().includes("crawler"),
   ).length;
+  const manualJobs = trackedJobs.filter((job) =>
+    job.intakeMode.toLowerCase().includes("manual"),
+  ).length;
   const filteredTrackedJobs = trackedJobs.filter((job) => {
     const matchesQuery =
       radarQuery.trim().length === 0 ||
@@ -268,6 +271,7 @@ export function ArgusWorkbench({
     trackedJobs[0];
   const activeSourceLabel =
     activeTrackedJob?.intakeMode ?? (activeDiscovery ? "Siemens crawler" : "Input manual");
+  const matchMeterWidth = `${Math.max(10, Math.min(analysis.score, 100))}%`;
 
   useEffect(() => {
     if (!activeTrackedJob && trackedJobs[0]) {
@@ -464,43 +468,54 @@ export function ArgusWorkbench({
     : [];
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-      <section className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-[28px] border border-white/60 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-            <p className="text-sm font-medium text-slate-500">
-              Vagas no radar
+    <div className="grid gap-8 xl:grid-cols-[1.12fr_0.88fr]">
+      <section className="space-y-8">
+        <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr_0.75fr]">
+          <div className="rounded-[32px] border border-slate-900/80 bg-slate-950 p-6 text-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+            <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+              Match em foco
             </p>
-            <p className="mt-2 text-3xl font-semibold text-slate-950">
-              {totalOpportunities}
-            </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Alimentadas por intake manual e futuras rotinas de crawler.
-            </p>
+            <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-5xl font-semibold">{analysis.score}%</p>
+                <p className="mt-2 text-sm text-slate-300">{analysis.verdict}</p>
+              </div>
+              <div className="min-w-[14rem] flex-1">
+                <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-sky-400"
+                    style={{ width: matchMeterWidth }}
+                  />
+                </div>
+                <p className="mt-3 text-sm leading-7 text-slate-300">
+                  Score da vaga ativa contra o seu perfil principal.
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/60 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-            <p className="text-sm font-medium text-slate-500">Match forte</p>
-            <p className="mt-2 text-3xl font-semibold text-slate-950">
+          <div className="rounded-[32px] border border-white/60 bg-white/88 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
+            <p className="text-sm font-medium text-slate-500">Pipeline forte</p>
+            <p className="mt-3 text-4xl font-semibold text-slate-950">
               {priorityJobs}
             </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Score acima de 70 para puxar revisão ou aplicação.
+            <p className="mt-3 text-sm leading-7 text-slate-500">
+              Vagas com score alto para puxar acao imediata.
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-white/60 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur">
-            <p className="text-sm font-medium text-slate-500">Discovery real</p>
-            <p className="mt-2 text-3xl font-semibold text-slate-950">
+          <div className="rounded-[32px] border border-white/60 bg-white/88 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
+            <p className="text-sm font-medium text-slate-500">Cobertura real</p>
+            <p className="mt-3 text-4xl font-semibold text-slate-950">
               {crawlerJobs}
             </p>
-            <p className="mt-2 text-sm text-slate-500">
-              Itens que já vieram de discovery real em portais.
+            <p className="mt-3 text-sm leading-7 text-slate-500">
+              Itens vindos de discovery real contra {manualJobs} manuais.
             </p>
           </div>
         </div>
 
-        <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+        <div className="rounded-[36px] border border-white/60 bg-white/88 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
@@ -538,34 +553,53 @@ export function ArgusWorkbench({
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
+          <div className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr]">
+            <div className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-5 text-white">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
+                Leitura de match
+              </p>
+              <div className="mt-4 flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-4xl font-semibold">{analysis.score}%</p>
+                  <p className="mt-2 text-sm text-slate-300">{analysis.verdict}</p>
+                </div>
+                <div className="w-full max-w-[14rem]">
+                  <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-sky-400"
+                      style={{ width: matchMeterWidth }}
+                    />
+                  </div>
+                  <div className="mt-3 flex justify-between text-xs uppercase tracking-[0.22em] text-slate-400">
+                    <span>baixo</span>
+                    <span>alto</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
                 Senioridade
               </p>
-              <p className="mt-2 text-sm font-medium text-slate-700">
+              <p className="mt-3 text-base font-semibold text-slate-900">
                 {parsedJob.seniority}
               </p>
+              <p className="mt-3 text-sm text-slate-500">{parsedJob.workModel}</p>
             </div>
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Modelo
-              </p>
-              <p className="mt-2 text-sm font-medium text-slate-700">
-                {parsedJob.workModel}
-              </p>
-            </div>
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
+            <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
                 Contrato
               </p>
-              <p className="mt-2 text-sm font-medium text-slate-700">
+              <p className="mt-3 text-base font-semibold text-slate-900">
                 {parsedJob.employmentType}
+              </p>
+              <p className="mt-3 text-sm text-slate-500">
+                {parsedJob.languages.join(" · ") || "Idiomas nao detectados"}
               </p>
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-wrap gap-3">
             <div className="rounded-full bg-slate-50 px-4 py-2 text-sm text-slate-600 ring-1 ring-slate-200">
               Origem ativa: {activeSourceLabel}
             </div>
@@ -634,8 +668,8 @@ export function ArgusWorkbench({
 
           <div className="mt-6">
             {activePanel === "summary" ? (
-              <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+              <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
                   <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
                     Resumo da vaga
                   </p>
@@ -644,7 +678,7 @@ export function ArgusWorkbench({
                   </p>
                 </div>
                 <div className="space-y-4">
-                  <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                  <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
                     <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
                       Fit rapido
                     </p>
@@ -655,7 +689,7 @@ export function ArgusWorkbench({
                       Leitura curta para decidir se vale revisar agora ou deixar no radar.
                     </p>
                   </div>
-                  <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                  <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
                     <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
                       Skills detectadas
                     </p>
@@ -681,8 +715,29 @@ export function ArgusWorkbench({
             ) : null}
 
             {activePanel === "match" ? (
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+              <div className="grid gap-5 lg:grid-cols-[0.9fr_1.05fr_1.05fr]">
+                <div className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-6 text-white">
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+                    Match score
+                  </p>
+                  <p className="mt-4 text-5xl font-semibold">{analysis.score}%</p>
+                  <p className="mt-3 text-sm text-slate-300">{analysis.verdict}</p>
+                  <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-sky-400"
+                      style={{ width: matchMeterWidth }}
+                    />
+                  </div>
+                  <div className="mt-6 grid gap-3">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
+                      {analysis.strengths.length} sinais positivos
+                    </div>
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
+                      {analysis.risks.length} riscos ou gaps
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
                   <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
                     O que favorece
                   </p>
@@ -692,7 +747,7 @@ export function ArgusWorkbench({
                     ))}
                   </ul>
                 </div>
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
                   <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
                     Pontos de atenção
                   </p>
@@ -706,8 +761,8 @@ export function ArgusWorkbench({
             ) : null}
 
             {activePanel === "message" ? (
-              <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-                <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-5 text-white">
+              <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+                <div className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
                       Mensagem sugerida
@@ -724,7 +779,7 @@ export function ArgusWorkbench({
                     {recruiterMessage}
                   </p>
                 </div>
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
                   <p className="text-sm font-medium text-slate-700">
                     Como usar esta mensagem
                   </p>
@@ -744,8 +799,8 @@ export function ArgusWorkbench({
             ) : null}
 
             {activePanel === "history" ? (
-              <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+              <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
                   <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
                     Linha do tempo
                   </p>
@@ -763,7 +818,7 @@ export function ArgusWorkbench({
                     ))}
                   </div>
                 </div>
-                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
                   <p className="text-sm font-medium text-slate-700">
                     Como testar o fluxo agora
                   </p>
@@ -792,28 +847,62 @@ export function ArgusWorkbench({
         </div>
         <div
           id="radar"
-          className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"
+          className="rounded-[36px] border border-white/60 bg-white/88 p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8"
         >
-          <div className="flex flex-col gap-2 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
                 Dashboard
               </p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                Pipeline inicial de vagas rastreadas
+              <h2 className="mt-2 text-3xl font-semibold text-slate-950">
+                Pipeline visual de vagas rastreadas
               </h2>
             </div>
-            <p className="text-sm text-slate-500">
+            <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
               Próxima etapa: persistência em banco e atualização automática.
-            </p>
+            </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-6 rounded-[28px] border border-slate-900/80 bg-slate-950 p-5 text-white">
+            <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+                  Estado do radar
+                </p>
+                <p className="mt-3 text-4xl font-semibold">{totalOpportunities}</p>
+                <p className="mt-2 text-sm text-slate-300">
+                  oportunidades visiveis e prontas para triagem.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
+                    Priority
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold">{priorityJobs}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
+                    Crawler
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold">{crawlerJobs}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
+                    Manual
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold">{manualJobs}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-2">
             {[
-              { id: "all", label: "Todas" },
-              { id: "crawler", label: "Crawler" },
-              { id: "manual", label: "Manuais" },
-              { id: "priority", label: "Prioridade" },
+              { id: "all", label: `Todas (${totalOpportunities})` },
+              { id: "crawler", label: `Crawler (${crawlerJobs})` },
+              { id: "manual", label: `Manuais (${manualJobs})` },
+              { id: "priority", label: `Prioridade (${priorityJobs})` },
             ].map((filter) => (
               <button
                 key={filter.id}
@@ -821,7 +910,7 @@ export function ArgusWorkbench({
                 onClick={() => setRadarFilter(filter.id as RadarFilter)}
                 className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                   radarFilter === filter.id
-                    ? "bg-slate-950 text-white"
+                    ? "bg-slate-950 text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)]"
                     : "bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
                 }`}
               >
