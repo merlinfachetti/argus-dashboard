@@ -181,6 +181,7 @@ export function analyzeJobMatch(
   profile: CandidateProfile,
 ): MatchAnalysis {
   const combinedText = `${job.title} ${job.summary}`;
+  const profileContext = `${profile.summary} ${profile.strengthSignals.join(" ")} ${profile.targetRoles.join(" ")} ${profile.coverLetterText}`;
   const profileSkills = new Set(profile.coreStack);
   const matchedSkills = job.skills.filter((skill) => profileSkills.has(skill));
   const skillCoverage =
@@ -211,6 +212,27 @@ export function analyzeJobMatch(
     /reliability|incident|maintainability|observability/i.test(job.summary)
   ) {
     score += 8;
+  }
+
+  if (
+    /automation|workflow|internal/i.test(job.summary) &&
+    /automation|workflow|internal/i.test(profileContext)
+  ) {
+    score += 4;
+  }
+
+  if (
+    /reliability|incident|observability|maintainability/i.test(job.summary) &&
+    /reliability|incident|observability|maintainability/i.test(profileContext)
+  ) {
+    score += 4;
+  }
+
+  if (
+    /leadership|mentoring|cross-functional|platform/i.test(job.summary) &&
+    /leadership|mentoring|cross-functional|platform/i.test(profileContext)
+  ) {
+    score += 4;
   }
 
   if (
@@ -286,11 +308,16 @@ export function buildRecruiterMessage(
   profile: CandidateProfile,
   analysis: MatchAnalysis,
 ) {
+  const coverLetterFocus = profile.coverLetterText
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 220);
+
   return `Hi, I came across the ${job.title} opportunity and it looks strongly aligned with my background. I am a ${profile.headline} based in ${profile.location} with 10+ years of experience building and maintaining production web applications using ${profile.coreStack
     .slice(0, 4)
     .join(", ")}.
 
 In my recent work, I have been delivering internal platforms, workflow automation and business-critical tools with a strong focus on reliability, maintainability and cross-functional collaboration. The role stands out because of its fit with my experience in production systems and its current match score in Argus is ${analysis.score}%.
 
-If the team is looking for someone who can contribute quickly across product delivery, engineering quality and operational clarity, I would be glad to connect and share more context.`;
+${coverLetterFocus.length > 0 ? `${coverLetterFocus}\n\n` : ""}If the team is looking for someone who can contribute quickly across product delivery, engineering quality and operational clarity, I would be glad to connect and share more context.`;
 }

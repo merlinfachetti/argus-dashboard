@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { DiscoveredJobListing } from "@/lib/connectors/types";
 import {
   analyzeJobMatch,
@@ -10,7 +10,11 @@ import {
   type MatchAnalysis,
   type ParsedJob,
 } from "@/lib/job-intake";
-import type { CandidateProfile, PortalSource } from "@/lib/profile";
+import {
+  deriveCandidateProfile,
+  type CandidateProfile,
+  type PortalSource,
+} from "@/lib/profile";
 import {
   createHistoryEntry,
   DASHBOARD_STATUS_LANES,
@@ -84,6 +88,20 @@ function buildInitialState(profile: CandidateProfile, initialJobDescription: str
     analysis,
     recruiterMessage,
     trackedJobs: [trackedJob],
+  };
+}
+
+function trackedJobToParsedJob(job: TrackedJob): ParsedJob {
+  return {
+    title: job.title,
+    company: job.company,
+    location: job.location,
+    seniority: job.seniority,
+    workModel: job.workModel,
+    employmentType: job.employmentType,
+    languages: job.languages,
+    skills: job.skills,
+    summary: job.summary,
   };
 }
 
@@ -173,20 +191,30 @@ export function ArgusWorkbench({
   const [syncMessage, setSyncMessage] = useState(
     "Conectando radar persistente...",
   );
+  const [cvText, setCvText] = useState(profile.cvText);
+  const [coverLetterText, setCoverLetterText] = useState(profile.coverLetterText);
   const [isPending, startTransition] = useTransition();
   const isControlPage = pageMode === "control";
   const isDashboardPage = pageMode === "dashboard";
   const isJobsPage = pageMode === "jobs";
+  const activeProfile = useMemo(
+    () =>
+      deriveCandidateProfile(profile, {
+        cvText,
+        coverLetterText,
+      }),
+    [coverLetterText, cvText, profile],
+  );
 
   const applyAnalysisState = useCallback(
     (nextParsedJob: ParsedJob, nextAnalysis: MatchAnalysis) => {
       setParsedJob(nextParsedJob);
       setAnalysis(nextAnalysis);
       setRecruiterMessage(
-        buildRecruiterMessage(nextParsedJob, profile, nextAnalysis),
+        buildRecruiterMessage(nextParsedJob, activeProfile, nextAnalysis),
       );
     },
-    [profile],
+    [activeProfile],
   );
 
   useEffect(() => {
@@ -217,6 +245,8 @@ export function ArgusWorkbench({
         jobsSort?: JobsSort;
         syncState?: "checking" | "connected" | "offline" | "error";
         syncMessage?: string;
+        cvText?: string;
+        coverLetterText?: string;
       };
 
       if (parsedState.jobDescription) setJobDescription(parsedState.jobDescription);
@@ -250,10 +280,14 @@ export function ArgusWorkbench({
       if (parsedState.jobsSort) setJobsSort(parsedState.jobsSort);
       if (parsedState.syncState) setSyncState(parsedState.syncState);
       if (parsedState.syncMessage) setSyncMessage(parsedState.syncMessage);
+      if (parsedState.cvText !== undefined) setCvText(parsedState.cvText);
+      if (parsedState.coverLetterText !== undefined) {
+        setCoverLetterText(parsedState.coverLetterText);
+      }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     }
-  }, [profile]);
+  }, []);
 
   useEffect(() => {
     if (initialRadarQuery.trim().length > 0) {
@@ -280,7 +314,7 @@ export function ArgusWorkbench({
         summary: matchingJob.summary,
       };
 
-      const nextAnalysis = analyzeJobMatch(nextParsedJob, profile);
+      const nextAnalysis = analyzeJobMatch(nextParsedJob, activeProfile);
       setActiveDiscoveryId(matchingJob.externalId ?? null);
       setActiveTrackedJobId(matchingJob.id);
       setJobDescription(
@@ -296,7 +330,7 @@ export function ArgusWorkbench({
       applyAnalysisState(nextParsedJob, nextAnalysis);
       setActivePanel("summary");
     }
-  }, [applyAnalysisState, initialActiveJobId, profile, trackedJobs]);
+  }, [activeProfile, applyAnalysisState, initialActiveJobId, trackedJobs]);
 
   useEffect(() => {
     let isMounted = true;
@@ -343,11 +377,11 @@ export function ArgusWorkbench({
           setActiveTrackedJobId(nextActiveJob.id);
           setActiveDiscoveryId(nextActiveJob.externalId ?? null);
           setJobDescription(nextActiveJob.summary);
-          const nextAnalysis = analyzeJobMatch(nextParsedJob, profile);
+          const nextAnalysis = analyzeJobMatch(nextParsedJob, activeProfile);
           setParsedJob(nextParsedJob);
           setAnalysis(nextAnalysis);
           setRecruiterMessage(
-            buildRecruiterMessage(nextParsedJob, profile, nextAnalysis),
+            buildRecruiterMessage(nextParsedJob, activeProfile, nextAnalysis),
           );
         }
       } catch {
@@ -365,7 +399,7 @@ export function ArgusWorkbench({
     return () => {
       isMounted = false;
     };
-  }, [profile]);
+  }, [activeProfile]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -390,6 +424,8 @@ export function ArgusWorkbench({
         jobsSort,
         syncState,
         syncMessage,
+        cvText,
+        coverLetterText,
       }),
     );
   }, [
@@ -412,7 +448,39 @@ export function ArgusWorkbench({
     jobsSort,
     syncState,
     syncMessage,
+    cvText,
+    coverLetterText,
   ]);
+
+  useEffect(() => {
+    const nextAnalysis = analyzeJobMatch(parsedJob, activeProfile);
+    setAnalysis(nextAnalysis);
+    setRecruiterMessage(
+      buildRecruiterMessage(parsedJob, activeProfile, nextAnalysis),
+    );
+
+    setTrackedJobs((currentJobs) =>
+      currentJobs.map((job) => {
+        const nextJobAnalysis = analyzeJobMatch(
+          trackedJobToParsedJob(job),
+          activeProfile,
+        );
+
+        return {
+          ...job,
+          score: nextJobAnalysis.score,
+          verdict: nextJobAnalysis.verdict,
+        };
+      }),
+    );
+
+    setDiscoveredJobs((currentJobs) =>
+      currentJobs.map((job) => ({
+        ...job,
+        analysis: analyzeJobMatch(job.parsedJob, activeProfile),
+      })),
+    );
+  }, [activeProfile, parsedJob]);
 
   const totalOpportunities = trackedJobs.length;
   const priorityJobs = trackedJobs.filter((job) => job.score >= 70).length;
@@ -507,7 +575,7 @@ export function ArgusWorkbench({
             skills: jobsPreviewJob.skills,
             summary: jobsPreviewJob.summary,
           },
-          profile,
+          activeProfile,
         )
       : null;
   const activeSourceLabel =
@@ -614,7 +682,7 @@ export function ArgusWorkbench({
   function handleProcessDescription() {
     startTransition(() => {
       const nextParsedJob = parseJobDescription(jobDescription);
-      const nextAnalysis = analyzeJobMatch(nextParsedJob, profile);
+      const nextAnalysis = analyzeJobMatch(nextParsedJob, activeProfile);
       const nextTrackedJob = toTrackedJob(nextParsedJob, nextAnalysis, {
         intakeMode: "Input manual",
       });
@@ -659,7 +727,7 @@ export function ArgusWorkbench({
           location: listing.location,
           summary: listing.descriptionText.replace(/\s+/g, " ").trim().slice(0, 280),
         };
-        const analysis = analyzeJobMatch(parsedJob, profile);
+        const analysis = analyzeJobMatch(parsedJob, activeProfile);
 
         return {
           listing,
@@ -734,7 +802,7 @@ export function ArgusWorkbench({
       summary: job.summary,
     };
 
-    const nextAnalysis = analyzeJobMatch(nextParsedJob, profile);
+    const nextAnalysis = analyzeJobMatch(nextParsedJob, activeProfile);
     setActiveDiscoveryId(job.externalId ?? null);
     setActiveTrackedJobId(job.id);
     setJobDescription(
@@ -2155,10 +2223,10 @@ export function ArgusWorkbench({
             Perfil e fontes
           </p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-            {profile.name}
+            {activeProfile.name}
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            {profile.location} · {profile.availability}
+            {activeProfile.location} · {activeProfile.availability}
           </p>
 
           <div className="mt-5 grid gap-4">
@@ -2167,14 +2235,14 @@ export function ArgusWorkbench({
                 Headline
               </p>
               <p className="mt-2 text-sm leading-7 text-slate-600">
-                {profile.headline}
+                {activeProfile.headline}
               </p>
             </div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
               Stack principal
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {profile.coreStack.slice(0, 8).map((skill) => (
+              {activeProfile.coreStack.slice(0, 8).map((skill) => (
                 <span
                   key={skill}
                   className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700"
@@ -2190,7 +2258,7 @@ export function ArgusWorkbench({
               Idiomas
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {profile.languages.map((language) => (
+              {activeProfile.languages.map((language) => (
                 <span
                   key={language}
                   className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700"
@@ -2198,6 +2266,43 @@ export function ArgusWorkbench({
                   {language}
                 </span>
               ))}
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                Documentos ativos
+              </p>
+              <p className="text-sm leading-7 text-slate-500">
+                Atualize seu CV e cover letter aqui. O Argus recalcula o match e a mensagem com base nessas mudanças.
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-4">
+              <label className="grid gap-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                  CV base
+                </span>
+                <textarea
+                  value={cvText}
+                  onChange={(event) => setCvText(event.target.value)}
+                  className="min-h-[180px] rounded-[24px] border border-slate-200 bg-slate-50/90 px-4 py-4 text-sm leading-7 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-4 focus:ring-sky-100"
+                  placeholder="Cole aqui a versao atual do seu CV."
+                />
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                  Cover letter base
+                </span>
+                <textarea
+                  value={coverLetterText}
+                  onChange={(event) => setCoverLetterText(event.target.value)}
+                  className="min-h-[150px] rounded-[24px] border border-slate-200 bg-slate-50/90 px-4 py-4 text-sm leading-7 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-4 focus:ring-sky-100"
+                  placeholder="Cole aqui a base da sua cover letter."
+                />
+              </label>
             </div>
           </div>
 

@@ -7,7 +7,10 @@ import {
   buildRecruiterMessage,
   type MatchAnalysis,
 } from "@/lib/job-intake";
-import type { CandidateProfile } from "@/lib/profile";
+import {
+  deriveCandidateProfile,
+  type CandidateProfile,
+} from "@/lib/profile";
 import {
   createHistoryEntry,
   STATUS_OPTIONS,
@@ -67,6 +70,40 @@ function readStoredJobs() {
   }
 }
 
+function readStoredDocuments(baseProfile: CandidateProfile) {
+  if (typeof window === "undefined") {
+    return {
+      cvText: baseProfile.cvText,
+      coverLetterText: baseProfile.coverLetterText,
+    };
+  }
+
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    return {
+      cvText: baseProfile.cvText,
+      coverLetterText: baseProfile.coverLetterText,
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as {
+      cvText?: string;
+      coverLetterText?: string;
+    };
+
+    return {
+      cvText: parsed.cvText ?? baseProfile.cvText,
+      coverLetterText: parsed.coverLetterText ?? baseProfile.coverLetterText,
+    };
+  } catch {
+    return {
+      cvText: baseProfile.cvText,
+      coverLetterText: baseProfile.coverLetterText,
+    };
+  }
+}
+
 function updateStoredJob(nextJob: TrackedJob) {
   if (typeof window === "undefined") {
     return;
@@ -102,6 +139,18 @@ export function JobDetailWorkspace({
   const [job, setJob] = useState<TrackedJob | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [syncMessage, setSyncMessage] = useState("Carregando detalhe da vaga...");
+  const [cvText] = useState(() => readStoredDocuments(profile).cvText);
+  const [coverLetterText] = useState(
+    () => readStoredDocuments(profile).coverLetterText,
+  );
+  const activeProfile = useMemo(
+    () =>
+      deriveCandidateProfile(profile, {
+        cvText,
+        coverLetterText,
+      }),
+    [coverLetterText, cvText, profile],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -167,16 +216,16 @@ export function JobDetailWorkspace({
       return null;
     }
 
-    return analyzeJobMatch(job, profile);
-  }, [job, profile]);
+    return analyzeJobMatch(job, activeProfile);
+  }, [activeProfile, job]);
 
   const recruiterMessage = useMemo(() => {
     if (!job || !analysis) {
       return "";
     }
 
-    return buildRecruiterMessage(job, profile, analysis);
-  }, [analysis, job, profile]);
+    return buildRecruiterMessage(job, activeProfile, analysis);
+  }, [activeProfile, analysis, job]);
 
   async function handleStatusChange(nextStatus: string) {
     if (!job) {

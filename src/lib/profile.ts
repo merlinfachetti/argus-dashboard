@@ -8,6 +8,8 @@ export type CandidateProfile = {
   targetRoles: string[];
   strengthSignals: string[];
   languages: string[];
+  cvText: string;
+  coverLetterText: string;
 };
 
 export type PortalSource = {
@@ -50,6 +52,10 @@ export const candidateProfile: CandidateProfile = {
     "Vivência atual na Alemanha e operação em ambiente high-throughput na Amazon",
   ],
   languages: ["Portuguese", "English", "German"],
+  cvText:
+    "Merlin Fachetti\nSenior Software Engineer based in Cologne, Germany.\n10+ years building production web applications with TypeScript, Node.js, React, SQL and PostgreSQL. Experience across full stack delivery, internal platforms, workflow automation, CI/CD, GitHub Actions, debugging, incident investigation, mentoring and engineering quality improvements.",
+  coverLetterText:
+    "I am particularly interested in engineering roles where I can contribute quickly across product delivery, reliability, internal tooling and collaboration with cross-functional teams.",
 };
 
 export const trackedSources: PortalSource[] = [
@@ -77,7 +83,186 @@ export const trackedSources: PortalSource[] = [
     strategy: "Crawler baseado em listagem e captura de detalhe da vaga.",
     status: "Pronto para discovery",
   },
+  {
+    company: "BWI",
+    url: "https://www.bwi.de/karriere/stellenangebote",
+    strategy: "Mapear busca pública, paginação e detalhe com fallback manual.",
+    status: "Catalogado para crawler",
+  },
+  {
+    company: "Eviden",
+    url: "https://eviden.com/careers/",
+    strategy: "Analisar careers hub e identificar entrada útil para vagas filtráveis.",
+    status: "Catalogado para crawler",
+  },
+  {
+    company: "Utimaco",
+    url: "https://utimaco.com/careers",
+    strategy: "Priorizar listagem pública e captura de detalhe quando disponível.",
+    status: "Catalogado para crawler",
+  },
+  {
+    company: "Hornetsecurity",
+    url: "https://www.hornetsecurity.com/en/career/",
+    strategy: "Mapear fonte pública por área e detectar oportunidade de parser leve.",
+    status: "Catalogado para crawler",
+  },
+  {
+    company: "G DATA",
+    url: "https://www.gdata.de/jobs",
+    strategy: "Avaliar listagem própria e extrair detalhe por vaga para enriquecimento.",
+    status: "Catalogado para crawler",
+  },
+  {
+    company: "Rohde & Schwarz",
+    url: "https://www.rohde-schwarz.com/de/karriere/stellenangebote/karriere-stellenangebote_251573.html",
+    strategy: "Mapear busca com filtros e fluxo de detalhe em portal corporativo.",
+    status: "Catalogado para crawler",
+  },
+  {
+    company: "secunet",
+    url: "https://www.secunet.com/en/about-us/career",
+    strategy: "Analisar careers hub e estruturar fallback manual por job detail.",
+    status: "Catalogado para crawler",
+  },
+  {
+    company: "Diehl",
+    url: "https://www.diehl.com/career/en/jobs-application/job-offers/",
+    strategy: "Crawler em listagem pública com foco em vagas de engenharia na Alemanha.",
+    status: "Catalogado para crawler",
+  },
+  {
+    company: "TKMS",
+    url: "https://www.tkmsgroup.com/de/karriere",
+    strategy: "Mapear portal institucional e detectar origem real das vagas.",
+    status: "Catalogado para crawler",
+  },
+  {
+    company: "Airbus",
+    url: "https://www.airbus.com/en/careers",
+    strategy: "Investigar hub de carreiras e definir estratégia por região/filtro.",
+    status: "Catalogado para crawler",
+  },
+  {
+    company: "Rheinmetall",
+    url: "https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote",
+    strategy: "Mapear listagem pública, paginação e filtro por engineering roles.",
+    status: "Catalogado para crawler",
+  },
 ];
+
+const profileSkillMatchers: Record<string, RegExp> = {
+  TypeScript: /\btypescript\b/i,
+  JavaScript: /\bjavascript\b/i,
+  "Node.js": /\bnode(?:\.js)?\b/i,
+  React: /\breact(?:\.js)?\b/i,
+  "Next.js": /\bnext(?:\.js)?\b/i,
+  SQL: /\bsql\b/i,
+  PostgreSQL: /\bpostgres(?:ql)?\b/i,
+  MySQL: /\bmysql\b/i,
+  "REST APIs": /\brest\b|\bapi(?:s)?\b/i,
+  Docker: /\bdocker\b/i,
+  "CI/CD": /\bci\/cd\b|\bpipeline(?:s)?\b/i,
+  "GitHub Actions": /\bgithub actions\b/i,
+  AWS: /\baws\b|\bec2\b|\bs3\b|\brds\b/i,
+  Python: /\bpython\b/i,
+  "System Design": /\bsystem design\b/i,
+  Microservices: /\bmicroservices?\b/i,
+  Observability: /\bobservability\b|\blog analysis\b/i,
+  Automation: /\bautomation\b|\bworkflow\b|\binternal tools?\b/i,
+};
+
+function normalizeDocumentText(text: string) {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function extractDocumentHeadline(text: string, fallback: string) {
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const matchingLine = lines.find((line) =>
+    /(engineer|developer|architect|lead|manager|platform|sre|security)/i.test(
+      line,
+    ),
+  );
+
+  return matchingLine?.slice(0, 72) ?? fallback;
+}
+
+function extractDocumentSkills(text: string) {
+  return Object.entries(profileSkillMatchers)
+    .filter(([, matcher]) => matcher.test(text))
+    .map(([skill]) => skill);
+}
+
+function extractDocumentLanguages(text: string) {
+  const languages: string[] = [];
+
+  if (/english/i.test(text)) languages.push("English");
+  if (/german|deutsch/i.test(text)) languages.push("German");
+  if (/portuguese|portugu[eê]s/i.test(text)) languages.push("Portuguese");
+
+  return languages;
+}
+
+function extractStrengthSignals(text: string, fallback: string[]) {
+  const signals: string[] = [];
+
+  if (/automation|workflow|internal tools?|dashboards?/i.test(text)) {
+    signals.push(
+      "Experiência forte com automação, workflow e ferramentas internas em produção",
+    );
+  }
+
+  if (/incident|reliability|observability|maintainability|troubleshooting/i.test(text)) {
+    signals.push(
+      "Foco consistente em confiabilidade, observabilidade e análise de incidentes",
+    );
+  }
+
+  if (/mentoring|leadership|code review|technical leadership|engineering management/i.test(text)) {
+    signals.push("Vivência com liderança técnica, mentoring e melhoria de práticas");
+  }
+
+  if (/react|node|typescript|postgres|sql/i.test(text)) {
+    signals.push("Base técnica aderente a stacks modernas de produto e plataforma");
+  }
+
+  return signals.length > 0 ? signals : fallback;
+}
+
+export function deriveCandidateProfile(
+  baseProfile: CandidateProfile,
+  overrides?: Partial<Pick<CandidateProfile, "cvText" | "coverLetterText">>,
+): CandidateProfile {
+  const cvText = overrides?.cvText?.trim() || baseProfile.cvText;
+  const coverLetterText =
+    overrides?.coverLetterText?.trim() || baseProfile.coverLetterText;
+  const combinedDocuments = `${cvText}\n${coverLetterText}`;
+  const derivedSkills = extractDocumentSkills(combinedDocuments);
+  const derivedLanguages = extractDocumentLanguages(combinedDocuments);
+
+  return {
+    ...baseProfile,
+    headline: extractDocumentHeadline(cvText, baseProfile.headline),
+    summary: normalizeDocumentText(cvText).slice(0, 320) || baseProfile.summary,
+    coreStack: Array.from(new Set([...derivedSkills, ...baseProfile.coreStack])).slice(
+      0,
+      14,
+    ),
+    strengthSignals: extractStrengthSignals(
+      combinedDocuments,
+      baseProfile.strengthSignals,
+    ),
+    languages: Array.from(
+      new Set([...baseProfile.languages, ...derivedLanguages]),
+    ),
+    cvText,
+    coverLetterText,
+  };
+}
 
 export const defaultJobDescription = `Senior Fullstack Engineer
 Company: Siemens Digital Industries
