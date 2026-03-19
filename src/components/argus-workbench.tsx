@@ -36,6 +36,7 @@ type DiscoveryPreview = {
 
 type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
+type ActivePanel = "summary" | "match" | "message" | "history";
 
 const STORAGE_KEY = "argus-workbench-state";
 
@@ -99,6 +100,18 @@ function modeButtonClass(active: boolean) {
     : "bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100";
 }
 
+function statusTone(status: string) {
+  if (status === "Aplicada" || status === "Entrevista") {
+    return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+  }
+
+  if (status === "Aplicar" || status === "Pronta para revisar") {
+    return "bg-sky-50 text-sky-700 ring-sky-200";
+  }
+
+  return "bg-slate-50 text-slate-600 ring-slate-200";
+}
+
 export function ArgusWorkbench({
   profile,
   sources,
@@ -115,6 +128,9 @@ export function ArgusWorkbench({
   const [trackedJobs, setTrackedJobs] = useState(initialState.trackedJobs);
   const [discoveredJobs, setDiscoveredJobs] = useState<DiscoveryPreview[]>([]);
   const [activeDiscoveryId, setActiveDiscoveryId] = useState<string | null>(null);
+  const [activeTrackedJobId, setActiveTrackedJobId] = useState<string | null>(
+    initialState.trackedJobs[0]?.id ?? null,
+  );
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
   const [copiedState, setCopiedState] = useState<"idle" | "copied">("idle");
@@ -122,6 +138,7 @@ export function ArgusWorkbench({
   const [radarQuery, setRadarQuery] = useState("");
   const [discoveryQuery, setDiscoveryQuery] = useState("");
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("discovery");
+  const [activePanel, setActivePanel] = useState<ActivePanel>("summary");
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -140,10 +157,12 @@ export function ArgusWorkbench({
         trackedJobs?: TrackedJob[];
         discoveredJobs?: DiscoveryPreview[];
         activeDiscoveryId?: string | null;
+        activeTrackedJobId?: string | null;
         radarFilter?: RadarFilter;
         radarQuery?: string;
         discoveryQuery?: string;
         workspaceMode?: WorkspaceMode;
+        activePanel?: ActivePanel;
       };
 
       if (parsedState.jobDescription) setJobDescription(parsedState.jobDescription);
@@ -157,10 +176,14 @@ export function ArgusWorkbench({
       if (parsedState.activeDiscoveryId !== undefined) {
         setActiveDiscoveryId(parsedState.activeDiscoveryId);
       }
+      if (parsedState.activeTrackedJobId !== undefined) {
+        setActiveTrackedJobId(parsedState.activeTrackedJobId);
+      }
       if (parsedState.radarFilter) setRadarFilter(parsedState.radarFilter);
       if (parsedState.radarQuery) setRadarQuery(parsedState.radarQuery);
       if (parsedState.discoveryQuery) setDiscoveryQuery(parsedState.discoveryQuery);
       if (parsedState.workspaceMode) setWorkspaceMode(parsedState.workspaceMode);
+      if (parsedState.activePanel) setActivePanel(parsedState.activePanel);
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     }
@@ -177,10 +200,12 @@ export function ArgusWorkbench({
         trackedJobs,
         discoveredJobs,
         activeDiscoveryId,
+        activeTrackedJobId,
         radarFilter,
         radarQuery,
         discoveryQuery,
         workspaceMode,
+        activePanel,
       }),
     );
   }, [
@@ -191,10 +216,12 @@ export function ArgusWorkbench({
     trackedJobs,
     discoveredJobs,
     activeDiscoveryId,
+    activeTrackedJobId,
     radarFilter,
     radarQuery,
     discoveryQuery,
     workspaceMode,
+    activePanel,
   ]);
 
   const totalOpportunities = trackedJobs.length;
@@ -233,7 +260,20 @@ export function ArgusWorkbench({
   const activeDiscovery = discoveredJobs.find(
     (job) => job.listing.externalId === activeDiscoveryId,
   );
-  const activeSourceLabel = activeDiscovery ? "Siemens crawler" : "Input manual";
+  const activeTrackedJob =
+    trackedJobs.find((job) => job.id === activeTrackedJobId) ??
+    (activeDiscoveryId
+      ? trackedJobs.find((job) => job.externalId === activeDiscoveryId)
+      : undefined) ??
+    trackedJobs[0];
+  const activeSourceLabel =
+    activeTrackedJob?.intakeMode ?? (activeDiscovery ? "Siemens crawler" : "Input manual");
+
+  useEffect(() => {
+    if (!activeTrackedJob && trackedJobs[0]) {
+      setActiveTrackedJobId(trackedJobs[0].id);
+    }
+  }, [activeTrackedJob, trackedJobs]);
 
   function applyAnalysisState(nextParsedJob: ParsedJob, nextAnalysis: MatchAnalysis) {
     setParsedJob(nextParsedJob);
@@ -247,16 +287,16 @@ export function ArgusWorkbench({
     startTransition(() => {
       const nextParsedJob = parseJobDescription(jobDescription);
       const nextAnalysis = analyzeJobMatch(nextParsedJob, profile);
+      const nextTrackedJob = toTrackedJob(nextParsedJob, nextAnalysis, {
+        intakeMode: "Input manual",
+      });
 
       applyAnalysisState(nextParsedJob, nextAnalysis);
-      setTrackedJobs((currentJobs) => [
-        toTrackedJob(nextParsedJob, nextAnalysis, {
-          intakeMode: "Input manual",
-        }),
-        ...currentJobs.slice(0, 5),
-      ]);
+      setTrackedJobs((currentJobs) => [nextTrackedJob, ...currentJobs.slice(0, 5)]);
+      setActiveTrackedJobId(nextTrackedJob.id);
       setActiveDiscoveryId(null);
       setWorkspaceMode("manual");
+      setActivePanel("summary");
     });
   }
 
@@ -307,8 +347,10 @@ export function ArgusWorkbench({
           nextDiscoveries[0].analysis,
         );
         setJobDescription(nextDiscoveries[0].listing.descriptionText);
+        setActiveTrackedJobId(nextDiscoveries[0].listing.externalId);
       }
       setWorkspaceMode("discovery");
+      setActivePanel("summary");
       setTrackedJobs((currentJobs) => {
         const seenIds = new Set(currentJobs.map((job) => job.id));
         const additions = nextDiscoveries
@@ -335,9 +377,11 @@ export function ArgusWorkbench({
 
   function handleInspectDiscovery(job: DiscoveryPreview) {
     setActiveDiscoveryId(job.listing.externalId);
+    setActiveTrackedJobId(job.listing.externalId);
     setJobDescription(job.listing.descriptionText);
     applyAnalysisState(job.parsedJob, job.analysis);
     setWorkspaceMode("discovery");
+    setActivePanel("summary");
   }
 
   function handleInspectTrackedJob(job: TrackedJob) {
@@ -355,12 +399,14 @@ export function ArgusWorkbench({
 
     const nextAnalysis = analyzeJobMatch(nextParsedJob, profile);
     setActiveDiscoveryId(job.externalId ?? null);
+    setActiveTrackedJobId(job.id);
     setJobDescription(
       [job.title, `Company: ${job.company}`, `Location: ${job.location}`, job.summary]
         .filter(Boolean)
         .join("\n"),
     );
     applyAnalysisState(nextParsedJob, nextAnalysis);
+    setActivePanel("summary");
   }
 
   function handleUpdateTrackedJobStatus(jobId: string, nextStatus: string) {
@@ -383,6 +429,39 @@ export function ArgusWorkbench({
       setCopiedState("idle");
     }
   }
+
+  const activeHistory = activeTrackedJob
+    ? [
+        {
+          label: "Origem",
+          value: activeTrackedJob.intakeMode,
+        },
+        {
+          label: "Status atual",
+          value: activeTrackedJob.status,
+        },
+        {
+          label: "Veredito",
+          value: `${activeTrackedJob.verdict} · ${activeTrackedJob.score}%`,
+        },
+        ...(activeTrackedJob.family
+          ? [
+              {
+                label: "Familia",
+                value: activeTrackedJob.family,
+              },
+            ]
+          : []),
+        ...(activeTrackedJob.externalId
+          ? [
+              {
+                label: "Job ID",
+                value: activeTrackedJob.externalId,
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
@@ -447,6 +526,15 @@ export function ArgusWorkbench({
                   ? `Siemens Job ID ${activeDiscovery.listing.externalId}`
                   : "Input manual"}
               </span>
+              {activeTrackedJob ? (
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ring-1 ${statusTone(
+                    activeTrackedJob.status,
+                  )}`}
+                >
+                  {activeTrackedJob.status}
+                </span>
+              ) : null}
             </div>
           </div>
 
@@ -481,6 +569,28 @@ export function ArgusWorkbench({
             <div className="rounded-full bg-slate-50 px-4 py-2 text-sm text-slate-600 ring-1 ring-slate-200">
               Origem ativa: {activeSourceLabel}
             </div>
+            {activeTrackedJob ? (
+              <select
+                value={activeTrackedJob.status}
+                onChange={(event) =>
+                  handleUpdateTrackedJobStatus(activeTrackedJob.id, event.target.value)
+                }
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 outline-none focus:border-sky-300"
+              >
+                {[
+                  "Nova",
+                  "Pronta para revisar",
+                  "Requer triagem",
+                  "Aplicar",
+                  "Aplicada",
+                  "Entrevista",
+                ].map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            ) : null}
             {activeDiscovery?.listing.sourceUrl ? (
               <a
                 className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-medium text-sky-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
@@ -500,107 +610,184 @@ export function ArgusWorkbench({
             </button>
           </div>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.92fr]">
-            <div className="space-y-4">
-              <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                  Match vs. perfil
-                </p>
-                <p className="mt-3 text-2xl font-semibold text-slate-950">
-                  {analysis.verdict}
-                </p>
-                <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                    <p className="text-sm font-medium text-slate-900">
-                      O que favorece
-                    </p>
-                    <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-600">
-                      {analysis.strengths.map((item) => (
-                        <li key={item}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                    <p className="text-sm font-medium text-slate-900">
-                      Pontos de atenção
-                    </p>
-                    <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-600">
-                      {analysis.risks.map((item) => (
-                        <li key={item}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
+          <div className="mt-6 flex flex-wrap gap-2 border-b border-slate-200 pb-5">
+            {[
+              { id: "summary", label: "Resumo" },
+              { id: "match", label: "Match" },
+              { id: "message", label: "Mensagem" },
+              { id: "history", label: "Historico" },
+            ].map((panel) => (
+              <button
+                key={panel.id}
+                type="button"
+                onClick={() => setActivePanel(panel.id as ActivePanel)}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  activePanel === panel.id
+                    ? "bg-slate-950 text-white"
+                    : "bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                {panel.label}
+              </button>
+            ))}
+          </div>
 
-              <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                  Skills detectadas
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {parsedJob.skills.length > 0 ? (
-                    parsedJob.skills.map((skill) => (
-                      <span
-                        key={skill}
-                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
-                      >
-                        {skill}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-slate-500">
-                      Nenhuma skill estruturada ainda para esta vaga.
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-5 text-white">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                    Mensagem sugerida
+          <div className="mt-6">
+            {activePanel === "summary" ? (
+              <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                    Resumo da vaga
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleCopyRecruiterMessage}
-                    className="inline-flex items-center justify-center rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15"
-                  >
-                    {copiedState === "copied" ? "Copiada" : "Copiar mensagem"}
-                  </button>
+                  <p className="mt-4 text-sm leading-8 text-slate-600">
+                    {parsedJob.summary}
+                  </p>
                 </div>
-                <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-200">
-                  {recruiterMessage}
-                </p>
+                <div className="space-y-4">
+                  <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                      Fit rapido
+                    </p>
+                    <p className="mt-3 text-2xl font-semibold text-slate-950">
+                      {analysis.verdict}
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-slate-500">
+                      Leitura curta para decidir se vale revisar agora ou deixar no radar.
+                    </p>
+                  </div>
+                  <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                      Skills detectadas
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {parsedJob.skills.length > 0 ? (
+                        parsedJob.skills.map((skill) => (
+                          <span
+                            key={skill}
+                            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
+                          >
+                            {skill}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-sm text-slate-500">
+                          Nenhuma skill estruturada ainda para esta vaga.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
+            ) : null}
 
-              <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-                <div>
+            {activePanel === "match" ? (
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                    O que favorece
+                  </p>
+                  <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
+                    {analysis.strengths.map((item) => (
+                      <li key={item}>• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                    Pontos de atenção
+                  </p>
+                  <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
+                    {analysis.risks.map((item) => (
+                      <li key={item}>• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
+
+            {activePanel === "message" ? (
+              <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+                <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-5 text-white">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+                      Mensagem sugerida
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleCopyRecruiterMessage}
+                      className="inline-flex items-center justify-center rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15"
+                    >
+                      {copiedState === "copied" ? "Copiada" : "Copiar mensagem"}
+                    </button>
+                  </div>
+                  <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-200">
+                    {recruiterMessage}
+                  </p>
+                </div>
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                  <p className="text-sm font-medium text-slate-700">
+                    Como usar esta mensagem
+                  </p>
+                  <div className="mt-4 grid gap-2 text-sm text-slate-600">
+                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                      1. Revise se o tom combina com a vaga e empresa
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                      2. Ajuste detalhes específicos antes de enviar
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                      3. Marque o status no radar assim que aplicar
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {activePanel === "history" ? (
+              <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                    Linha do tempo
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    {activeHistory.map((item) => (
+                      <div
+                        key={`${item.label}-${item.value}`}
+                        className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200"
+                      >
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                          {item.label}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-700">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
                   <p className="text-sm font-medium text-slate-700">
                     Como testar o fluxo agora
                   </p>
                   <p className="mt-1 text-sm leading-7 text-slate-500">
-                    Use um único modo de trabalho por vez. Isso mantém o portal
-                    enxuto sem esconder funcionalidade.
+                    Use um único modo por vez. O objetivo aqui é ver o produto
+                    funcionando sem poluição e com decisões rápidas.
                   </p>
-                </div>
-                <div className="mt-4 grid gap-2 text-sm text-slate-600">
-                  <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                    1. Escolha `Fonte real` ou `JD manual`
-                  </div>
-                  <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                    2. Traga uma vaga para o painel ativo
-                  </div>
-                  <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                    3. Revise match, riscos e mensagem
-                  </div>
-                  <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                    4. Gerencie o status no radar
+                  <div className="mt-4 grid gap-2 text-sm text-slate-600">
+                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                      1. Escolha `Fonte real` ou `JD manual`
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                      2. Torne uma vaga ativa no painel
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                      3. Valide resumo, match e mensagem
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                      4. Atualize o status para manter o radar limpo
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : null}
           </div>
         </div>
         <div
@@ -666,7 +853,11 @@ export function ArgusWorkbench({
               {filteredTrackedJobs.map((job) => (
                 <article
                   key={job.id}
-                  className="space-y-4 px-4 py-4"
+                  className={`space-y-4 px-4 py-4 transition ${
+                    activeTrackedJobId === job.id
+                      ? "bg-sky-50/70"
+                      : "bg-white hover:bg-slate-50"
+                  }`}
                   onClick={() => handleInspectTrackedJob(job)}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -737,7 +928,11 @@ export function ArgusWorkbench({
                 {filteredTrackedJobs.map((job) => (
                   <tr
                     key={job.id}
-                    className="cursor-pointer transition hover:bg-slate-50"
+                    className={`cursor-pointer transition ${
+                      activeTrackedJobId === job.id
+                        ? "bg-sky-50/70"
+                        : "hover:bg-slate-50"
+                    }`}
                     onClick={() => handleInspectTrackedJob(job)}
                   >
                     <td className="px-4 py-4 align-top">
