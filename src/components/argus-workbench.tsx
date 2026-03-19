@@ -34,6 +34,8 @@ type DiscoveryPreview = {
   analysis: MatchAnalysis;
 };
 
+type RadarFilter = "all" | "crawler" | "manual" | "priority";
+
 function toTrackedJob(
   job: ParsedJob,
   analysis: MatchAnalysis,
@@ -103,34 +105,57 @@ export function ArgusWorkbench({
   );
   const [trackedJobs, setTrackedJobs] = useState(initialState.trackedJobs);
   const [discoveredJobs, setDiscoveredJobs] = useState<DiscoveryPreview[]>([]);
+  const [activeDiscoveryId, setActiveDiscoveryId] = useState<string | null>(null);
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
+  const [copiedState, setCopiedState] = useState<"idle" | "copied">("idle");
+  const [radarFilter, setRadarFilter] = useState<RadarFilter>("all");
   const [isPending, startTransition] = useTransition();
 
   const totalOpportunities = trackedJobs.length;
   const priorityJobs = trackedJobs.filter((job) => job.score >= 70).length;
+  const crawlerJobs = trackedJobs.filter((job) =>
+    job.intakeMode.toLowerCase().includes("crawler"),
+  ).length;
   const averageScore =
     trackedJobs.reduce((sum, job) => sum + job.score, 0) / totalOpportunities;
+  const filteredTrackedJobs = trackedJobs.filter((job) => {
+    if (radarFilter === "crawler") {
+      return job.intakeMode.toLowerCase().includes("crawler");
+    }
+
+    if (radarFilter === "manual") {
+      return job.intakeMode.toLowerCase().includes("manual");
+    }
+
+    if (radarFilter === "priority") {
+      return job.score >= 70;
+    }
+
+    return true;
+  });
+
+  function applyAnalysisState(nextParsedJob: ParsedJob, nextAnalysis: MatchAnalysis) {
+    setParsedJob(nextParsedJob);
+    setAnalysis(nextAnalysis);
+    setRecruiterMessage(
+      buildRecruiterMessage(nextParsedJob, profile, nextAnalysis),
+    );
+  }
 
   function handleProcessDescription() {
     startTransition(() => {
       const nextParsedJob = parseJobDescription(jobDescription);
       const nextAnalysis = analyzeJobMatch(nextParsedJob, profile);
-      const nextRecruiterMessage = buildRecruiterMessage(
-        nextParsedJob,
-        profile,
-        nextAnalysis,
-      );
 
-      setParsedJob(nextParsedJob);
-      setAnalysis(nextAnalysis);
-      setRecruiterMessage(nextRecruiterMessage);
+      applyAnalysisState(nextParsedJob, nextAnalysis);
       setTrackedJobs((currentJobs) => [
         toTrackedJob(nextParsedJob, nextAnalysis, {
           intakeMode: "Input manual",
         }),
         ...currentJobs.slice(0, 5),
       ]);
+      setActiveDiscoveryId(null);
     });
   }
 
@@ -174,6 +199,14 @@ export function ArgusWorkbench({
       });
 
       setDiscoveredJobs(nextDiscoveries);
+      if (nextDiscoveries[0]) {
+        setActiveDiscoveryId(nextDiscoveries[0].listing.externalId);
+        applyAnalysisState(
+          nextDiscoveries[0].parsedJob,
+          nextDiscoveries[0].analysis,
+        );
+        setJobDescription(nextDiscoveries[0].listing.descriptionText);
+      }
       setTrackedJobs((currentJobs) => {
         const seenIds = new Set(currentJobs.map((job) => job.id));
         const additions = nextDiscoveries
@@ -195,6 +228,25 @@ export function ArgusWorkbench({
       );
     } finally {
       setIsDiscovering(false);
+    }
+  }
+
+  function handleInspectDiscovery(job: DiscoveryPreview) {
+    setActiveDiscoveryId(job.listing.externalId);
+    setJobDescription(job.listing.descriptionText);
+    applyAnalysisState(job.parsedJob, job.analysis);
+  }
+
+  async function handleCopyRecruiterMessage() {
+    try {
+      await navigator.clipboard.writeText(recruiterMessage);
+      setCopiedState("copied");
+
+      window.setTimeout(() => {
+        setCopiedState("idle");
+      }, 1800);
+    } catch {
+      setCopiedState("idle");
     }
   }
 
@@ -227,10 +279,10 @@ export function ArgusWorkbench({
           <div className="rounded-[28px] border border-white/60 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur">
             <p className="text-sm font-medium text-slate-500">Média atual</p>
             <p className="mt-2 text-3xl font-semibold text-slate-950">
-              {Math.round(averageScore)}%
+              {crawlerJobs}
             </p>
             <p className="mt-2 text-sm text-slate-500">
-              Ajustaremos o modelo de scoring conforme o produto evoluir.
+              Itens que já vieram de discovery real em portais.
             </p>
           </div>
         </div>
@@ -266,6 +318,23 @@ export function ArgusWorkbench({
             </span>
           </div>
 
+          <div className="mt-4 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-700">
+                  Como testar o fluxo agora
+                </p>
+                <p className="mt-1 text-sm leading-7 text-slate-500">
+                  Clique em buscar, escolha uma vaga descoberta e o painel de
+                  análise central passa a refletir a vaga real do portal.
+                </p>
+              </div>
+              <div className="text-sm text-slate-500">
+                Media atual do radar: {Math.round(averageScore)}%
+              </div>
+            </div>
+          </div>
+
           {discoveryError ? (
             <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {discoveryError}
@@ -283,7 +352,11 @@ export function ArgusWorkbench({
               discoveredJobs.map((job) => (
                 <article
                   key={job.listing.externalId}
-                  className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5"
+                  className={`rounded-[24px] border p-5 transition ${
+                    activeDiscoveryId === job.listing.externalId
+                      ? "border-sky-300 bg-sky-50/80 shadow-[0_18px_40px_rgba(14,165,233,0.12)]"
+                      : "border-slate-200 bg-slate-50/80"
+                  }`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
@@ -326,6 +399,13 @@ export function ArgusWorkbench({
                         {job.listing.experienceLevel}
                       </span>
                     ) : null}
+                    <button
+                      type="button"
+                      onClick={() => handleInspectDiscovery(job)}
+                      className="rounded-full bg-slate-950 px-3 py-1 font-medium text-white transition hover:bg-slate-800"
+                    >
+                      Analisar aqui
+                    </button>
                     <a
                       className="font-medium text-sky-700 hover:text-sky-900"
                       href={job.listing.sourceUrl}
@@ -386,6 +466,12 @@ export function ArgusWorkbench({
                     </h3>
                     <p className="mt-1 text-sm text-slate-500">
                       {parsedJob.company} · {parsedJob.location}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">
+                      Fonte ativa:{" "}
+                      {activeDiscoveryId
+                        ? `Siemens Job ID ${activeDiscoveryId}`
+                        : "Input manual"}
                     </p>
                   </div>
                   <span
@@ -475,9 +561,18 @@ export function ArgusWorkbench({
               </div>
 
               <div className="rounded-[28px] border border-slate-200 bg-white p-5">
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                  Mensagem sugerida ao recruiter
-                </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                    Mensagem sugerida ao recruiter
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCopyRecruiterMessage}
+                    className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                  >
+                    {copiedState === "copied" ? "Copiada" : "Copiar mensagem"}
+                  </button>
+                </div>
                 <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-700">
                   {recruiterMessage}
                 </p>
@@ -501,6 +596,28 @@ export function ArgusWorkbench({
             </p>
           </div>
 
+          <div className="mt-5 flex flex-wrap gap-2">
+            {[
+              { id: "all", label: "Todas" },
+              { id: "crawler", label: "Crawler" },
+              { id: "manual", label: "Manuais" },
+              { id: "priority", label: "Prioridade" },
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setRadarFilter(filter.id as RadarFilter)}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  radarFilter === filter.id
+                    ? "bg-slate-950 text-white"
+                    : "bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
           <div className="mt-6 overflow-hidden rounded-[28px] border border-slate-200">
             <table className="min-w-full divide-y divide-slate-200 text-left">
               <thead className="bg-slate-50">
@@ -512,7 +629,7 @@ export function ArgusWorkbench({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
-                {trackedJobs.map((job) => (
+                {filteredTrackedJobs.map((job) => (
                   <tr key={job.id}>
                     <td className="px-4 py-4 align-top">
                       <p className="font-semibold text-slate-900">{job.title}</p>
