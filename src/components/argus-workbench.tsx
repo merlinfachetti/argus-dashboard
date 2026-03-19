@@ -35,6 +35,7 @@ type DiscoveryPreview = {
 };
 
 type RadarFilter = "all" | "crawler" | "manual" | "priority";
+type WorkspaceMode = "discovery" | "manual";
 
 const STORAGE_KEY = "argus-workbench-state";
 
@@ -92,6 +93,12 @@ function badgeTone(score: number) {
   return "bg-rose-50 text-rose-700 ring-rose-200";
 }
 
+function modeButtonClass(active: boolean) {
+  return active
+    ? "bg-slate-950 text-white"
+    : "bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100";
+}
+
 export function ArgusWorkbench({
   profile,
   sources,
@@ -114,6 +121,7 @@ export function ArgusWorkbench({
   const [radarFilter, setRadarFilter] = useState<RadarFilter>("all");
   const [radarQuery, setRadarQuery] = useState("");
   const [discoveryQuery, setDiscoveryQuery] = useState("");
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("discovery");
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -135,6 +143,7 @@ export function ArgusWorkbench({
         radarFilter?: RadarFilter;
         radarQuery?: string;
         discoveryQuery?: string;
+        workspaceMode?: WorkspaceMode;
       };
 
       if (parsedState.jobDescription) setJobDescription(parsedState.jobDescription);
@@ -151,6 +160,7 @@ export function ArgusWorkbench({
       if (parsedState.radarFilter) setRadarFilter(parsedState.radarFilter);
       if (parsedState.radarQuery) setRadarQuery(parsedState.radarQuery);
       if (parsedState.discoveryQuery) setDiscoveryQuery(parsedState.discoveryQuery);
+      if (parsedState.workspaceMode) setWorkspaceMode(parsedState.workspaceMode);
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     }
@@ -170,6 +180,7 @@ export function ArgusWorkbench({
         radarFilter,
         radarQuery,
         discoveryQuery,
+        workspaceMode,
       }),
     );
   }, [
@@ -183,6 +194,7 @@ export function ArgusWorkbench({
     radarFilter,
     radarQuery,
     discoveryQuery,
+    workspaceMode,
   ]);
 
   const totalOpportunities = trackedJobs.length;
@@ -190,8 +202,6 @@ export function ArgusWorkbench({
   const crawlerJobs = trackedJobs.filter((job) =>
     job.intakeMode.toLowerCase().includes("crawler"),
   ).length;
-  const averageScore =
-    trackedJobs.reduce((sum, job) => sum + job.score, 0) / totalOpportunities;
   const filteredTrackedJobs = trackedJobs.filter((job) => {
     const matchesQuery =
       radarQuery.trim().length === 0 ||
@@ -245,6 +255,7 @@ export function ArgusWorkbench({
         ...currentJobs.slice(0, 5),
       ]);
       setActiveDiscoveryId(null);
+      setWorkspaceMode("manual");
     });
   }
 
@@ -296,6 +307,7 @@ export function ArgusWorkbench({
         );
         setJobDescription(nextDiscoveries[0].listing.descriptionText);
       }
+      setWorkspaceMode("discovery");
       setTrackedJobs((currentJobs) => {
         const seenIds = new Set(currentJobs.map((job) => job.id));
         const additions = nextDiscoveries
@@ -324,6 +336,7 @@ export function ArgusWorkbench({
     setActiveDiscoveryId(job.listing.externalId);
     setJobDescription(job.listing.descriptionText);
     applyAnalysisState(job.parsedJob, job.analysis);
+    setWorkspaceMode("discovery");
   }
 
   function handleInspectTrackedJob(job: TrackedJob) {
@@ -349,6 +362,14 @@ export function ArgusWorkbench({
     applyAnalysisState(nextParsedJob, nextAnalysis);
   }
 
+  function handleUpdateTrackedJobStatus(jobId: string, nextStatus: string) {
+    setTrackedJobs((currentJobs) =>
+      currentJobs.map((job) =>
+        job.id === jobId ? { ...job, status: nextStatus } : job,
+      ),
+    );
+  }
+
   async function handleCopyRecruiterMessage() {
     try {
       await navigator.clipboard.writeText(recruiterMessage);
@@ -363,7 +384,7 @@ export function ArgusWorkbench({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+    <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
       <section className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-[28px] border border-white/60 bg-white/85 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur">
@@ -403,226 +424,161 @@ export function ArgusWorkbench({
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-                Discovery manual
+                Vaga ativa
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                Primeiro conector real: Siemens Germany
+                {parsedJob.title}
               </h2>
+              <p className="mt-2 text-sm text-slate-500">
+                {parsedJob.company} · {parsedJob.location}
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={handleRunSiemensDiscovery}
-              className="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
-              disabled={isDiscovering}
-            >
-              {isDiscovering ? "Coletando..." : "Buscar vagas Siemens"}
-            </button>
-          </div>
-
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm leading-7 text-slate-600">
-              Faz discovery na busca publica da Siemens filtrada para Alemanha,
-              abre o detalhe real do JD, normaliza os dados e injeta tudo no
-              radar local para triagem imediata.
-            </p>
-            <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 ring-1 ring-slate-200">
-              Search + detail enrichment
-            </span>
-          </div>
-
-          <div className="mt-4 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-700">
-                  Como testar o fluxo agora
-                </p>
-                <p className="mt-1 text-sm leading-7 text-slate-500">
-                  Clique em buscar, escolha uma vaga descoberta e o painel de
-                  análise central passa a refletir a vaga real do portal.
-                </p>
-              </div>
-              <div className="text-sm text-slate-500">
-                Media atual do radar: {Math.round(averageScore)}%
-              </div>
-            </div>
-            <div className="mt-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-4">
-              <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                1. Buscar vagas reais
-              </div>
-              <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                2. Selecionar uma vaga
-              </div>
-              <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                3. Revisar o match
-              </div>
-              <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                4. Copiar a abordagem
-              </div>
-            </div>
-          </div>
-
-          {discoveryError ? (
-            <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {discoveryError}
-            </div>
-          ) : null}
-
-          <div className="mt-6 grid gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <input
-                value={discoveryQuery}
-                onChange={(event) => setDiscoveryQuery(event.target.value)}
-                className="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100 sm:max-w-md"
-                placeholder="Filtrar vagas descobertas por titulo, empresa ou local..."
-              />
-              <div className="text-sm text-slate-500">
-                {filteredDiscoveredJobs.length} vaga(s) visivel(is)
-              </div>
-            </div>
-
-            {discoveredJobs.length === 0 ? (
-              <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/70 px-5 py-6 text-sm leading-7 text-slate-500">
-                Ainda sem resultado carregado. Quando você disparar a coleta,
-                o Argus consulta a busca da Siemens, abre o detalhe da vaga,
-                calcula o match e injeta o resultado no dashboard.
-              </div>
-            ) : (
-              filteredDiscoveredJobs.map((job) => (
-                <article
-                  key={job.listing.externalId}
-                  className={`rounded-[24px] border p-5 transition ${
-                    activeDiscoveryId === job.listing.externalId
-                      ? "border-sky-300 bg-sky-50/80 shadow-[0_18px_40px_rgba(14,165,233,0.12)]"
-                      : "border-slate-200 bg-slate-50/80"
-                  }`}
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-slate-950">
-                        {job.listing.title}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {job.listing.company} · {job.listing.location} ·{" "}
-                        {job.listing.family}
-                      </p>
-                    </div>
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
-                        job.analysis.score,
-                      )}`}
-                    >
-                      {job.analysis.score}% {job.analysis.verdict}
-                    </span>
-                  </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                    <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                      Job ID {job.listing.externalId}
-                    </span>
-                    {job.listing.detailEnriched ? (
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-200">
-                        JD enriquecido
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700 ring-1 ring-amber-200">
-                        Card-only
-                      </span>
-                    )}
-                    {job.listing.workMode ? (
-                      <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                        {job.listing.workMode}
-                      </span>
-                    ) : null}
-                    {job.listing.experienceLevel ? (
-                      <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                        {job.listing.experienceLevel}
-                      </span>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => handleInspectDiscovery(job)}
-                      className="rounded-full bg-slate-950 px-3 py-1 font-medium text-white transition hover:bg-slate-800"
-                    >
-                      Analisar aqui
-                    </button>
-                    <a
-                      className="font-medium text-sky-700 hover:text-sky-900"
-                      href={job.listing.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Abrir vaga
-                    </a>
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
-        </div>
-
-        {activeDiscovery ? (
-          <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-            <div className="flex flex-col gap-2 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-                  Vaga ativa
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                  {activeDiscovery.listing.title}
-                </h2>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
               <span
                 className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
-                  activeDiscovery.analysis.score,
+                  analysis.score,
                 )}`}
               >
-                {activeDiscovery.analysis.score}% {activeDiscovery.analysis.verdict}
+                {analysis.score}% match
+              </span>
+              <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 ring-1 ring-slate-200">
+                {activeDiscovery
+                  ? `Siemens Job ID ${activeDiscovery.listing.externalId}`
+                  : "Input manual"}
               </span>
             </div>
+          </div>
 
-            <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.85fr]">
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                Senioridade
+              </p>
+              <p className="mt-2 text-sm font-medium text-slate-700">
+                {parsedJob.seniority}
+              </p>
+            </div>
+            <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                Modelo
+              </p>
+              <p className="mt-2 text-sm font-medium text-slate-700">
+                {parsedJob.workModel}
+              </p>
+            </div>
+            <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                Contrato
+              </p>
+              <p className="mt-2 text-sm font-medium text-slate-700">
+                {parsedJob.employmentType}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.92fr]">
+            <div className="space-y-4">
               <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                  Snapshot
+                <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                  Match vs. perfil
                 </p>
-                <div className="mt-3 space-y-2 text-sm leading-7 text-slate-600">
-                  <p>{activeDiscovery.listing.company}</p>
-                  <p>{activeDiscovery.listing.location}</p>
-                  <p>{activeDiscovery.listing.family}</p>
-                  <p>
-                    {activeDiscovery.listing.workMode ?? "Work mode n/d"} ·{" "}
-                    {activeDiscovery.listing.employmentType ?? "Contrato n/d"}
-                  </p>
+                <p className="mt-3 text-2xl font-semibold text-slate-950">
+                  {analysis.verdict}
+                </p>
+                <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                    <p className="text-sm font-medium text-slate-900">
+                      O que favorece
+                    </p>
+                    <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-600">
+                      {analysis.strengths.map((item) => (
+                        <li key={item}>• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                    <p className="text-sm font-medium text-slate-900">
+                      Pontos de atenção
+                    </p>
+                    <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-600">
+                      {analysis.risks.map((item) => (
+                        <li key={item}>• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-5 text-white">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
-                  Checklist rapido
+              <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                  Skills detectadas
                 </p>
-                <div className="mt-3 space-y-2 text-sm leading-7 text-slate-300">
-                  <p>
-                    {activeDiscovery.analysis.score >= 70 ? "✓" : "•"} Vale
-                    revisar com prioridade
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {parsedJob.skills.length > 0 ? (
+                    parsedJob.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
+                      >
+                        {skill}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-slate-500">
+                      Nenhuma skill estruturada ainda para esta vaga.
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-[24px] border border-slate-200 bg-slate-950 p-5 text-white">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+                    Mensagem sugerida
                   </p>
-                  <p>
-                    {activeDiscovery.listing.detailEnriched ? "✓" : "•"} JD real
-                    carregado do portal
+                  <button
+                    type="button"
+                    onClick={handleCopyRecruiterMessage}
+                    className="inline-flex items-center justify-center rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15"
+                  >
+                    {copiedState === "copied" ? "Copiada" : "Copiar mensagem"}
+                  </button>
+                </div>
+                <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-200">
+                  {recruiterMessage}
+                </p>
+              </div>
+
+              <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">
+                    Como testar o fluxo agora
                   </p>
-                  <p>
-                    {activeDiscovery.parsedJob.languages.includes("German")
-                      ? "• Alemão aparece como sinal importante"
-                      : "✓ Idioma nao parece bloqueio principal"}
+                  <p className="mt-1 text-sm leading-7 text-slate-500">
+                    Use um único modo de trabalho por vez. Isso mantém o portal
+                    enxuto sem esconder funcionalidade.
                   </p>
-                  <p>
-                    {activeDiscovery.parsedJob.skills.length > 0
-                      ? `✓ ${activeDiscovery.parsedJob.skills.length} skill(s) detectada(s)`
-                      : "• Ainda com extração de skills limitada"}
-                  </p>
+                </div>
+                <div className="mt-4 grid gap-2 text-sm text-slate-600">
+                  <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                    1. Escolha `Fonte real` ou `JD manual`
+                  </div>
+                  <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                    2. Traga uma vaga para o painel ativo
+                  </div>
+                  <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                    3. Revise match, riscos e mensagem
+                  </div>
+                  <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                    4. Gerencie o status no radar
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        ) : null}
+        </div>
 
         <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -880,7 +836,27 @@ export function ArgusWorkbench({
                       </span>
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-600">
-                      {job.status}
+                      <select
+                        value={job.status}
+                        onChange={(event) =>
+                          handleUpdateTrackedJobStatus(job.id, event.target.value)
+                        }
+                        onClick={(event) => event.stopPropagation()}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-300"
+                      >
+                        {[
+                          "Nova",
+                          "Pronta para revisar",
+                          "Requer triagem",
+                          "Aplicar",
+                          "Aplicada",
+                          "Entrevista",
+                        ].map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                   </tr>
                 ))}
@@ -892,8 +868,171 @@ export function ArgusWorkbench({
 
       <aside className="space-y-6">
         <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+          <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-5">
+            <button
+              type="button"
+              onClick={() => setWorkspaceMode("discovery")}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${modeButtonClass(
+                workspaceMode === "discovery",
+              )}`}
+            >
+              Fonte real
+            </button>
+            <button
+              type="button"
+              onClick={() => setWorkspaceMode("manual")}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${modeButtonClass(
+                workspaceMode === "manual",
+              )}`}
+            >
+              JD manual
+            </button>
+          </div>
+
+          {workspaceMode === "discovery" ? (
+            <div className="mt-5 space-y-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                    Siemens Germany
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">
+                    Busca publica + enriquecimento do detalhe real da vaga.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRunSiemensDiscovery}
+                  className="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+                  disabled={isDiscovering}
+                >
+                  {isDiscovering ? "Coletando..." : "Buscar vagas Siemens"}
+                </button>
+              </div>
+
+              {discoveryError ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {discoveryError}
+                </div>
+              ) : null}
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <input
+                  value={discoveryQuery}
+                  onChange={(event) => setDiscoveryQuery(event.target.value)}
+                  className="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                  placeholder="Filtrar vagas descobertas..."
+                />
+                <div className="text-sm text-slate-500">
+                  {filteredDiscoveredJobs.length} vaga(s)
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {discoveredJobs.length === 0 ? (
+                  <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50/70 px-5 py-6 text-sm leading-7 text-slate-500">
+                    Traga vagas reais para este painel. A ideia aqui e manter o
+                    discovery num lugar proprio e sem competir com o restante da
+                    tela.
+                  </div>
+                ) : (
+                  filteredDiscoveredJobs.map((job) => (
+                    <article
+                      key={job.listing.externalId}
+                      className={`rounded-[24px] border p-4 transition ${
+                        activeDiscoveryId === job.listing.externalId
+                          ? "border-sky-300 bg-sky-50/80 shadow-[0_18px_40px_rgba(14,165,233,0.12)]"
+                          : "border-slate-200 bg-slate-50/80"
+                      }`}
+                    >
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="text-base font-semibold text-slate-950">
+                              {job.listing.title}
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-500">
+                              {job.listing.company} · {job.listing.location}
+                            </p>
+                          </div>
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
+                              job.analysis.score,
+                            )}`}
+                          >
+                            {job.analysis.score}%
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 text-xs text-slate-600">
+                          <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
+                            {job.listing.family}
+                          </span>
+                          {job.listing.detailEnriched ? (
+                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-200">
+                              JD enriquecido
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleInspectDiscovery(job)}
+                            className="rounded-full bg-slate-950 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                          >
+                            Tornar ativa
+                          </button>
+                          <a
+                            className="rounded-full bg-white px-3 py-2 text-sm font-medium text-sky-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+                            href={job.listing.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Abrir vaga
+                          </a>
+                        </div>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                    JD manual
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">
+                    Cole qualquer descricao de vaga sem formatacao. O Argus
+                    estrutura, pontua e joga para o radar.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleProcessDescription}
+                  className="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  disabled={isPending}
+                >
+                  {isPending ? "Processando..." : "Estruturar"}
+                </button>
+              </div>
+
+              <textarea
+                value={jobDescription}
+                onChange={(event) => setJobDescription(event.target.value)}
+                className="min-h-[420px] w-full rounded-[28px] border border-slate-200 bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-4 focus:ring-sky-100"
+                placeholder="Cole aqui a vaga inteira, mesmo desorganizada."
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
           <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-            Perfil inicial
+            Perfil e fontes
           </p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-950">
             {profile.name}
@@ -901,67 +1040,24 @@ export function ArgusWorkbench({
           <p className="mt-1 text-sm text-slate-500">
             {profile.location} · {profile.availability}
           </p>
-          <p className="mt-4 text-sm leading-7 text-slate-600">
-            {profile.summary}
-          </p>
 
-          <div className="mt-6 space-y-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Stack principal
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {profile.coreStack.map((skill) => (
-                  <span
-                    key={skill}
-                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Foco de vagas
-              </p>
-              <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-600">
-                {profile.targetRoles.map((role) => (
-                  <li key={role}>• {role}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Diferenciais
-              </p>
-              <ul className="mt-3 space-y-2 text-sm leading-7 text-slate-600">
-                {profile.strengthSignals.map((signal) => (
-                  <li key={signal}>• {signal}</li>
-                ))}
-              </ul>
+          <div className="mt-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+              Stack principal
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {profile.coreStack.slice(0, 8).map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700"
+                >
+                  {skill}
+                </span>
+              ))}
             </div>
           </div>
-        </div>
 
-        <div className="rounded-[32px] border border-white/60 bg-white/85 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-                Fontes monitoradas
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                Portais prioritários
-              </h2>
-            </div>
-            <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-white">
-              Fase 1
-            </span>
-          </div>
-
-          <div className="mt-5 space-y-4">
+          <div className="mt-6 space-y-3">
             {sources.map((source) => (
               <article
                 key={source.company}
@@ -980,14 +1076,6 @@ export function ArgusWorkbench({
                     {source.status}
                   </span>
                 </div>
-                <a
-                  className="mt-3 inline-flex text-sm font-medium text-sky-700 hover:text-sky-900"
-                  href={source.url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {source.url}
-                </a>
               </article>
             ))}
           </div>
