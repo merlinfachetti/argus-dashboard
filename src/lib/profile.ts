@@ -63,7 +63,7 @@ export const trackedSources: PortalSource[] = [
     company: "Siemens",
     url: "https://jobs.siemens.com/en_US/externaljobs/SearchJobs/?42414=%5B812132%5D&42414_format=17570&listFilterMode=1&folderRecordsPerPage=6&",
     strategy: "Crawler leve ou browser automation dependendo da paginação.",
-    status: "Mapear seletor",
+    status: "Discovery live",
   },
   {
     company: "Bayer",
@@ -147,7 +147,7 @@ export const trackedSources: PortalSource[] = [
     company: "Rheinmetall",
     url: "https://www.rheinmetall.com/de/karriere/aktuelle-stellenangebote",
     strategy: "Mapear listagem pública, paginação e filtro por engineering roles.",
-    status: "Catalogado para crawler",
+    status: "Discovery live",
   },
 ];
 

@@ -1,5 +1,7 @@
+export type SupportedConnectorSource = "Siemens" | "Rheinmetall";
+
 export type DiscoveredJobListing = {
-  source: "Siemens";
+  source: SupportedConnectorSource;
   sourceLabel: string;
   externalId: string;
   title: string;

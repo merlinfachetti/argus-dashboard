@@ -42,8 +42,34 @@ type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "message" | "history";
 type JobsSort = "updated" | "score" | "company";
+type DiscoverySourceId = "siemens" | "rheinmetall";
 
 const STORAGE_KEY = "argus-workbench-state";
+const DISCOVERY_SOURCES: Record<
+  DiscoverySourceId,
+  {
+    label: string;
+    company: string;
+    description: string;
+    buttonLabel: string;
+    endpoint: string;
+  }
+> = {
+  siemens: {
+    label: "Siemens Germany",
+    company: "Siemens",
+    description: "Busca publica + enriquecimento do detalhe real da vaga.",
+    buttonLabel: "Buscar vagas Siemens",
+    endpoint: "/api/sources/siemens/discover?limit=6&enrich=1",
+  },
+  rheinmetall: {
+    label: "Rheinmetall Germany",
+    company: "Rheinmetall",
+    description: "Listagem publica com detalhe enriquecido direto da vaga.",
+    buttonLabel: "Buscar vagas Rheinmetall",
+    endpoint: "/api/sources/rheinmetall/discover?limit=6&enrich=1",
+  },
+};
 
 function toTrackedJob(
   job: ParsedJob,
@@ -179,6 +205,8 @@ export function ArgusWorkbench({
   const [radarFilter, setRadarFilter] = useState<RadarFilter>("all");
   const [radarQuery, setRadarQuery] = useState(initialRadarQuery);
   const [discoveryQuery, setDiscoveryQuery] = useState("");
+  const [selectedDiscoverySource, setSelectedDiscoverySource] =
+    useState<DiscoverySourceId>("siemens");
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("discovery");
   const [activePanel, setActivePanel] = useState<ActivePanel>("summary");
   const [jobsSourceFilter, setJobsSourceFilter] = useState("all");
@@ -197,6 +225,7 @@ export function ArgusWorkbench({
   const isControlPage = pageMode === "control";
   const isDashboardPage = pageMode === "dashboard";
   const isJobsPage = pageMode === "jobs";
+  const activeDiscoverySourceConfig = DISCOVERY_SOURCES[selectedDiscoverySource];
   const activeProfile = useMemo(
     () =>
       deriveCandidateProfile(profile, {
@@ -237,6 +266,7 @@ export function ArgusWorkbench({
         radarFilter?: RadarFilter;
         radarQuery?: string;
         discoveryQuery?: string;
+        selectedDiscoverySource?: DiscoverySourceId;
         workspaceMode?: WorkspaceMode;
         activePanel?: ActivePanel;
         jobsSourceFilter?: string;
@@ -266,6 +296,9 @@ export function ArgusWorkbench({
       if (parsedState.radarFilter) setRadarFilter(parsedState.radarFilter);
       if (parsedState.radarQuery) setRadarQuery(parsedState.radarQuery);
       if (parsedState.discoveryQuery) setDiscoveryQuery(parsedState.discoveryQuery);
+      if (parsedState.selectedDiscoverySource) {
+        setSelectedDiscoverySource(parsedState.selectedDiscoverySource);
+      }
       if (parsedState.workspaceMode) setWorkspaceMode(parsedState.workspaceMode);
       if (parsedState.activePanel) setActivePanel(parsedState.activePanel);
       if (parsedState.jobsSourceFilter) {
@@ -416,6 +449,7 @@ export function ArgusWorkbench({
         radarFilter,
         radarQuery,
         discoveryQuery,
+        selectedDiscoverySource,
         workspaceMode,
         activePanel,
         jobsSourceFilter,
@@ -440,6 +474,7 @@ export function ArgusWorkbench({
     radarFilter,
     radarQuery,
     discoveryQuery,
+    selectedDiscoverySource,
     workspaceMode,
     activePanel,
     jobsSourceFilter,
@@ -579,7 +614,8 @@ export function ArgusWorkbench({
         )
       : null;
   const activeSourceLabel =
-    activeTrackedJob?.intakeMode ?? (activeDiscovery ? "Siemens crawler" : "Input manual");
+    activeTrackedJob?.intakeMode ??
+    (activeDiscovery ? `${activeDiscovery.listing.source} crawler` : "Input manual");
   const matchMeterWidth = `${Math.max(10, Math.min(analysis.score, 100))}%`;
   const jobsPreviewMeterWidth = jobsPreviewAnalysis
     ? `${Math.max(10, Math.min(jobsPreviewAnalysis.score, 100))}%`
@@ -697,17 +733,14 @@ export function ArgusWorkbench({
     });
   }
 
-  async function handleRunSiemensDiscovery() {
+  async function handleRunSourceDiscovery() {
     setIsDiscovering(true);
     setDiscoveryError(null);
 
     try {
-      const response = await fetch(
-        "/api/sources/siemens/discover?limit=6&enrich=1",
-        {
-          cache: "no-store",
-        },
-      );
+      const response = await fetch(activeDiscoverySourceConfig.endpoint, {
+        cache: "no-store",
+      });
 
       const payload = (await response.json()) as {
         error?: string;
@@ -715,7 +748,9 @@ export function ArgusWorkbench({
       };
 
       if (!response.ok) {
-        throw new Error(payload.error ?? "Siemens discovery failed");
+        throw new Error(
+          payload.error ?? `${activeDiscoverySourceConfig.company} discovery failed`,
+        );
       }
 
       const nextDiscoveries = payload.jobs.map((listing) => {
@@ -755,7 +790,7 @@ export function ArgusWorkbench({
           .filter((job) => !seenIds.has(job.listing.externalId))
           .map((job) =>
             toTrackedJob(job.parsedJob, job.analysis, {
-              intakeMode: "Siemens crawler",
+              intakeMode: `${job.listing.source} crawler`,
               sourceUrl: job.listing.sourceUrl,
               externalId: job.listing.externalId,
               family: job.listing.family,
@@ -1030,7 +1065,7 @@ export function ArgusWorkbench({
               </span>
               <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-800 ring-1 ring-slate-300">
                 {activeDiscovery
-                  ? `Siemens Job ID ${activeDiscovery.listing.externalId}`
+                  ? `${activeDiscovery.listing.source} Job ID ${activeDiscovery.listing.externalId}`
                   : "Input manual"}
               </span>
               {activeTrackedJob ? (
@@ -2033,23 +2068,44 @@ export function ArgusWorkbench({
 
           {workspaceMode === "discovery" ? (
             <div className="mt-5 space-y-5">
+              <div className="flex flex-wrap gap-2">
+                {(Object.entries(DISCOVERY_SOURCES) as Array<
+                  [DiscoverySourceId, (typeof DISCOVERY_SOURCES)[DiscoverySourceId]]
+                >).map(([sourceId, sourceConfig]) => (
+                  <button
+                    key={sourceId}
+                    type="button"
+                    onClick={() => setSelectedDiscoverySource(sourceId)}
+                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                      selectedDiscoverySource === sourceId
+                        ? "bg-slate-950 text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)]"
+                        : "bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    {sourceConfig.company}
+                  </button>
+                ))}
+              </div>
+
               <div className="rounded-[28px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(14,165,233,0.72))] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                    Siemens Germany
+                    {activeDiscoverySourceConfig.label}
                   </p>
                   <p className="mt-2 text-sm leading-7 text-slate-300">
-                    Busca publica + enriquecimento do detalhe real da vaga.
+                    {activeDiscoverySourceConfig.description}
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={handleRunSiemensDiscovery}
+                  onClick={handleRunSourceDiscovery}
                   className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-300"
                   disabled={isDiscovering}
                 >
-                  {isDiscovering ? "Coletando..." : "Buscar vagas Siemens"}
+                  {isDiscovering
+                    ? "Coletando..."
+                    : activeDiscoverySourceConfig.buttonLabel}
                 </button>
               </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
