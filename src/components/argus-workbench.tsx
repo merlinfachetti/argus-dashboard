@@ -30,6 +30,7 @@ type ArgusWorkbenchProps = {
   pageMode?: "control" | "dashboard" | "jobs";
   initialRadarQuery?: string;
   initialActiveJobId?: string;
+  initialDiscoverySource?: DiscoverySourceId;
 };
 
 type DiscoveryPreview = {
@@ -184,6 +185,7 @@ export function ArgusWorkbench({
   pageMode = "control",
   initialRadarQuery = "",
   initialActiveJobId,
+  initialDiscoverySource,
 }: ArgusWorkbenchProps) {
   const initialState = buildInitialState(profile, initialJobDescription);
 
@@ -327,6 +329,12 @@ export function ArgusWorkbench({
       setRadarQuery(initialRadarQuery);
     }
   }, [initialRadarQuery]);
+
+  useEffect(() => {
+    if (initialDiscoverySource && DISCOVERY_SOURCES[initialDiscoverySource]) {
+      setSelectedDiscoverySource(initialDiscoverySource);
+    }
+  }, [initialDiscoverySource]);
 
   useEffect(() => {
     if (!initialActiveJobId) {

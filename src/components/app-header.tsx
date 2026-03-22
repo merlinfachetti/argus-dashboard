@@ -14,6 +14,7 @@ export function AppHeader() {
   const searchParams = useSearchParams();
   const currentQuery = searchParams.get("q") ?? "";
   const isJobsRoute = pathname === "/jobs" || pathname.startsWith("/jobs/");
+  const isSourcesRoute = pathname === "/sources";
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-900/75 bg-[rgba(5,12,25,0.88)] text-white backdrop-blur-2xl">
@@ -77,6 +78,9 @@ export function AppHeader() {
           </Link>
           <Link href="/jobs" className={navClass(isJobsRoute)}>
             Jobs
+          </Link>
+          <Link href="/sources" className={navClass(isSourcesRoute)}>
+            Sources
           </Link>
           </nav>
 

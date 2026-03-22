@@ -9,7 +9,7 @@ import {
 export default async function ControlCenterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ job?: string }>;
+  searchParams: Promise<{ job?: string; source?: "siemens" | "rheinmetall" }>;
 }) {
   const params = await searchParams;
 
@@ -53,6 +53,7 @@ export default async function ControlCenterPage({
         initialJobDescription={defaultJobDescription}
         pageMode="control"
         initialActiveJobId={params.job}
+        initialDiscoverySource={params.source}
       />
     </div>
   );
