@@ -2,6 +2,8 @@
 
 Argus is a private job radar focused on collecting, structuring and prioritizing opportunities that match Merlin Fachetti's profile.
 
+For the full V2 product documentation, current feature map, delivery expectations and next steps, see [`docs/product-v2.md`](docs/product-v2.md).
+
 ## Current scope
 
 - Profile bootstrapped from CV and LinkedIn data
@@ -9,8 +11,12 @@ Argus is a private job radar focused on collecting, structuring and prioritizing
 - Structured vacancy output with heuristics
 - Match score and risk summary against the candidate profile
 - Recruiter outreach draft generation
-- Initial dashboard for tracked opportunities
-- First batch of target career portals
+- Private authentication flow
+- Persisted radar with lifecycle history
+- Daily digest preview and automation routes
+- Multi-page product shell with `Jobs`, `Dashboard`, `Control Center`, `Sources`, `Digests` and `Ops`
+- Live discovery connectors for Siemens, Rheinmetall and BWI
+- Expanded catalog of target career portals
 
 ## Stack
 
