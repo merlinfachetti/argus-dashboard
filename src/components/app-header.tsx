@@ -15,6 +15,15 @@ export function AppHeader() {
   const currentQuery = searchParams.get("q") ?? "";
   const isJobsRoute = pathname === "/jobs" || pathname.startsWith("/jobs/");
   const isSourcesRoute = pathname === "/sources";
+  const isLoginRoute = pathname === "/login";
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+    });
+
+    window.location.href = "/login";
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-900/75 bg-[rgba(5,12,25,0.88)] text-white backdrop-blur-2xl">
@@ -42,60 +51,71 @@ export function AppHeader() {
             </div>
           </div>
 
-          <form
-            action="/jobs"
-            className="flex w-full max-w-3xl items-center gap-2 rounded-[26px] border border-white/10 bg-white/5 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
-          >
-            <input
-              key={`${pathname}-${currentQuery}`}
-              name="q"
-              defaultValue={currentQuery}
-              placeholder="Buscar vagas, empresas, local ou stack..."
-              className="h-11 w-full rounded-[18px] bg-transparent px-4 text-sm text-white outline-none placeholder:text-slate-400"
-            />
-            <button
-              type="submit"
-              className="inline-flex h-11 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#38bdf8,#f97316)] px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+          {!isLoginRoute ? (
+            <form
+              action="/jobs"
+              className="flex w-full max-w-3xl items-center gap-2 rounded-[26px] border border-white/10 bg-white/5 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
             >
-              Buscar
-            </button>
-          </form>
+              <input
+                key={`${pathname}-${currentQuery}`}
+                name="q"
+                defaultValue={currentQuery}
+                placeholder="Buscar vagas, empresas, local ou stack..."
+                className="h-11 w-full rounded-[18px] bg-transparent px-4 text-sm text-white outline-none placeholder:text-slate-400"
+              />
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#38bdf8,#f97316)] px-5 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+              >
+                Buscar
+              </button>
+            </form>
+          ) : null}
         </div>
 
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <nav className="flex flex-wrap items-center gap-2">
-          <Link href="/" className={navClass(pathname === "/")}>
-            Home
-          </Link>
-          <Link
-            href="/control-center"
-            className={navClass(pathname === "/control-center")}
-          >
-            Control Center
-          </Link>
-          <Link href="/dashboard" className={navClass(pathname === "/dashboard")}>
-            Dashboard
-          </Link>
-          <Link href="/jobs" className={navClass(isJobsRoute)}>
-            Jobs
-          </Link>
-          <Link href="/sources" className={navClass(isSourcesRoute)}>
-            Sources
-          </Link>
-          </nav>
+        {!isLoginRoute ? (
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <nav className="flex flex-wrap items-center gap-2">
+            <Link href="/" className={navClass(pathname === "/")}>
+              Home
+            </Link>
+            <Link
+              href="/control-center"
+              className={navClass(pathname === "/control-center")}
+            >
+              Control Center
+            </Link>
+            <Link href="/dashboard" className={navClass(pathname === "/dashboard")}>
+              Dashboard
+            </Link>
+            <Link href="/jobs" className={navClass(isJobsRoute)}>
+              Jobs
+            </Link>
+            <Link href="/sources" className={navClass(isSourcesRoute)}>
+              Sources
+            </Link>
+            </nav>
 
-          <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">
-              Daily radar
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">
-              Match engine
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">
-              Recruiter draft
-            </span>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">
+                Daily radar
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">
+                Match engine
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2">
+                Recruiter draft
+              </span>
+              <button
+                type="button"
+                onClick={() => void handleLogout()}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-slate-100 transition hover:border-white/20 hover:bg-white/10"
+              >
+                Logout
+              </button>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </header>
   );

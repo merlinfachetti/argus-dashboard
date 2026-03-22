@@ -28,6 +28,15 @@ npm install
 npm run dev
 ```
 
+Copy `.env.example` to `.env.local` and set:
+
+- `DATABASE_URL`
+- `DIRECT_URL`
+- `ARGUS_ACCESS_PASSWORD`
+- `ARGUS_SESSION_SECRET`
+
+If `ARGUS_ACCESS_PASSWORD` and `ARGUS_SESSION_SECRET` are defined, the app is protected by private login at `/login`.
+
 ## CI pipeline
 
 The GitHub workflow runs:
@@ -36,10 +45,24 @@ The GitHub workflow runs:
 - `npm run lint`
 - `npm run build`
 
+## Database deployment
+
+Generate and validate Prisma locally:
+
+```bash
+npm run prisma:generate
+npm run prisma:validate
+```
+
+When a production database is configured, deploy migrations with:
+
+```bash
+npm run prisma:migrate:deploy
+```
+
 ## Next implementation steps
 
-- Persist jobs and profile data in PostgreSQL
-- Add authenticated private dashboard
+- Finish production database provisioning and apply migrations
 - Add crawler orchestration and scheduled processing
 - Generate morning email digest
 - Connect Vercel previews and production deployment
