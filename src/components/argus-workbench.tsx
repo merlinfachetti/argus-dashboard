@@ -1207,8 +1207,31 @@ export function ArgusWorkbench({
       detail:
         activeTrackedJob?.intakeMode ??
         (activeDiscovery ? "Discovery live" : "Input manual"),
-    },
+      },
   ];
+  const controlLiveSources = sources.filter((source) =>
+    /live/i.test(source.status),
+  ).length;
+  const controlDocumentStatus =
+    profileSyncState === "error"
+      ? "Ajustar sync"
+      : profileSyncState === "offline"
+        ? "Modo local"
+        : profileSyncState === "syncing"
+          ? "Sincronizando"
+          : "Documentos prontos";
+  const controlDocumentStatusTone =
+    profileSyncState === "error"
+      ? "text-rose-500"
+      : profileSyncState === "offline"
+        ? "text-amber-500"
+        : profileSyncState === "syncing"
+          ? "text-sky-500"
+          : "text-emerald-600";
+  const controlSourceFocus =
+    workspaceMode === "discovery"
+      ? activeDiscoverySourceConfig.company
+      : "Manual intake";
   const comparisonJobs = [...filteredTrackedJobs]
     .sort((left, right) => right.score - left.score)
     .slice(0, 3);
@@ -1326,6 +1349,78 @@ export function ArgusWorkbench({
           <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-current align-middle opacity-80" />
           <span className="font-semibold">Persistencia do radar:</span> {syncMessage}
         </div>
+
+        {isControlPage ? (
+          <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+            <div className="rounded-[36px] border border-slate-900/85 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_42%,rgba(14,165,233,0.74))] p-6 text-white shadow-[0_28px_80px_rgba(15,23,42,0.18)]">
+              <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+                Control command
+              </p>
+              <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-4xl font-semibold">{analysis.score}%</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-300">
+                    vaga ativa com contexto, mensagem e proximo passo prontos para execucao.
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Focus mode
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-white">
+                      {controlSourceFocus}
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Next move
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-white">
+                      {activeNextAction}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  Match state
+                </p>
+                <p className="mt-3 text-3xl font-semibold text-slate-950">
+                  {analysis.verdict}
+                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-500">
+                  leitura da vaga ativa agora.
+                </p>
+              </div>
+              <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(240,249,255,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  Live sources
+                </p>
+                <p className="mt-3 text-3xl font-semibold text-slate-950">
+                  {controlLiveSources}
+                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-500">
+                  fontes com discovery real no radar.
+                </p>
+              </div>
+              <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(255,248,240,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  Docs state
+                </p>
+                <p className={`mt-3 text-3xl font-semibold ${controlDocumentStatusTone}`}>
+                  {controlDocumentStatus}
+                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-500">
+                  CV e cover letter influenciando o match.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         {!isDashboardPage ? (
           <div className="rounded-[40px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,248,243,0.9))] p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
@@ -2825,6 +2920,41 @@ export function ArgusWorkbench({
 
       {isControlPage ? (
         <aside className="space-y-6 xl:sticky xl:top-28">
+        <div className="rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(240,249,255,0.9))] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+          <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
+            Workspace mode
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-[24px] border border-slate-200 bg-white/92 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                Source focus
+              </p>
+              <p className="mt-2 text-base font-semibold text-slate-950">
+                {controlSourceFocus}
+              </p>
+            </div>
+            <div className="rounded-[24px] border border-slate-200 bg-white/92 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                Radar sync
+              </p>
+              <p className="mt-2 text-base font-semibold text-slate-950">
+                {syncState === "connected"
+                  ? "Conectado"
+                  : syncState === "checking"
+                    ? "Conectando"
+                    : "Fallback local"}
+              </p>
+            </div>
+            <div className="rounded-[24px] border border-slate-200 bg-white/92 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                Active status
+              </p>
+              <p className="mt-2 text-base font-semibold text-slate-950">
+                {activeTrackedJob?.status ?? "Nova leitura"}
+              </p>
+            </div>
+          </div>
+        </div>
         <div
           id="profile"
           className="rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(239,246,255,0.9))] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"
@@ -2907,6 +3037,32 @@ export function ArgusWorkbench({
                     </p>
                     <p className="mt-2 text-sm text-slate-200">
                       Escolher rapido o que merece virar vaga ativa.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Foco atual
+                    </p>
+                    <p className="mt-2 text-sm text-white">
+                      {activeDiscoverySourceConfig.company}
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Descobertas
+                    </p>
+                    <p className="mt-2 text-sm text-white">
+                      {filteredDiscoveredJobs.length} visiveis
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Prioridade
+                    </p>
+                    <p className="mt-2 text-sm text-white">
+                      escolher a melhor vaga para o cockpit
                     </p>
                   </div>
                 </div>
@@ -3046,6 +3202,14 @@ export function ArgusWorkbench({
                     </p>
                   </div>
                 </div>
+                <div className="mt-4 rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Intake command
+                  </p>
+                  <p className="mt-2 text-sm text-white">
+                    Ideal para portais fechados, JDs enviados por recruiter ou qualquer texto cru que precise virar item operacional.
+                  </p>
+                </div>
               </div>
 
               <textarea
@@ -3070,6 +3234,30 @@ export function ArgusWorkbench({
           </p>
 
           <div className="mt-5 grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-[24px] border border-slate-200 bg-white/92 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  Profile sync
+                </p>
+                <p className={`mt-2 text-base font-semibold ${controlDocumentStatusTone}`}>
+                  {controlDocumentStatus}
+                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-500">
+                  {profileSyncMessage}
+                </p>
+              </div>
+              <div className="rounded-[24px] border border-slate-200 bg-white/92 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  Source coverage
+                </p>
+                <p className="mt-2 text-base font-semibold text-slate-950">
+                  {controlLiveSources} live · {sources.length} catalogadas
+                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-500">
+                  inventario pronto para discovery real e fallback manual.
+                </p>
+              </div>
+            </div>
             <div className="rounded-[24px] border border-slate-200 bg-white/90 px-4 py-4 shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
                 Headline
@@ -3117,17 +3305,7 @@ export function ArgusWorkbench({
               <p className="text-sm leading-7 text-slate-500">
                 Atualize seu CV e cover letter aqui. O Argus recalcula o match e a mensagem com base nessas mudanças.
               </p>
-              <p
-                className={`text-xs font-semibold uppercase tracking-[0.22em] ${
-                  profileSyncState === "error"
-                    ? "text-rose-500"
-                    : profileSyncState === "offline"
-                      ? "text-amber-500"
-                      : profileSyncState === "syncing"
-                        ? "text-sky-500"
-                        : "text-emerald-600"
-                }`}
-              >
+              <p className={`text-xs font-semibold uppercase tracking-[0.22em] ${controlDocumentStatusTone}`}>
                 {profileSyncMessage}
               </p>
             </div>
@@ -3159,7 +3337,16 @@ export function ArgusWorkbench({
             </div>
           </div>
 
-          <div className="mt-6 space-y-3">
+          <div className="mt-6">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+                Coverage map
+              </p>
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 ring-1 ring-slate-200">
+                {controlLiveSources} live
+              </span>
+            </div>
+            <div className="space-y-3">
             {sources.map((source) => (
               <article
                 key={source.company}
@@ -3180,6 +3367,7 @@ export function ArgusWorkbench({
                 </div>
               </article>
             ))}
+            </div>
           </div>
         </div>
         </aside>
