@@ -1240,6 +1240,20 @@ export function ArgusWorkbench({
   const jobsPreviewLastTouch = jobsPreviewJob
     ? trackedJobLastTouch(jobsPreviewJob)
     : "Selecione uma vaga";
+  const dashboardInterviewCount = trackedJobs.filter(
+    (job) => job.status === "Entrevista",
+  ).length;
+  const dashboardExecutionCount = trackedJobs.filter((job) =>
+    ["Aplicar", "Aplicada"].includes(job.status),
+  ).length;
+  const dashboardReviewCount = trackedJobs.filter((job) =>
+    ["Pronta para revisar", "Requer triagem"].includes(job.status),
+  ).length;
+  const dashboardFreshCount = trackedJobs.filter((job) => job.status === "Nova").length;
+  const dashboardLiveCount = trackedJobs.filter((job) =>
+    job.intakeMode.toLowerCase().includes("crawler"),
+  ).length;
+  const dashboardTopOpportunity = comparisonJobs[0] ?? null;
 
   return (
     <div
@@ -1845,6 +1859,89 @@ export function ArgusWorkbench({
             </div>
           ) : null}
 
+          {isDashboardPage ? (
+            <div className="mt-6 grid gap-4 xl:grid-cols-[1.04fr_0.96fr]">
+              <div className="rounded-[34px] border border-slate-900/85 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_45%,rgba(14,165,233,0.74))] p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
+                <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+                  Executive command
+                </p>
+                <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <p className="text-4xl font-semibold">{totalOpportunities}</p>
+                    <p className="mt-2 text-sm leading-7 text-slate-300">
+                      itens no pipeline com leitura de prioridade, estagio e acao seguinte.
+                    </p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        Review load
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-white">
+                        {dashboardReviewCount}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        In execution
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-white">
+                        {dashboardExecutionCount}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(240,249,255,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Pipeline quente
+                  </p>
+                  <p className="mt-3 text-3xl font-semibold text-slate-950">
+                    {dashboardInterviewCount}
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-500">
+                    vagas ja em entrevista ou muito proximas da parte mais critica.
+                  </p>
+                </div>
+                <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(255,248,240,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Discovery live
+                  </p>
+                  <p className="mt-3 text-3xl font-semibold text-slate-950">
+                    {dashboardLiveCount}
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-500">
+                    oportunidades vindas de fontes reais ja conectadas ao radar.
+                  </p>
+                </div>
+                <div className="rounded-[30px] border border-slate-200 bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Fresh intake
+                  </p>
+                  <p className="mt-3 text-3xl font-semibold text-slate-950">
+                    {dashboardFreshCount}
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-500">
+                    itens novos ainda aguardando decisao e triagem inicial.
+                  </p>
+                </div>
+                <div className="rounded-[30px] border border-slate-200 bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Priority queue
+                  </p>
+                  <p className="mt-3 text-3xl font-semibold text-slate-950">
+                    {priorityJobs}
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-500">
+                    itens que ja merecem atencao nas proximas horas.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <div className="mt-6 flex flex-wrap gap-2">
             {[
               { id: "all", label: `Todas (${totalOpportunities})` },
@@ -2262,11 +2359,11 @@ export function ArgusWorkbench({
           ) : null}
 
           {isDashboardPage ? (
-            <div className="mt-6 grid gap-4 xl:grid-cols-5">
+            <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {dashboardLanes.map((lane) => (
               <section
                 key={lane.status}
-                className={`rounded-[32px] border p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05)] ${laneTone(
+                className={`rounded-[34px] border p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)] ${laneTone(
                   lane.status,
                 )}`}
               >
@@ -2300,7 +2397,7 @@ export function ArgusWorkbench({
                     lane.jobs.map((job) => (
                       <article
                         key={`${lane.status}-${job.id}`}
-                        className="rounded-[24px] bg-white/92 p-4 ring-1 ring-slate-200 shadow-[0_14px_30px_rgba(15,23,42,0.04)]"
+                        className="rounded-[26px] bg-white/92 p-4 ring-1 ring-slate-200 shadow-[0_14px_30px_rgba(15,23,42,0.04)]"
                       >
                         <button
                           type="button"
@@ -2313,7 +2410,16 @@ export function ArgusWorkbench({
                           <p className="mt-1 text-xs leading-6 text-slate-500">
                             {job.company} · {job.location}
                           </p>
+                          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                            ultimo toque {trackedJobLastTouch(job)}
+                          </p>
                         </button>
+                        <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-full rounded-full bg-sky-500"
+                            style={{ width: `${Math.max(8, Math.min(job.score, 100))}%` }}
+                          />
+                        </div>
                         <div className="mt-3 flex items-center justify-between gap-2">
                           <span
                             className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${badgeTone(
@@ -2341,10 +2447,13 @@ export function ArgusWorkbench({
                             ) : null}
                           </div>
                         </div>
+                        <div className="mt-3 rounded-[22px] bg-slate-50/90 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
+                          {nextActionLabel(job.score, job.status)}
+                        </div>
                       </article>
                     ))
                   ) : (
-                    <div className="rounded-[24px] border border-dashed border-slate-300 bg-white/75 px-4 py-5 text-sm text-slate-500">
+                    <div className="rounded-[26px] border border-dashed border-slate-300 bg-white/75 px-4 py-5 text-sm text-slate-500">
                       Nenhuma vaga nesta etapa.
                     </div>
                   )}
@@ -2355,22 +2464,54 @@ export function ArgusWorkbench({
           ) : null}
 
           {isDashboardPage ? (
-            <div className="mt-6 grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
-            <div className="rounded-[32px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(14,165,233,0.72))] p-5 text-white shadow-[0_22px_60px_rgba(15,23,42,0.16)]">
+            <div className="mt-6 grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
+            <div className="rounded-[34px] border border-slate-900/80 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_45%,rgba(14,165,233,0.68))] p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
               <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                Comparativo rapido
+                Priority board
               </p>
               <p className="mt-3 text-sm leading-7 text-slate-300">
-                Leitura horizontal das melhores vagas do radar para decidir qual
-                merece virar foco agora.
+                Leitura horizontal das melhores vagas do radar para decidir qual merece virar foco agora.
               </p>
+              <div className="mt-5 grid gap-3">
+                <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Melhor oportunidade
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-white">
+                    {dashboardTopOpportunity?.title ?? "Ainda sem prioridade dominante"}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-300">
+                    {dashboardTopOpportunity
+                      ? `${dashboardTopOpportunity.company} · ${dashboardTopOpportunity.location}`
+                      : "Adicione mais vagas para o board montar a leitura executiva."}
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Melhor match
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold text-white">
+                      {comparisonJobs[0]?.score ?? 0}%
+                    </p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      Em entrevista
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold text-white">
+                      {dashboardInterviewCount}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               {comparisonJobs.length > 0 ? (
                 comparisonJobs.map((job) => (
                   <article
                     key={`compare-${job.id}`}
-                    className={`rounded-[30px] border p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)] transition ${
+                    className={`rounded-[32px] border p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)] transition ${
                       activeTrackedJobId === job.id
                         ? "border-sky-300 bg-sky-50/80 shadow-[0_18px_40px_rgba(14,165,233,0.12)]"
                         : "border-slate-200 bg-white/88"
@@ -2409,6 +2550,17 @@ export function ArgusWorkbench({
                       >
                         {job.status}
                       </span>
+                    </div>
+                    <div className="mt-4 rounded-[24px] bg-slate-50/80 px-4 py-4 ring-1 ring-slate-200">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        Proxima acao
+                      </p>
+                      <p className="mt-2 text-sm leading-7 text-slate-600">
+                        {nextActionLabel(job.score, job.status)}
+                      </p>
+                      <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        ultimo toque {trackedJobLastTouch(job)}
+                      </p>
                     </div>
                   </article>
                 ))
