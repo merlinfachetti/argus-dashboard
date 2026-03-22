@@ -269,6 +269,10 @@ export function ArgusWorkbench({
   const [syncMessage, setSyncMessage] = useState(
     "Conectando radar persistente...",
   );
+  // true após o primeiro fetch do radar terminar (independente do resultado)
+  const [radarLoaded, setRadarLoaded] = useState(false);
+  // true se o radar foi carregado E tem vagas reais (não o estado inicial)
+  const [hasRealJobs, setHasRealJobs] = useState(false);
   const [cvText, setCvText] = useState(profile.cvText);
   const [coverLetterText, setCoverLetterText] = useState(profile.coverLetterText);
   const [profileSyncState, setProfileSyncState] =
@@ -530,13 +534,16 @@ export function ArgusWorkbench({
         if (!response.ok || !payload.available) {
           setSyncState("offline");
           setSyncMessage(payload.reason ?? "Banco ainda nao configurado");
+          setRadarLoaded(true);
           return;
         }
 
         setSyncState("connected");
-        setSyncMessage("Radar persistente conectado");
+        setSyncMessage("Radar conectado — pronto para uso");
+        setRadarLoaded(true);
 
         if (payload.jobs.length > 0) {
+          setHasRealJobs(true);
           const nextActiveJob = payload.jobs[0];
           const nextParsedJob: ParsedJob = {
             title: nextActiveJob.title,
@@ -568,6 +575,10 @@ export function ArgusWorkbench({
 
         setSyncState("error");
         setSyncMessage("Falha ao carregar estado persistido do radar");
+      } finally {
+        if (isMounted) {
+          setRadarLoaded(true);
+        }
       }
     }
 
@@ -938,6 +949,7 @@ export function ArgusWorkbench({
       setActiveDiscoveryId(null);
       setWorkspaceMode("manual");
       setActivePanel("summary");
+      setHasRealJobs(true);
       void persistTrackedJob(nextTrackedJob, jobDescription);
     });
   }
@@ -992,6 +1004,7 @@ export function ArgusWorkbench({
       }
       setWorkspaceMode("discovery");
       setActivePanel("summary");
+      setHasRealJobs(true);
       const jobsToPersist: TrackedJob[] = [];
       setTrackedJobs((currentJobs) => {
         const seenIds = new Set(currentJobs.map((job) => job.id));
@@ -1337,14 +1350,30 @@ export function ArgusWorkbench({
                     <p className="text-[13px] font-semibold text-slate-600">
                       {radarFilter !== "all" || jobsSeniorityFilter !== "all"
                         ? "Nenhuma vaga para esses filtros"
-                        : "Radar vazio — adicione vagas pelo Control Center"}
+                        : "Radar vazio"}
                     </p>
                     <p className="mt-1 text-[12px] text-slate-400">
                       {radarFilter !== "all" || jobsSeniorityFilter !== "all"
-                        ? "Tente remover alguns filtros para ver mais resultados."
-                        : "Use o intake manual ou dispare um discovery de fonte real."}
+                        ? "Tente remover os filtros ou reset para ver todos os resultados."
+                        : "Adicione vagas pelo Control Center para começar o radar."}
                     </p>
                   </div>
+                  {radarFilter !== "all" || jobsSeniorityFilter !== "all" ? (
+                    <button
+                      type="button"
+                      onClick={() => { setRadarFilter("all"); setJobsSeniorityFilter("all"); }}
+                      className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Limpar filtros
+                    </button>
+                  ) : (
+                    <Link
+                      href="/control-center"
+                      className="rounded-full bg-slate-950 px-4 py-1.5 text-[12px] font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      Ir para Control Center
+                    </Link>
+                  )}
                 </div>
               ) : (
                 jobsFilteredTrackedJobs.map((job) => (
@@ -1482,8 +1511,22 @@ export function ArgusWorkbench({
               )}
             </div>
           ) : (
-            <div className="flex items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50/60 p-8 text-[13px] text-slate-400">
-              Selecione uma vaga para ver o preview
+            <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/60 p-7 text-center">
+              <p className="text-[13px] font-medium text-slate-500">
+                {jobsFilteredTrackedJobs.length === 0
+                  ? "Nenhuma vaga no radar"
+                  : "Selecione uma vaga para ver o preview"}
+              </p>
+              {jobsFilteredTrackedJobs.length === 0 && (
+                <div className="mt-4 flex justify-center gap-2">
+                  <Link
+                    href="/control-center"
+                    className="rounded-full bg-slate-950 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    Adicionar vaga
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1493,6 +1536,34 @@ export function ArgusWorkbench({
 
   // ─── DASHBOARD MODE ───────────────────────────────────────────────────────────
   if (isDashboardPage) {
+    // Dashboard sem vagas reais — mostrar CTA de onboarding
+    if (!hasRealJobs && trackedJobs.length <= 1 && radarLoaded) {
+      return (
+        <div className="space-y-5">
+          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium ${syncPill}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${syncDot}`} />
+            {syncMessage}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="col-span-full rounded-[24px] border border-dashed border-slate-200 bg-white p-8 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-xl">
+                ◎
+              </div>
+              <p className="mt-4 text-[15px] font-semibold text-slate-900">Pipeline vazio</p>
+              <p className="mt-1.5 text-[13px] text-slate-500">
+                Adicione vagas pelo Control Center para ver o funil, gargalos e prioridades aqui.
+              </p>
+              <div className="mt-5 flex justify-center gap-2.5">
+                <Link href="/control-center" className="rounded-full bg-slate-950 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-slate-800">
+                  Ir para Control Center
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-5">
         {/* Sync */}
@@ -1639,6 +1710,228 @@ export function ArgusWorkbench({
   }
 
   // ─── CONTROL CENTER MODE ──────────────────────────────────────────────────────
+
+  // Welcome screen — radar ainda carregando ou sem vagas reais
+  if (!radarLoaded || (!hasRealJobs && trackedJobs.length <= 1 && syncState !== "checking")) {
+    return (
+      <div className="grid items-start gap-5 xl:grid-cols-[1fr_360px]">
+        {/* Welcome / onboarding */}
+        <div className="space-y-4">
+          {/* Status bar */}
+          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium ${syncPill}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${syncDot}`} />
+            {!radarLoaded ? "Conectando ao radar..." : syncMessage}
+          </div>
+
+          {!radarLoaded ? (
+            /* Loading state */
+            <div className="flex items-center justify-center rounded-[28px] border border-slate-200/60 bg-white py-20">
+              <div className="text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-sky-200 bg-sky-50">
+                  <span className="text-xl">◎</span>
+                </div>
+                <p className="mt-4 text-[14px] font-semibold text-slate-700">Carregando radar...</p>
+                <p className="mt-1 text-[12px] text-slate-400">Verificando vagas persistidas</p>
+              </div>
+            </div>
+          ) : (
+            /* Empty state — radar carregado mas sem vagas */
+            <div className="overflow-hidden rounded-[28px] border border-slate-200/60 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
+              {/* Header */}
+              <div className="border-b border-slate-100 px-7 py-6">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  Control Center
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                  Radar vazio — adicione a primeira vaga
+                </h2>
+                <p className="mt-2 text-[13px] leading-6 text-slate-500">
+                  Use discovery real para puxar vagas dos portais conectados, ou cole um JD manualmente para começar.
+                </p>
+              </div>
+
+              {/* Two action paths */}
+              <div className="grid gap-0 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceMode("discovery")}
+                  className="group flex flex-col gap-3 border-r border-slate-100 p-6 text-left transition hover:bg-slate-50"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-600 transition group-hover:border-sky-300 group-hover:bg-sky-100">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-semibold text-slate-950">Discovery real</p>
+                    <p className="mt-1 text-[12px] leading-5 text-slate-500">
+                      Puxe vagas diretamente dos portais Siemens, Rheinmetall e BWI com um clique.
+                    </p>
+                  </div>
+                  <span className="text-[12px] font-semibold text-sky-600 transition group-hover:translate-x-0.5">
+                    Iniciar discovery →
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceMode("manual")}
+                  className="group flex flex-col gap-3 p-6 text-left transition hover:bg-slate-50"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition group-hover:border-slate-300 group-hover:bg-slate-100">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-semibold text-slate-950">Intake manual</p>
+                    <p className="mt-1 text-[12px] leading-5 text-slate-500">
+                      Cole qualquer JD — mesmo desorganizado. O Argus estrutura, calcula match e salva no radar.
+                    </p>
+                  </div>
+                  <span className="text-[12px] font-semibold text-slate-600 transition group-hover:translate-x-0.5">
+                    Colar JD →
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Intake area — sempre visível no welcome state */}
+          {radarLoaded && (
+            <div className="overflow-hidden rounded-[24px] border border-slate-200/60 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
+              <div className="flex border-b border-slate-100">
+                {(["discovery", "manual"] as WorkspaceMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setWorkspaceMode(mode)}
+                    className={[
+                      "flex-1 py-3 text-[12px] font-semibold transition",
+                      workspaceMode === mode
+                        ? "border-b-2 border-sky-500 text-sky-700"
+                        : "text-slate-500 hover:text-slate-700",
+                    ].join(" ")}
+                  >
+                    {mode === "discovery" ? "Discovery real" : "Intake manual"}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-5">
+                {workspaceMode === "discovery" ? (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      {(Object.entries(DISCOVERY_SOURCES) as [DiscoverySourceId, (typeof DISCOVERY_SOURCES)[DiscoverySourceId]][]).map(([id, src]) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => setSelectedDiscoverySource(id)}
+                          className={[
+                            "rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
+                            selectedDiscoverySource === id
+                              ? "border-slate-800 bg-slate-950 text-white"
+                              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                          ].join(" ")}
+                        >
+                          {src.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[12px] leading-5 text-slate-500">
+                      {activeDiscoverySourceConfig.description}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void handleRunSourceDiscovery()}
+                      disabled={isDiscovering}
+                      className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                    >
+                      {isDiscovering ? "Buscando..." : activeDiscoverySourceConfig.buttonLabel}
+                    </button>
+                    {discoveryError && (
+                      <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-[12px] text-rose-700">
+                        {discoveryError}
+                      </p>
+                    )}
+                    {filteredDiscoveredJobs.length > 0 && (
+                      <div className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
+                        {filteredDiscoveredJobs.map((job) => (
+                          <button
+                            key={job.listing.externalId}
+                            type="button"
+                            onClick={() => handleInspectDiscovery(job)}
+                            className={[
+                              "flex w-full items-center gap-3 px-4 py-3 text-left transition",
+                              activeDiscoveryId === job.listing.externalId ? "bg-sky-50" : "hover:bg-slate-50",
+                            ].join(" ")}
+                          >
+                            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ${badgeTone(job.analysis.score)}`}>
+                              {job.analysis.score}%
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-[13px] font-semibold text-slate-950">{job.listing.title}</p>
+                              <p className="text-[11px] text-slate-500">{job.listing.location}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-[12px] text-slate-500">
+                      Cole o texto da vaga (mesmo desorganizado). O Argus estrutura, calcula match e salva no radar.
+                    </p>
+                    <textarea
+                      value={jobDescription}
+                      onChange={(e) => setJobDescription(e.target.value)}
+                      className="min-h-[200px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[13px] leading-6 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
+                      placeholder="Cole aqui a vaga inteira, mesmo desorganizada."
+                    />
+                    <button
+                      type="button"
+                      onClick={handleProcessDescription}
+                      disabled={isPending}
+                      className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                    >
+                      {isPending ? "Processando..." : "Estruturar vaga"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar mínima no welcome state */}
+        <aside className="sticky top-[68px] space-y-4">
+          <div className="rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Perfil ativo</p>
+            <p className="mt-2 text-[14px] font-semibold text-slate-950">{activeProfile.name}</p>
+            <p className="mt-1 text-[12px] text-slate-500">{activeProfile.location} · {activeProfile.availability}</p>
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {activeProfile.coreStack.slice(0, 5).map((s) => (
+                <span key={s} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600">{s}</span>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Sources live</p>
+            <div className="mt-3 space-y-2">
+              {sources.filter((s) => /live/i.test(s.status)).map((s) => (
+                <div key={s.company} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                  <p className="text-[12px] font-medium text-slate-700">{s.company}</p>
+                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">live</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+      </div>
+    );
+  }
+
   return (
     <div className="grid items-start gap-5 xl:grid-cols-[1fr_360px]">
       {/* ── Main column ─────────────────────────────────────────────────────── */}
@@ -1759,20 +2052,35 @@ export function ArgusWorkbench({
         </div>
 
         {/* Panel tabs */}
-        <div className="flex gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
-          {(["summary", "match", "message", "history"] as ActivePanel[]).map((panel) => (
+        <div className="flex gap-1 rounded-2xl border border-slate-200 bg-slate-100/60 p-1">
+          {([
+            { id: "summary", label: "Resumo", hint: parsedJob.title ? "✓" : "" },
+            { id: "match", label: "Match", hint: `${analysis.score}%` },
+            { id: "message", label: "Mensagem", hint: recruiterMessage ? "✓" : "" },
+            { id: "history", label: "Histórico", hint: activeTrackedJob?.history.length ? `${activeTrackedJob.history.length}` : "" },
+          ] as { id: ActivePanel; label: string; hint: string }[]).map((panel) => (
             <button
-              key={panel}
+              key={panel.id}
               type="button"
-              onClick={() => setActivePanel(panel)}
+              onClick={() => setActivePanel(panel.id)}
               className={[
-                "flex-1 rounded-full py-2 text-[12px] font-semibold transition",
-                activePanel === panel
-                  ? "bg-white text-slate-950 shadow-[0_2px_8px_rgba(15,23,42,0.10)]"
+                "flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-[12px] font-semibold transition",
+                activePanel === panel.id
+                  ? "bg-white text-slate-950 shadow-[0_2px_8px_rgba(15,23,42,0.08)]"
                   : "text-slate-500 hover:text-slate-700",
               ].join(" ")}
             >
-              {panel === "summary" ? "Resumo" : panel === "match" ? "Match" : panel === "message" ? "Mensagem" : "Histórico"}
+              {panel.label}
+              {panel.hint && (
+                <span className={[
+                  "rounded-full px-1.5 py-0.5 text-[9px] font-bold",
+                  activePanel === panel.id
+                    ? "bg-sky-100 text-sky-700"
+                    : "bg-slate-200 text-slate-500",
+                ].join(" ")}>
+                  {panel.hint}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -2027,9 +2335,20 @@ export function ArgusWorkbench({
           </div>
           <div className="max-h-[320px] divide-y divide-slate-100 overflow-y-auto">
             {filteredTrackedJobs.length === 0 ? (
-              <p className="px-4 py-6 text-center text-[12px] text-slate-300">
-                Nenhuma vaga no radar.
-              </p>
+              <div className="flex flex-col items-center gap-2 px-4 py-6 text-center">
+                <p className="text-[12px] text-slate-400">
+                  {radarFilter === "priority" ? "Nenhuma vaga com score ≥ 70%" : "Radar vazio"}
+                </p>
+                {radarFilter === "priority" && (
+                  <button
+                    type="button"
+                    onClick={() => setRadarFilter("all")}
+                    className="text-[11px] font-semibold text-sky-600 hover:text-sky-500"
+                  >
+                    Ver todas
+                  </button>
+                )}
+              </div>
             ) : (
               filteredTrackedJobs.map((job) => (
                 <button
@@ -2038,7 +2357,9 @@ export function ArgusWorkbench({
                   onClick={() => handleInspectTrackedJob(job)}
                   className={[
                     "flex w-full items-center gap-3 px-4 py-3 text-left transition",
-                    activeTrackedJobId === job.id ? "bg-sky-50" : "hover:bg-slate-50",
+                    activeTrackedJobId === job.id
+                      ? "bg-sky-50 shadow-[inset_3px_0_0_#38bdf8]"
+                      : "hover:bg-slate-50",
                   ].join(" ")}
                 >
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${badgeTone(job.score)}`}>
