@@ -152,11 +152,6 @@ function badgeTone(score: number) {
   return "bg-rose-50 text-rose-700 ring-rose-200";
 }
 
-function modeButtonClass(active: boolean) {
-  return active
-    ? "bg-slate-950 text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)]"
-    : "bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50";
-}
 
 function statusTone(status: string) {
   if (status === "Aplicada" || status === "Entrevista") {
@@ -286,7 +281,6 @@ export function ArgusWorkbench({
   const [remoteProfileChecked, setRemoteProfileChecked] = useState(false);
   const [lastSyncedDocuments, setLastSyncedDocuments] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const isControlPage = pageMode === "control";
   const isDashboardPage = pageMode === "dashboard";
   const isJobsPage = pageMode === "jobs";
   const activeDiscoverySourceConfig = DISCOVERY_SOURCES[selectedDiscoverySource];
@@ -742,14 +736,7 @@ export function ArgusWorkbench({
     );
   }, [activeProfile, parsedJob]);
 
-  const totalOpportunities = trackedJobs.length;
   const priorityJobs = trackedJobs.filter((job) => job.score >= 70).length;
-  const crawlerJobs = trackedJobs.filter((job) =>
-    job.intakeMode.toLowerCase().includes("crawler"),
-  ).length;
-  const manualJobs = trackedJobs.filter((job) =>
-    job.intakeMode.toLowerCase().includes("manual"),
-  ).length;
   const filteredTrackedJobs = trackedJobs.filter((job) => {
     const matchesQuery =
       radarQuery.trim().length === 0 ||
@@ -842,9 +829,6 @@ export function ArgusWorkbench({
     activeTrackedJob?.intakeMode ??
     (activeDiscovery ? `${activeDiscovery.listing.source} crawler` : "Input manual");
   const matchMeterWidth = `${Math.max(10, Math.min(analysis.score, 100))}%`;
-  const jobsPreviewMeterWidth = jobsPreviewAnalysis
-    ? `${Math.max(10, Math.min(jobsPreviewAnalysis.score, 100))}%`
-    : "0%";
 
   function mergePersistedJob(nextJob: TrackedJob) {
     setTrackedJobs((currentJobs) => {
@@ -1135,38 +1119,6 @@ export function ArgusWorkbench({
     }
   }
 
-  const activeSnapshot = activeTrackedJob
-    ? [
-        {
-          label: "Origem",
-          value: activeTrackedJob.intakeMode,
-        },
-        {
-          label: "Status atual",
-          value: activeTrackedJob.status,
-        },
-        {
-          label: "Veredito",
-          value: `${activeTrackedJob.verdict} · ${activeTrackedJob.score}%`,
-        },
-        ...(activeTrackedJob.family
-          ? [
-              {
-                label: "Familia",
-                value: activeTrackedJob.family,
-              },
-            ]
-          : []),
-        ...(activeTrackedJob.externalId
-          ? [
-              {
-                label: "Job ID",
-                value: activeTrackedJob.externalId,
-              },
-            ]
-          : []),
-      ]
-    : [];
   const activeTimeline =
     activeTrackedJob?.history.length && activeTrackedJob.history.length > 0
       ? activeTrackedJob.history
@@ -1209,9 +1161,6 @@ export function ArgusWorkbench({
         (activeDiscovery ? "Discovery live" : "Input manual"),
       },
   ];
-  const controlLiveSources = sources.filter((source) =>
-    /live/i.test(source.status),
-  ).length;
   const controlDocumentStatus =
     profileSyncState === "error"
       ? "Ajustar sync"
@@ -1240,2138 +1189,875 @@ export function ArgusWorkbench({
     count: trackedJobs.filter((job) => job.status === status).length,
     jobs: trackedJobs.filter((job) => job.status === status).slice(0, 3),
   }));
-  const jobsSourceOptions = [
-    "all",
-    ...new Set(
-      trackedJobs.map((job) =>
-        job.intakeMode.toLowerCase().includes("crawler") ? "crawler" : "manual",
-      ),
-    ),
-  ];
-  const jobsSeniorityOptions = [
-    "all",
-    ...new Set(trackedJobs.map((job) => job.seniority).filter(Boolean)),
-  ];
-  const jobsExplorerSearchLabel = radarQuery.trim()
-    ? `Busca ativa por "${radarQuery.trim()}"`
-    : "Busca global aguardando termo";
-  const jobsReadyCount = jobsFilteredTrackedJobs.filter((job) => job.score >= 70).length;
-  const jobsLiveCount = jobsFilteredTrackedJobs.filter((job) =>
-    job.intakeMode.toLowerCase().includes("crawler"),
-  ).length;
   const jobsSpotlight = jobsFilteredTrackedJobs.slice(0, 3);
-  const jobsPreviewLastTouch = jobsPreviewJob
-    ? trackedJobLastTouch(jobsPreviewJob)
-    : "Selecione uma vaga";
   const dashboardInterviewCount = trackedJobs.filter(
     (job) => job.status === "Entrevista",
   ).length;
   const dashboardExecutionCount = trackedJobs.filter((job) =>
     ["Aplicar", "Aplicada"].includes(job.status),
   ).length;
-  const dashboardReviewCount = trackedJobs.filter((job) =>
-    ["Pronta para revisar", "Requer triagem"].includes(job.status),
-  ).length;
-  const dashboardFreshCount = trackedJobs.filter((job) => job.status === "Nova").length;
-  const dashboardLiveCount = trackedJobs.filter((job) =>
-    job.intakeMode.toLowerCase().includes("crawler"),
-  ).length;
-  const dashboardTopOpportunity = comparisonJobs[0] ?? null;
 
-  return (
-    <div
-      className={
-        isControlPage
-          ? "grid items-start gap-10 xl:grid-cols-[minmax(0,1.18fr)_minmax(22rem,0.82fr)]"
-          : "space-y-10"
-      }
-    >
-      <section className="space-y-8">
-        {!isJobsPage ? (
-          <div className="grid gap-4 xl:grid-cols-[1.35fr_0.72fr_0.72fr]">
-          <div className="rounded-[38px] border border-slate-900/85 bg-[linear-gradient(140deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_45%,rgba(14,165,233,0.78))] p-6 text-white shadow-[0_28px_90px_rgba(15,23,42,0.18)]">
-            <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300">
-              Decision signal
-            </p>
-            <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-5xl font-semibold">{analysis.score}%</p>
-                <p className="mt-2 text-sm text-slate-300">{analysis.verdict}</p>
-                <p className="mt-4 max-w-sm text-sm leading-7 text-slate-200">
-                  Um snapshot de decisão para dizer se a vaga ativa merece atenção imediata ou só monitoramento.
-                </p>
-              </div>
-              <div className="min-w-[14rem] flex-1">
-                <div className="h-3 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-sky-400"
-                    style={{ width: matchMeterWidth }}
-                  />
-                </div>
-                <p className="mt-3 text-sm leading-7 text-slate-300">
-                  Leitura de aderência da vaga ativa contra o perfil atual do candidato.
-                </p>
-              </div>
-            </div>
-          </div>
+  // ─── RENDER ──────────────────────────────────────────────────────────────────
 
-          <div className="rounded-[34px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
-            <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">Priority queue</p>
-            <p className="mt-3 text-4xl font-semibold text-slate-950">
-              {priorityJobs}
-            </p>
-            <p className="mt-3 text-sm leading-7 text-slate-500">
-              vagas já fortes o suficiente para virar ação nas próximas horas.
-            </p>
-          </div>
+  // Sync status pill
+  const syncPill =
+    syncState === "connected"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : syncState === "checking"
+        ? "border-sky-200 bg-sky-50 text-sky-700"
+        : "border-amber-200 bg-amber-50 text-amber-700";
 
-          <div className="rounded-[34px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,247,237,0.92))] p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
-            <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">Live coverage</p>
-            <p className="mt-3 text-4xl font-semibold text-slate-950">
-              {crawlerJobs}
-            </p>
-            <p className="mt-3 text-sm leading-7 text-slate-500">
-              fontes reais já abastecendo o radar contra {manualJobs} entradas manuais.
-            </p>
-          </div>
-          </div>
-        ) : null}
+  const syncDot =
+    syncState === "connected"
+      ? "bg-emerald-500"
+      : syncState === "checking"
+        ? "bg-sky-500 animate-pulse"
+        : "bg-amber-500";
 
-        <div
-          className={`rounded-[30px] border px-5 py-4 text-sm shadow-[0_18px_50px_rgba(15,23,42,0.04)] ${
-            syncState === "connected"
-              ? "border-emerald-200 bg-[linear-gradient(90deg,rgba(236,253,245,0.96),rgba(255,255,255,0.94))] text-emerald-800"
-              : syncState === "checking"
-                ? "border-sky-200 bg-[linear-gradient(90deg,rgba(239,246,255,0.96),rgba(255,255,255,0.94))] text-sky-800"
-                : "border-amber-200 bg-[linear-gradient(90deg,rgba(255,251,235,0.96),rgba(255,255,255,0.94))] text-amber-800"
-          }`}
-        >
-          <span className="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-current align-middle opacity-80" />
-          <span className="font-semibold">Persistencia do radar:</span> {syncMessage}
+  // ─── JOBS MODE ───────────────────────────────────────────────────────────────
+  if (isJobsPage) {
+    return (
+      <div className="space-y-5">
+        {/* Sync status */}
+        <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium ${syncPill}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${syncDot}`} />
+          {syncMessage}
         </div>
 
-        {isControlPage ? (
-          <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-            <div className="rounded-[36px] border border-slate-900/85 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_42%,rgba(14,165,233,0.74))] p-6 text-white shadow-[0_28px_80px_rgba(15,23,42,0.18)]">
-              <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                Control command
-              </p>
-              <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <p className="text-4xl font-semibold">{analysis.score}%</p>
-                  <p className="mt-2 text-sm leading-7 text-slate-300">
-                    vaga ativa com contexto, mensagem e proximo passo prontos para execucao.
-                  </p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Focus mode
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-white">
-                      {controlSourceFocus}
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Next move
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-white">
-                      {activeNextAction}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                  Match state
-                </p>
-                <p className="mt-3 text-3xl font-semibold text-slate-950">
-                  {analysis.verdict}
-                </p>
-                <p className="mt-2 text-sm leading-7 text-slate-500">
-                  leitura da vaga ativa agora.
-                </p>
-              </div>
-              <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(240,249,255,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                  Live sources
-                </p>
-                <p className="mt-3 text-3xl font-semibold text-slate-950">
-                  {controlLiveSources}
-                </p>
-                <p className="mt-2 text-sm leading-7 text-slate-500">
-                  fontes com discovery real no radar.
-                </p>
-              </div>
-              <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(255,248,240,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                  Docs state
-                </p>
-                <p className={`mt-3 text-3xl font-semibold ${controlDocumentStatusTone}`}>
-                  {controlDocumentStatus}
-                </p>
-                <p className="mt-2 text-sm leading-7 text-slate-500">
-                  CV e cover letter influenciando o match.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {!isDashboardPage ? (
-          <div className="rounded-[40px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,248,243,0.9))] p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
-          <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-                Vaga ativa
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-                {parsedJob.title}
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                {parsedJob.company} · {parsedJob.location}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
-                  analysis.score,
-                )}`}
-              >
-                {analysis.score}% match
-              </span>
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-800 ring-1 ring-slate-300">
-                {activeDiscovery
-                  ? `${activeDiscovery.listing.source} Job ID ${activeDiscovery.listing.externalId}`
-                  : "Input manual"}
-              </span>
-              {activeTrackedJob ? (
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ring-1 ${statusTone(
-                    activeTrackedJob.status,
-                  )}`}
-                >
-                  {activeTrackedJob.status}
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr]">
-            <div className="rounded-[30px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.96)_55%,rgba(14,165,233,0.7))] p-5 text-white">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">
-                Leitura de match
-              </p>
-              <div className="mt-4 flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-4xl font-semibold">{analysis.score}%</p>
-                  <p className="mt-2 text-sm text-slate-300">{analysis.verdict}</p>
-                </div>
-                <div className="w-full max-w-[14rem]">
-                  <div className="h-3 overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="h-full rounded-full bg-sky-400"
-                      style={{ width: matchMeterWidth }}
-                    />
-                  </div>
-                  <div className="mt-3 flex justify-between text-xs uppercase tracking-[0.22em] text-slate-400">
-                    <span>baixo</span>
-                    <span>alto</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-[30px] border border-slate-200 bg-white/88 p-5 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Senioridade
-              </p>
-              <p className="mt-3 text-base font-semibold text-slate-900">
-                {parsedJob.seniority}
-              </p>
-              <p className="mt-3 text-sm text-slate-500">{parsedJob.workModel}</p>
-            </div>
-            <div className="rounded-[30px] border border-slate-200 bg-white/88 p-5 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Contrato
-              </p>
-              <p className="mt-3 text-base font-semibold text-slate-900">
-                {parsedJob.employmentType}
-              </p>
-              <p className="mt-3 text-sm text-slate-500">
-                {parsedJob.languages.join(" · ") || "Idiomas nao detectados"}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            <div className="rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-medium text-slate-800 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
-              Origem ativa: {activeSourceLabel}
-            </div>
-            {activeTrackedJob ? (
-              <select
-                value={activeTrackedJob.status}
-                onChange={(event) =>
-                  handleUpdateTrackedJobStatus(activeTrackedJob.id, event.target.value)
-                }
-                className="rounded-full border border-slate-300 bg-white/95 px-4 py-2 text-sm font-medium text-slate-800 outline-none shadow-[0_10px_24px_rgba(15,23,42,0.04)] focus:border-sky-300"
-              >
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            {activeDiscovery?.listing.sourceUrl ? (
-              <a
-                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-sm font-semibold text-sky-800 shadow-[0_10px_24px_rgba(15,23,42,0.04)] transition hover:bg-slate-50"
-                href={activeDiscovery.listing.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Abrir vaga original
-              </a>
-            ) : null}
+        {/* Filters row */}
+        <div className="flex flex-wrap items-center gap-2">
+          {(["all", "crawler", "manual", "priority"] as RadarFilter[]).map((f) => (
             <button
+              key={f}
               type="button"
-              onClick={handleCopyRecruiterMessage}
-              className="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#0f172a,#1e293b)] px-4 py-2 text-sm font-medium text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition hover:brightness-105"
+              onClick={() => setRadarFilter(f)}
+              className={[
+                "rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
+                radarFilter === f
+                  ? "border-slate-800 bg-slate-950 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+              ].join(" ")}
             >
-              {copiedState === "copied" ? "Mensagem copiada" : "Copiar abordagem"}
+              {f === "all" ? "Todos" : f === "crawler" ? "Crawler" : f === "manual" ? "Manual" : "Prioridade ≥ 70%"}
             </button>
+          ))}
+          <div className="ml-auto flex items-center gap-2">
+            {/* Sort */}
+            <select
+              value={jobsSort}
+              onChange={(e) => setJobsSort(e.target.value as JobsSort)}
+              className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-[12px] font-medium text-slate-700 outline-none"
+            >
+              <option value="updated">Recentes</option>
+              <option value="score">Score</option>
+              <option value="company">Empresa</option>
+            </select>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px] font-semibold text-slate-500">
+              {jobsFilteredTrackedJobs.length} vagas
+            </span>
           </div>
+        </div>
 
-          <div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {activeWorkspaceCards.map((card) => (
-              <article
-                key={card.label}
-                className="rounded-[26px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.92))] px-5 py-4 shadow-[0_16px_40px_rgba(15,23,42,0.04)]"
-              >
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                  {card.label}
-                </p>
-                <p className="mt-3 text-lg font-semibold text-slate-950">{card.value}</p>
-                <p className="mt-2 text-sm leading-7 text-slate-500">{card.detail}</p>
-              </article>
-            ))}
-          </div>
-
-          <div className="mt-8 flex flex-wrap gap-2 border-b border-slate-200 pb-6">
-            {[
-              { id: "summary", label: "Resumo" },
-              { id: "match", label: "Match" },
-              { id: "message", label: "Mensagem" },
-              { id: "history", label: "Historico" },
-            ].map((panel) => (
-              <button
-                key={panel.id}
-                type="button"
-                onClick={() => setActivePanel(panel.id as ActivePanel)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  activePanel === panel.id
-                    ? "bg-slate-950 text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)]"
-                    : "bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50"
-                }`}
-              >
-                {panel.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-6">
-            {activePanel === "summary" ? (
-              <div className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
-                <div className="rounded-[30px] border border-slate-900/85 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_50%,rgba(14,165,233,0.72))] p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                    Role brief
-                  </p>
-                  <h3 className="mt-3 text-3xl font-semibold">{parsedJob.title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-slate-300">
-                    {parsedJob.company} · {parsedJob.location}
-                  </p>
-                  <p className="mt-6 text-sm leading-8 text-slate-200">
-                    {parsedJob.summary}
-                  </p>
-                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Senioridade
-                      </p>
-                      <p className="mt-2 text-sm text-white">{parsedJob.seniority}</p>
-                    </div>
-                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Work model
-                      </p>
-                      <p className="mt-2 text-sm text-white">{parsedJob.workModel}</p>
-                    </div>
-                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Contrato
-                      </p>
-                      <p className="mt-2 text-sm text-white">{parsedJob.employmentType}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid gap-4">
-                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                      Decision read
-                    </p>
-                    <p className="mt-3 text-2xl font-semibold text-slate-950">
-                      {analysis.verdict}
-                    </p>
-                    <p className="mt-2 text-sm leading-7 text-slate-500">
-                      Leitura curta para decidir se o item sobe para execucao agora ou continua em triagem.
-                    </p>
-                  </div>
-                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,248,240,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                      Linguas e stack
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {parsedJob.languages.map((language) => (
-                        <span
-                          key={language}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
-                        >
-                          {language}
-                        </span>
-                      ))}
-                      {parsedJob.skills.length > 0 ? (
-                        parsedJob.skills.map((skill) => (
-                          <span
-                            key={skill}
-                            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
-                          >
-                            {skill}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-sm text-slate-500">
-                          Nenhuma skill estruturada ainda para esta vaga.
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="rounded-[28px] border border-slate-200 bg-white/92 p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                      Recommended move
-                    </p>
-                    <p className="mt-3 text-xl font-semibold text-slate-950">
-                      {activeNextAction}
-                    </p>
-                    <p className="mt-2 text-sm leading-7 text-slate-500">
-                      Combine esse sinal com o contexto da empresa e com a mensagem sugerida antes de executar.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {activePanel === "match" ? (
-              <div className="grid gap-5 xl:grid-cols-[0.92fr_1.04fr_1.04fr]">
-                <div className="rounded-[30px] border border-slate-900/80 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_45%,rgba(14,165,233,0.65))] p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                    Match score
-                  </p>
-                  <p className="mt-4 text-5xl font-semibold">{analysis.score}%</p>
-                  <p className="mt-3 text-sm text-slate-300">{analysis.verdict}</p>
-                  <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="h-full rounded-full bg-sky-400"
-                      style={{ width: matchMeterWidth }}
-                    />
-                  </div>
-                  <div className="mt-6 grid gap-3">
-                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Sinais positivos
-                      </p>
-                      <p className="mt-2 text-lg font-semibold text-white">
-                        {analysis.strengths.length}
-                      </p>
-                    </div>
-                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Riscos ou gaps
-                      </p>
-                      <p className="mt-2 text-lg font-semibold text-white">
-                        {analysis.risks.length}
-                      </p>
-                    </div>
-                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Proximo passo
-                      </p>
-                      <p className="mt-2 text-sm text-white">{activeNextAction}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(240,253,244,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                    O que favorece
-                  </p>
-                  <div className="mt-4 grid gap-3">
-                    {analysis.strengths.map((item) => (
-                      <div
-                        key={item}
-                        className="rounded-[22px] bg-white px-4 py-4 text-sm leading-7 text-slate-600 ring-1 ring-emerald-100"
-                      >
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(255,241,242,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                    Pontos de atenção
-                  </p>
-                  <div className="mt-4 grid gap-3">
-                    {analysis.risks.map((item) => (
-                      <div
-                        key={item}
-                        className="rounded-[22px] bg-white px-4 py-4 text-sm leading-7 text-slate-600 ring-1 ring-rose-100"
-                      >
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {activePanel === "message" ? (
-              <div className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
-                <div className="rounded-[30px] border border-slate-900/80 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_45%,rgba(14,165,233,0.65))] p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                      Mensagem sugerida
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleCopyRecruiterMessage}
-                      className="inline-flex items-center justify-center rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15"
-                    >
-                      {copiedState === "copied" ? "Copiada" : "Copiar mensagem"}
-                    </button>
-                  </div>
-                  <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-200">
-                    {recruiterMessage}
-                  </p>
-                </div>
-                <div className="grid gap-4">
-                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-                    <p className="text-sm font-medium text-slate-700">
-                      Como usar esta mensagem
-                    </p>
-                    <div className="mt-4 grid gap-2 text-sm text-slate-600">
-                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
-                        1. Revise se o tom combina com a vaga e a empresa
-                      </div>
-                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
-                        2. Ajuste detalhes especificos antes de enviar
-                      </div>
-                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
-                        3. Atualize o status no radar assim que aplicar
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,248,240,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                      Documentos ativos
-                    </p>
-                    <p className="mt-3 text-sm leading-7 text-slate-500">
-                      O texto atual esta sendo calibrado usando o CV e a cover letter ativos no painel lateral.
-                    </p>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-[22px] bg-white px-4 py-4 ring-1 ring-slate-200">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                          CV base
-                        </p>
-                        <p className="mt-2 text-sm text-slate-700">
-                          {cvText.trim() ? "Conectado ao match" : "Ainda vazio"}
-                        </p>
-                      </div>
-                      <div className="rounded-[22px] bg-white px-4 py-4 ring-1 ring-slate-200">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                          Cover letter
-                        </p>
-                        <p className="mt-2 text-sm text-slate-700">
-                          {coverLetterText.trim() ? "Personalizando outreach" : "Ainda vazia"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {activePanel === "history" ? (
-              <div className="grid gap-5 xl:grid-cols-[1.04fr_0.96fr]">
-                <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                    Linha do tempo
-                  </p>
-                  <div className="mt-5 space-y-3">
-                    {activeTimeline.length > 0 ? (
-                      activeTimeline.map((entry, index) => (
-                        <div
-                          key={`${entry.status}-${entry.changedAt}-${index}`}
-                          className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200 shadow-[0_10px_24px_rgba(15,23,42,0.03)]"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <span
-                              className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] ring-1 ${statusTone(
-                                entry.status,
-                              )}`}
-                            >
-                              {entry.status}
-                            </span>
-                            <span className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                              {new Date(entry.changedAt).toLocaleString("de-DE")}
-                            </span>
-                          </div>
-                          {entry.note ? (
-                            <p className="mt-2 text-sm text-slate-600">{entry.note}</p>
-                          ) : null}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="rounded-[24px] border border-dashed border-slate-300 bg-white/80 px-4 py-5 text-sm text-slate-500">
-                        Ainda nao ha eventos para esta vaga.
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="grid gap-4">
-                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(240,249,255,0.9))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                      Snapshot operacional
-                    </p>
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      {activeSnapshot.map((item) => (
-                        <div
-                          key={`${item.label}-${item.value}`}
-                          className="rounded-[22px] bg-white px-4 py-4 ring-1 ring-slate-200"
-                        >
-                          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                            {item.label}
-                          </p>
-                          <p className="mt-2 text-sm text-slate-700">{item.value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(255,248,240,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
-                    <p className="text-sm font-medium text-slate-700">
-                      Workflow sugerido
-                    </p>
-                    <p className="mt-1 text-sm leading-7 text-slate-500">
-                      Use um modo por vez e mantenha a vaga ativa sempre como referencia principal do trabalho.
-                    </p>
-                    <div className="mt-4 grid gap-2 text-sm text-slate-600">
-                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
-                        1. Escolha `Fonte real` ou `JD manual`
-                      </div>
-                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
-                        2. Torne uma vaga ativa no painel
-                      </div>
-                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
-                        3. Valide resumo, match e abordagem
-                      </div>
-                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
-                        4. Atualize status para manter o radar limpo
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </div>
-          </div>
-        ) : null}
-        {isDashboardPage || isJobsPage ? (
-          <div
-          id="radar"
-          className="rounded-[42px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(243,248,255,0.88))] p-7 shadow-[0_30px_100px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8"
-        >
-          <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-                {isJobsPage ? "Jobs" : "Dashboard"}
-              </p>
-              <h2 className="mt-2 text-3xl font-semibold text-slate-950">
-                {isJobsPage
-                  ? "Vagas rastreadas com foco em busca e selecao"
-                  : "Pipeline visual de vagas rastreadas"}
-              </h2>
-            </div>
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-              {isJobsPage
-                ? "Use a busca do header para filtrar o radar por qualquer termo."
-                : "Próxima etapa: persistência em banco e atualização automática."}
-            </div>
-          </div>
-
-          {!isJobsPage ? (
-            <div className="mt-6 rounded-[32px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_50%,rgba(14,165,233,0.62))] p-6 text-white">
-            <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-              <div>
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                  Estado do radar
-                </p>
-                <p className="mt-3 text-4xl font-semibold">{totalOpportunities}</p>
-                <p className="mt-2 text-sm text-slate-300">
-                  oportunidades visiveis e prontas para triagem.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
-                    Priority
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold">{priorityJobs}</p>
-                </div>
-                <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
-                    Crawler
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold">{crawlerJobs}</p>
-                </div>
-                <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
-                    Manual
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold">{manualJobs}</p>
-                </div>
-              </div>
-            </div>
-            </div>
-          ) : null}
-
-          {isDashboardPage ? (
-            <div className="mt-6 grid gap-4 xl:grid-cols-[1.04fr_0.96fr]">
-              <div className="rounded-[34px] border border-slate-900/85 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_45%,rgba(14,165,233,0.74))] p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                  Executive command
-                </p>
-                <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                  <div>
-                    <p className="text-4xl font-semibold">{totalOpportunities}</p>
-                    <p className="mt-2 text-sm leading-7 text-slate-300">
-                      itens no pipeline com leitura de prioridade, estagio e acao seguinte.
-                    </p>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Review load
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-white">
-                        {dashboardReviewCount}
-                      </p>
-                    </div>
-                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        In execution
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-white">
-                        {dashboardExecutionCount}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(240,249,255,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Pipeline quente
-                  </p>
-                  <p className="mt-3 text-3xl font-semibold text-slate-950">
-                    {dashboardInterviewCount}
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-slate-500">
-                    vagas ja em entrevista ou muito proximas da parte mais critica.
-                  </p>
-                </div>
-                <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(255,248,240,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Discovery live
-                  </p>
-                  <p className="mt-3 text-3xl font-semibold text-slate-950">
-                    {dashboardLiveCount}
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-slate-500">
-                    oportunidades vindas de fontes reais ja conectadas ao radar.
-                  </p>
-                </div>
-                <div className="rounded-[30px] border border-slate-200 bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Fresh intake
-                  </p>
-                  <p className="mt-3 text-3xl font-semibold text-slate-950">
-                    {dashboardFreshCount}
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-slate-500">
-                    itens novos ainda aguardando decisao e triagem inicial.
-                  </p>
-                </div>
-                <div className="rounded-[30px] border border-slate-200 bg-white/95 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Priority queue
-                  </p>
-                  <p className="mt-3 text-3xl font-semibold text-slate-950">
-                    {priorityJobs}
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-slate-500">
-                    itens que ja merecem atencao nas proximas horas.
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="mt-6 flex flex-wrap gap-2">
-            {[
-              { id: "all", label: `Todas (${totalOpportunities})` },
-              { id: "crawler", label: `Crawler (${crawlerJobs})` },
-              { id: "manual", label: `Manuais (${manualJobs})` },
-              { id: "priority", label: `Prioridade (${priorityJobs})` },
-            ].map((filter) => (
-              <button
-                key={filter.id}
-                type="button"
-                onClick={() => setRadarFilter(filter.id as RadarFilter)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  radarFilter === filter.id
-                    ? "bg-slate-950 text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)]"
-                    : "bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50"
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-
-          {isJobsPage ? (
-            <div className="mt-6 grid gap-4 xl:grid-cols-[0.92fr_1.08fr_0.72fr]">
-              <div className="rounded-[34px] border border-slate-900/80 bg-[linear-gradient(140deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_50%,rgba(14,165,233,0.75))] p-6 text-white shadow-[0_22px_60px_rgba(15,23,42,0.16)]">
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                  Jobs Explorer
-                </p>
-                <p className="mt-3 text-3xl font-semibold">{jobsFilteredTrackedJobs.length}</p>
-                <p className="mt-3 text-sm leading-7 text-slate-300">
-                  vagas visiveis apos header search, filtros locais e ordenacao.
-                </p>
-                <div className="mt-5 rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Search state
-                  </p>
-                  <p className="mt-2 text-sm text-white">{jobsExplorerSearchLabel}</p>
-                </div>
-              </div>
-              <div className="rounded-[34px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  <label className="grid gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                      Origem
-                    </span>
-                    <select
-                      value={jobsSourceFilter}
-                      onChange={(event) => setJobsSourceFilter(event.target.value)}
-                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-sky-300"
-                    >
-                      {jobsSourceOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option === "all"
-                            ? "Todas"
-                            : option === "crawler"
-                              ? "Crawler"
-                              : "Manual"}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="grid gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                      Senioridade
-                    </span>
-                    <select
-                      value={jobsSeniorityFilter}
-                      onChange={(event) => setJobsSeniorityFilter(event.target.value)}
-                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-sky-300"
-                    >
-                      {jobsSeniorityOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option === "all" ? "Todas" : option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="grid gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                      Score minimo
-                    </span>
-                    <select
-                      value={jobsMinimumScore}
-                      onChange={(event) => setJobsMinimumScore(event.target.value)}
-                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-sky-300"
-                    >
-                      <option value="all">Todos</option>
-                      <option value="60">60+</option>
-                      <option value="70">70+</option>
-                      <option value="80">80+</option>
-                    </select>
-                  </label>
-                  <label className="grid gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                      Ordenar por
-                    </span>
-                    <select
-                      value={jobsSort}
-                      onChange={(event) => setJobsSort(event.target.value as JobsSort)}
-                      className="rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-sky-300"
-                    >
-                      <option value="updated">Atualizacao</option>
-                      <option value="score">Score</option>
-                      <option value="company">Empresa</option>
-                    </select>
-                  </label>
-                </div>
-              </div>
-
-              <div className="rounded-[34px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,248,240,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                  Explorer lens
-                </p>
-                <div className="mt-4 grid gap-3">
-                  <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
-                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                      Live sources
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-950">
-                      {jobsLiveCount}
-                    </p>
-                  </div>
-                  <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
-                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                      Ready now
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-950">
-                      {jobsReadyCount}
-                    </p>
-                  </div>
-                  <p className="text-sm leading-7 text-slate-500">
-                    Explorer para priorizar rapido, mover o melhor item para o `Control Center` e deixar o resto bem organizado.
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          {isJobsPage ? (
-            <div className="mt-6 grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-              <div className="rounded-[32px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(14,165,233,0.72))] p-6 text-white shadow-[0_22px_60px_rgba(15,23,42,0.16)]">
-                <div className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                      Vaga em foco
-                    </p>
-                    <h3 className="mt-2 text-2xl font-semibold">
-                      {jobsPreviewJob?.title ?? "Selecione uma vaga"}
-                    </h3>
-                    <p className="mt-2 text-sm leading-7 text-slate-300">
-                      {jobsPreviewJob
-                        ? `${jobsPreviewJob.company} · ${jobsPreviewJob.location}`
-                        : "Use a busca do header ou os filtros abaixo para abrir uma vaga do radar."}
-                    </p>
-                  </div>
-                  {jobsPreviewJob && jobsPreviewAnalysis ? (
-                    <div className="rounded-[24px] border border-white/10 bg-white/5 px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                        Match atual
-                      </p>
-                      <p className="mt-2 text-3xl font-semibold">
-                        {jobsPreviewAnalysis.score}%
-                      </p>
-                      <p className="mt-1 text-sm text-slate-300">
-                        {jobsPreviewAnalysis.verdict}
-                      </p>
-                    </div>
-                  ) : null}
-                </div>
-
-                {jobsPreviewJob && jobsPreviewAnalysis ? (
-                  <>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
-                        {jobsPreviewJob.intakeMode}
-                      </span>
-                      <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
-                        {jobsPreviewJob.status}
-                      </span>
-                      <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
-                        {jobsPreviewLastTouch}
-                      </span>
-                    </div>
-                    <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-sky-400"
-                        style={{ width: jobsPreviewMeterWidth }}
-                      />
-                    </div>
-                    <div className="mt-5 grid gap-4 md:grid-cols-3">
-                      <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                          Senioridade
-                        </p>
-                        <p className="mt-2 text-base font-semibold text-white">
-                          {jobsPreviewJob.seniority}
-                        </p>
-                        <p className="mt-2 text-sm text-slate-300">
-                          {jobsPreviewJob.workModel}
-                        </p>
-                      </div>
-                      <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                          Proximo passo
-                        </p>
-                        <p className="mt-2 text-base font-semibold text-white">
-                          {nextActionLabel(
-                            jobsPreviewAnalysis.score,
-                            jobsPreviewJob.status,
-                          )}
-                        </p>
-                        <p className="mt-2 text-sm text-slate-300">
-                          baseado no match atual e no estagio da vaga.
-                        </p>
-                      </div>
-                      <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                          Stack detectada
-                        </p>
-                        <p className="mt-2 text-base font-semibold text-white">
-                          {jobsPreviewJob.skills.length}
-                        </p>
-                        <p className="mt-2 text-sm text-slate-300">
-                          skill(s) estruturadas nesta leitura.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                      <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                          Sinais fortes
-                        </p>
-                        <div className="mt-3 grid gap-2">
-                          {jobsPreviewAnalysis.strengths.slice(0, 3).map((item) => (
-                            <div
-                              key={item}
-                              className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-200"
-                            >
-                              {item}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                          Pontos de atencao
-                        </p>
-                        <div className="mt-3 grid gap-2">
-                          {jobsPreviewAnalysis.risks.slice(0, 3).map((item) => (
-                            <div
-                              key={item}
-                              className="rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-200"
-                            >
-                              {item}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleInspectTrackedJob(jobsPreviewJob)}
-                        className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
-                      >
-                        Inspecionar no explorer
-                      </button>
-                      <Link
-                        href={`/control-center?job=${encodeURIComponent(jobsPreviewJob.id)}`}
-                        className="rounded-full bg-sky-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
-                      >
-                        Abrir no control center
-                      </Link>
-                      {jobsPreviewJob.sourceUrl ? (
-                        <a
-                          className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                          href={jobsPreviewJob.sourceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Ver vaga original
-                        </a>
-                      ) : null}
-                    </div>
-                  </>
-                ) : null}
-              </div>
-
-              <div className="rounded-[32px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
-                <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                  Explorer command
-                </p>
-                <div className="mt-4 grid gap-3">
-                  <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
-                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                      Search command
-                    </p>
-                    <p className="mt-2 text-base font-semibold text-slate-950">
-                      {jobsExplorerSearchLabel}
-                    </p>
-                    <p className="mt-2 text-sm leading-7 text-slate-500">
-                      A busca do header continua sendo o comando principal desta pagina.
-                    </p>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                        Maior match
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-slate-950">
-                        {jobsFilteredTrackedJobs[0]?.score ?? 0}%
-                      </p>
-                    </div>
-                    <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                        Prontas p/ revisar
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-slate-950">
-                        {jobsReadyCount}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                        Live mix
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-slate-950">
-                        {jobsLiveCount}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        vagas de discovery real na selecao atual.
-                      </p>
-                    </div>
-                    <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                        Manual mix
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-slate-950">
-                        {Math.max(0, jobsFilteredTrackedJobs.length - jobsLiveCount)}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        fallback manual ainda vivo no radar.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
-                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                      Vaga selecionada
-                    </p>
-                    <p className="mt-2 text-base font-semibold text-slate-950">
-                      {jobsPreviewJob?.title ?? "Nenhuma vaga selecionada"}
-                    </p>
-                    <p className="mt-2 text-sm leading-7 text-slate-500">
-                      {jobsPreviewJob
-                        ? `${jobsPreviewJob.seniority} · ${jobsPreviewJob.intakeMode} · ${jobsPreviewJob.status}`
-                        : "Selecione uma vaga do radar para abrir a leitura detalhada."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          {isJobsPage ? (
-            <div className="mt-6 grid gap-4 lg:grid-cols-3">
-              {jobsSpotlight.length > 0 ? (
-                jobsSpotlight.map((job, index) => (
-                  <button
-                    key={`spotlight-${job.id}`}
-                    type="button"
-                    onClick={() => handleInspectTrackedJob(job)}
-                    className={`rounded-[30px] border p-5 text-left shadow-[0_18px_50px_rgba(15,23,42,0.05)] transition ${
-                      activeTrackedJobId === job.id
-                        ? "border-sky-300 bg-[linear-gradient(180deg,rgba(240,249,255,0.96),rgba(255,255,255,0.98))] shadow-[0_20px_50px_rgba(14,165,233,0.12)]"
-                        : "border-slate-200 bg-white/92 hover:border-slate-300 hover:bg-slate-50/80"
-                    }`}
-                  >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                      Spotlight {index + 1}
-                    </p>
-                    <p className="mt-3 text-lg font-semibold text-slate-950">{job.title}</p>
-                    <p className="mt-2 text-sm leading-7 text-slate-500">
-                      {job.company} · {job.location}
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${badgeTone(
-                          job.score,
-                        )}`}
-                      >
-                        {job.score}% match
-                      </span>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${statusTone(
-                          job.status,
-                        )}`}
-                      >
-                        {job.status}
-                      </span>
-                    </div>
-                    <p className="mt-4 text-sm leading-7 text-slate-500">
-                      {nextActionLabel(job.score, job.status)} · ultimo toque {trackedJobLastTouch(
-                        job,
-                      )}
-                    </p>
-                  </button>
-                ))
-              ) : (
-                <div className="rounded-[30px] border border-dashed border-slate-300 bg-white/80 px-5 py-6 text-sm text-slate-500 lg:col-span-3">
-                  Quando houver mais vagas filtradas, o explorer monta um spotlight automatico das melhores oportunidades.
-                </div>
-              )}
-            </div>
-          ) : null}
-
-          {isDashboardPage ? (
-            <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-            {dashboardLanes.map((lane) => (
-              <section
-                key={lane.status}
-                className={`rounded-[34px] border p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)] ${laneTone(
-                  lane.status,
-                )}`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      {lane.status}
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-950">
-                      {lane.count}
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-slate-200 bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-700 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
-                    Lane
-                  </span>
-                </div>
-                <p className="mt-3 text-sm leading-7 text-slate-500">
-                  {lane.status === "Pronta para revisar"
-                    ? "Sinal forte, precisa de leitura final antes de aplicar."
-                    : lane.status === "Aplicar"
-                      ? "Vagas que já deveriam estar em execução."
-                      : lane.status === "Aplicada"
-                        ? "Histórico de movimentação já convertida."
-                        : lane.status === "Entrevista"
-                          ? "Pipeline quente, máxima atenção."
-                          : "Itens novos ainda aguardando direção."}
-                </p>
-
-                <div className="mt-4 space-y-3">
-                  {lane.jobs.length > 0 ? (
-                    lane.jobs.map((job) => (
-                      <article
-                        key={`${lane.status}-${job.id}`}
-                        className="rounded-[26px] bg-white/92 p-4 ring-1 ring-slate-200 shadow-[0_14px_30px_rgba(15,23,42,0.04)]"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleInspectTrackedJob(job)}
-                          className="w-full text-left"
-                        >
-                          <p className="text-sm font-semibold text-slate-900">
-                            {job.title}
-                          </p>
-                          <p className="mt-1 text-xs leading-6 text-slate-500">
-                            {job.company} · {job.location}
-                          </p>
-                          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                            ultimo toque {trackedJobLastTouch(job)}
-                          </p>
-                        </button>
-                        <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
-                          <div
-                            className="h-full rounded-full bg-sky-500"
-                            style={{ width: `${Math.max(8, Math.min(job.score, 100))}%` }}
-                          />
-                        </div>
-                        <div className="mt-3 flex items-center justify-between gap-2">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${badgeTone(
-                              job.score,
-                            )}`}
-                          >
-                            {job.score}%
-                          </span>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleInspectTrackedJob(job)}
-                              className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-800 ring-1 ring-slate-300 transition hover:bg-slate-50"
-                            >
-                              Abrir
-                            </button>
-                            {job.status !== "Entrevista" ? (
-                              <button
-                                type="button"
-                                onClick={() => handleAdvanceTrackedJob(job.id)}
-                                className="rounded-full bg-slate-950 px-3 py-1 text-xs font-medium text-white transition hover:bg-slate-800"
-                              >
-                                Avancar
-                              </button>
-                            ) : null}
-                          </div>
-                        </div>
-                        <div className="mt-3 rounded-[22px] bg-slate-50/90 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
-                          {nextActionLabel(job.score, job.status)}
-                        </div>
-                      </article>
-                    ))
-                  ) : (
-                    <div className="rounded-[26px] border border-dashed border-slate-300 bg-white/75 px-4 py-5 text-sm text-slate-500">
-                      Nenhuma vaga nesta etapa.
-                    </div>
-                  )}
-                </div>
-              </section>
-            ))}
-            </div>
-          ) : null}
-
-          {isDashboardPage ? (
-            <div className="mt-6 grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
-            <div className="rounded-[34px] border border-slate-900/80 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_45%,rgba(14,165,233,0.68))] p-6 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
-              <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                Priority board
-              </p>
-              <p className="mt-3 text-sm leading-7 text-slate-300">
-                Leitura horizontal das melhores vagas do radar para decidir qual merece virar foco agora.
-              </p>
-              <div className="mt-5 grid gap-3">
-                <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Melhor oportunidade
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-white">
-                    {dashboardTopOpportunity?.title ?? "Ainda sem prioridade dominante"}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-300">
-                    {dashboardTopOpportunity
-                      ? `${dashboardTopOpportunity.company} · ${dashboardTopOpportunity.location}`
-                      : "Adicione mais vagas para o board montar a leitura executiva."}
-                  </p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Melhor match
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold text-white">
-                      {comparisonJobs[0]?.score ?? 0}%
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Em entrevista
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold text-white">
-                      {dashboardInterviewCount}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {comparisonJobs.length > 0 ? (
-                comparisonJobs.map((job) => (
-                  <article
-                    key={`compare-${job.id}`}
-                    className={`rounded-[32px] border p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)] transition ${
-                      activeTrackedJobId === job.id
-                        ? "border-sky-300 bg-sky-50/80 shadow-[0_18px_40px_rgba(14,165,233,0.12)]"
-                        : "border-slate-200 bg-white/88"
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleInspectTrackedJob(job)}
-                      className="w-full text-left"
-                    >
-                      <p className="text-sm font-semibold text-slate-900">
-                        {job.title}
-                      </p>
-                      <p className="mt-1 text-xs leading-6 text-slate-500">
-                        {job.company} · {job.location}
-                      </p>
-                    </button>
-                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
-                      <div
-                        className="h-full rounded-full bg-sky-500"
-                        style={{ width: `${Math.max(8, Math.min(job.score, 100))}%` }}
-                      />
-                    </div>
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${badgeTone(
-                          job.score,
-                        )}`}
-                      >
-                        {job.score}% match
-                      </span>
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${statusTone(
-                          job.status,
-                        )}`}
-                      >
-                        {job.status}
-                      </span>
-                    </div>
-                    <div className="mt-4 rounded-[24px] bg-slate-50/80 px-4 py-4 ring-1 ring-slate-200">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Proxima acao
-                      </p>
-                      <p className="mt-2 text-sm leading-7 text-slate-600">
-                        {nextActionLabel(job.score, job.status)}
-                      </p>
-                      <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        ultimo toque {trackedJobLastTouch(job)}
-                      </p>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <div className="rounded-[28px] border border-dashed border-slate-300 bg-slate-50/70 px-5 py-6 text-sm text-slate-500 md:col-span-3">
-                  Adicione ou descubra mais vagas para montar o comparativo.
-                </div>
-              )}
-            </div>
-            </div>
-          ) : null}
-
-          <div className="mt-6 overflow-hidden rounded-[32px] border border-slate-200 bg-white/80 shadow-[0_22px_60px_rgba(15,23,42,0.05)]">
-            <div className="border-b border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(255,255,255,0.98))] px-4 py-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                {isJobsPage ? (
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      Radar operacional de vagas
-                    </p>
-                    <p className="mt-1 text-sm leading-7 text-slate-500">
-                      {jobsExplorerSearchLabel}. Selecione uma linha para atualizar o preview e tome a decisao aqui mesmo.
-                    </p>
-                    {jobsPreviewJob ? (
-                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        Em foco: {jobsPreviewJob.title}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : (
-                  <input
-                    value={radarQuery}
-                    onChange={(event) => setRadarQuery(event.target.value)}
-                    className="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100 sm:max-w-md"
-                    placeholder="Buscar no radar por titulo, empresa, local ou origem..."
-                  />
-                )}
-                <div className="flex items-center gap-3">
-                  {isJobsPage ? (
-                    <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                      {jobsFilteredTrackedJobs.length} visiveis
-                    </div>
-                  ) : null}
-                  <div className="text-sm text-slate-500">
-                    {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).length} item(ns) visivel(is)
-                  </div>
-                </div>
-              </div>
-            </div>
-            {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).length === 0 ? (
-              <div className="bg-white/95 px-4 py-12 text-center text-sm text-slate-500">
-                Nenhuma vaga encontrada com os filtros atuais.
-              </div>
-            ) : null}
-            <div className="divide-y divide-slate-100 bg-white/95 md:hidden">
-              {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).map((job) => (
-                <article
-                  key={job.id}
-                  className={`space-y-4 px-4 py-5 transition ${
-                    activeTrackedJobId === job.id
-                      ? "bg-[linear-gradient(180deg,rgba(240,249,255,0.9),rgba(255,255,255,0.95))]"
-                      : "bg-white hover:bg-slate-50"
-                  }`}
+        {/* Spotlight */}
+        {jobsSpotlight.length > 0 && (
+          <div>
+            <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+              Spotlight
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {jobsSpotlight.map((job, i) => (
+                <button
+                  key={`spot-${job.id}`}
+                  type="button"
                   onClick={() => handleInspectTrackedJob(job)}
+                  className={[
+                    "rounded-2xl border p-4 text-left transition hover:-translate-y-0.5",
+                    activeTrackedJobId === job.id
+                      ? "border-sky-300 bg-gradient-to-b from-sky-50 to-white shadow-[0_12px_32px_rgba(14,165,233,0.14)]"
+                      : "border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)] hover:border-slate-300",
+                  ].join(" ")}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-semibold text-slate-900">{job.title}</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {job.company} · {job.location}
-                      </p>
-                    </div>
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
-                        job.score,
-                      )}`}
-                    >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                      #{i + 1}
+                    </span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ${badgeTone(job.score)}`}>
                       {job.score}%
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                    <span className="rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
-                      {job.intakeMode}
-                    </span>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${statusTone(
-                        job.status,
-                      )}`}
-                    >
-                      {job.status}
-                    </span>
-                    <span className="rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
-                      {trackedJobLastTouch(job)}
-                    </span>
-                    {job.sourceUrl ? (
-                      <a
-                        className="rounded-full bg-white px-3 py-1 text-sky-700 ring-1 ring-slate-200"
-                        href={job.sourceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        Abrir fonte
-                      </a>
-                    ) : null}
-                    {isJobsPage ? (
-                      <Link
-                        className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white transition hover:bg-slate-800"
-                        href={`/jobs/${encodeURIComponent(job.id)}`}
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        Ver detalhe
-                      </Link>
-                    ) : null}
-                  </div>
-                  <div className="rounded-[22px] bg-slate-50/80 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
+                  <p className="mt-2.5 text-[14px] font-semibold leading-snug text-slate-950">{job.title}</p>
+                  <p className="mt-1 text-[12px] text-slate-500">{job.company} · {job.location}</p>
+                  <p className="mt-3 text-[11px] font-semibold text-slate-400">
                     {nextActionLabel(job.score, job.status)}
-                  </div>
-                  <select
-                    value={job.status}
-                    onChange={(event) =>
-                      handleUpdateTrackedJobStatus(job.id, event.target.value)
-                    }
-                    onClick={(event) => event.stopPropagation()}
-                    className="w-full rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-300"
-                  >
-                    {STATUS_OPTIONS.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </article>
+                  </p>
+                </button>
               ))}
             </div>
-            <table className="hidden min-w-full divide-y divide-slate-200 text-left md:table">
-              <thead className="bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(255,255,255,0.98))]">
-                <tr className="text-xs uppercase tracking-[0.22em] text-slate-500">
-                  <th className="px-4 py-3 font-semibold">Vaga</th>
-                  <th className="px-4 py-3 font-semibold">Signal</th>
-                  <th className="px-4 py-3 font-semibold">Origem</th>
-                  <th className="px-4 py-3 font-semibold">Stage</th>
-                  <th className="px-4 py-3 font-semibold">Acao</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white/95">
-                {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).map((job) => (
-                  <tr
+          </div>
+        )}
+
+        {/* Main grid — list + preview */}
+        <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
+          {/* List */}
+          <div className="overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
+            {/* List header */}
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+              <p className="text-[12px] font-semibold text-slate-600">
+                {radarQuery.trim() ? `Busca: "${radarQuery}"` : "Todos os resultados"}
+              </p>
+              <input
+                value={radarQuery}
+                onChange={(e) => setRadarQuery(e.target.value)}
+                placeholder="Filtrar lista..."
+                className="h-7 w-full max-w-[180px] rounded-full border border-slate-200 bg-slate-50 px-3 text-[12px] text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
+              />
+            </div>
+
+            {/* Rows */}
+            <div className="divide-y divide-slate-100">
+              {jobsFilteredTrackedJobs.length === 0 ? (
+                <div className="px-5 py-8 text-center text-[13px] text-slate-400">
+                  Nenhuma vaga encontrada para os filtros atuais.
+                </div>
+              ) : (
+                jobsFilteredTrackedJobs.map((job) => (
+                  <button
                     key={job.id}
-                    className={`cursor-pointer transition ${
+                    type="button"
+                    onClick={() => {
+                      setActiveTrackedJobId(job.id);
+                      handleInspectTrackedJob(job);
+                    }}
+                    className={[
+                      "flex w-full items-center gap-4 px-4 py-3.5 text-left transition",
                       activeTrackedJobId === job.id
-                        ? "bg-[linear-gradient(90deg,rgba(240,249,255,0.9),rgba(255,255,255,0.96))]"
-                        : "hover:bg-slate-50"
-                    }`}
-                    onClick={() => handleInspectTrackedJob(job)}
+                        ? "bg-sky-50"
+                        : "hover:bg-slate-50",
+                    ].join(" ")}
                   >
-                    <td className="px-4 py-4 align-top">
-                      <p className="font-semibold text-slate-900">{job.title}</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {job.company} · {job.location}
-                      </p>
-                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                        ultimo toque {trackedJobLastTouch(job)}
-                      </p>
-                      {job.sourceUrl ? (
-                        <a
-                          className="mt-2 inline-flex text-sm font-medium text-sky-700 hover:text-sky-900"
-                          href={job.sourceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Abrir fonte
-                        </a>
-                      ) : null}
-                      {isJobsPage ? (
-                        <Link
-                          className="mt-2 inline-flex text-sm font-semibold text-slate-950 hover:text-slate-700"
-                          href={`/jobs/${encodeURIComponent(job.id)}`}
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          Ver detalhe
-                        </Link>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="space-y-3">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
-                            job.score,
-                          )}`}
-                        >
+                    {/* Score pill */}
+                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ${badgeTone(job.score)}`}>
+                      {job.score}%
+                    </span>
+                    {/* Content */}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-semibold text-slate-950">{job.title}</p>
+                      <p className="mt-0.5 text-[12px] text-slate-500">{job.company} · {job.location}</p>
+                    </div>
+                    {/* Status + action */}
+                    <div className="shrink-0 text-right">
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ring-1 ${statusTone(job.status)}`}>
+                        {job.status}
+                      </span>
+                      <p className="mt-1 text-[10px] text-slate-400">{trackedJobLastTouch(job)}</p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Preview panel */}
+          {jobsPreviewJob ? (
+            <div className="sticky top-[68px] space-y-3">
+              {/* Job header */}
+              <div className="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      Em foco
+                    </p>
+                    <h2 className="mt-1 text-[16px] font-semibold leading-snug text-slate-950">
+                      {jobsPreviewJob.title}
+                    </h2>
+                    <p className="mt-0.5 text-[12px] text-slate-500">
+                      {jobsPreviewJob.company} · {jobsPreviewJob.location}
+                    </p>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-bold ring-1 ${badgeTone(jobsPreviewJob.score)}`}>
+                    {jobsPreviewJob.score}%
+                  </span>
+                </div>
+
+                {/* Score bar */}
+                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-sky-500 transition-all"
+                    style={{ width: `${Math.max(8, Math.min(jobsPreviewJob.score, 100))}%` }}
+                  />
+                </div>
+
+                {/* Quick facts */}
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {[
+                    { l: "Senioridade", v: jobsPreviewJob.seniority },
+                    { l: "Modelo", v: jobsPreviewJob.workModel },
+                    { l: "Contrato", v: jobsPreviewJob.employmentType },
+                    { l: "Status", v: jobsPreviewJob.status },
+                  ].map((item) => (
+                    <div key={item.l} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{item.l}</p>
+                      <p className="mt-0.5 text-[12px] font-semibold text-slate-800 truncate">{item.v || "—"}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Summary */}
+                {jobsPreviewJob.summary && (
+                  <p className="mt-4 text-[12px] leading-6 text-slate-500 line-clamp-3">
+                    {jobsPreviewJob.summary}
+                  </p>
+                )}
+
+                {/* Actions */}
+                <div className="mt-4 flex gap-2">
+                  <Link
+                    href={`/control-center?job=${jobsPreviewJob.id}`}
+                    className="flex-1 rounded-full bg-slate-950 py-2 text-center text-[12px] font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    Operar no CC
+                  </Link>
+                  <Link
+                    href={`/jobs/${jobsPreviewJob.id}`}
+                    className="flex-1 rounded-full border border-slate-200 bg-white py-2 text-center text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                  >
+                    Ver detalhe
+                  </Link>
+                </div>
+              </div>
+
+              {/* Match preview */}
+              {jobsPreviewAnalysis && (
+                <div className="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Match</p>
+                  <p className="mt-1.5 text-[14px] font-semibold text-slate-950">{jobsPreviewAnalysis.verdict}</p>
+                  {jobsPreviewAnalysis.strengths.length > 0 && (
+                    <div className="mt-3 space-y-1.5">
+                      {jobsPreviewAnalysis.strengths.slice(0, 3).map((s) => (
+                        <div key={s} className="flex items-start gap-2">
+                          <span className="mt-0.5 shrink-0 text-emerald-500">✓</span>
+                          <p className="text-[12px] leading-5 text-slate-600">{s}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {jobsPreviewAnalysis.risks.length > 0 && (
+                    <div className="mt-3 space-y-1.5">
+                      {jobsPreviewAnalysis.risks.slice(0, 2).map((r) => (
+                        <div key={r} className="flex items-start gap-2">
+                          <span className="mt-0.5 shrink-0 text-amber-500">⚠</span>
+                          <p className="text-[12px] leading-5 text-slate-500">{r}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center rounded-[24px] border border-dashed border-slate-200 bg-slate-50/60 p-8 text-[13px] text-slate-400">
+              Selecione uma vaga para ver o preview
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── DASHBOARD MODE ───────────────────────────────────────────────────────────
+  if (isDashboardPage) {
+    return (
+      <div className="space-y-5">
+        {/* Sync */}
+        <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium ${syncPill}`}>
+          <span className={`h-1.5 w-1.5 rounded-full ${syncDot}`} />
+          {syncMessage}
+        </div>
+
+        {/* KPIs row */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Total radar", value: trackedJobs.length, accent: false },
+            { label: "Alta prioridade", value: priorityJobs, accent: true },
+            { label: "Em entrevista", value: dashboardInterviewCount, emerald: true },
+            { label: "Fila execução", value: dashboardExecutionCount, amber: true },
+          ].map((kpi) => (
+            <div
+              key={kpi.label}
+              className={[
+                "rounded-2xl border p-4",
+                kpi.emerald ? "border-emerald-200/60 bg-gradient-to-b from-emerald-50 to-white" :
+                kpi.amber ? "border-amber-200/60 bg-gradient-to-b from-amber-50 to-white" :
+                kpi.accent ? "border-sky-200/60 bg-gradient-to-b from-sky-50 to-white" :
+                "border-slate-200/60 bg-white",
+              ].join(" ")}
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{kpi.label}</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{kpi.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Kanban board */}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {dashboardLanes.map((lane) => (
+            <section
+              key={lane.status}
+              className={`rounded-[24px] border p-4 ${laneTone(lane.status)}`}
+            >
+              {/* Lane header */}
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  {lane.status}
+                </p>
+                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[12px] font-bold text-slate-700">
+                  {lane.count}
+                </span>
+              </div>
+
+              {/* Cards */}
+              <div className="space-y-2">
+                {lane.jobs.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-center text-[12px] text-slate-400">
+                    Vazio
+                  </div>
+                ) : (
+                  lane.jobs.map((job) => (
+                    <div
+                      key={`${lane.status}-${job.id}`}
+                      className="rounded-xl border border-white/80 bg-white p-3 shadow-[0_4px_16px_rgba(15,23,42,0.06)]"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleInspectTrackedJob(job)}
+                        className="w-full text-left"
+                      >
+                        <p className="text-[13px] font-semibold leading-snug text-slate-950">{job.title}</p>
+                        <p className="mt-0.5 text-[11px] text-slate-500">{job.company}</p>
+                      </button>
+                      {/* Score bar */}
+                      <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-sky-500"
+                          style={{ width: `${Math.max(8, Math.min(job.score, 100))}%` }}
+                        />
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-1">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${badgeTone(job.score)}`}>
                           {job.score}%
                         </span>
-                        <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                          <div
-                            className="h-full rounded-full bg-sky-500"
-                            style={{ width: `${Math.max(8, Math.min(job.score, 100))}%` }}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">
-                      <div className="space-y-2">
-                        <div>{job.intakeMode}</div>
-                        <div className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                          {job.seniority}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">
-                      <div className="space-y-3">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${statusTone(
-                            job.status,
-                          )}`}
-                        >
-                          {job.status}
-                        </span>
-                        <div className="text-sm text-slate-500">
-                          {nextActionLabel(job.score, job.status)}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">
-                      <div className="flex flex-col gap-2">
-                        <select
-                          value={job.status}
-                          onChange={(event) =>
-                            handleUpdateTrackedJobStatus(job.id, event.target.value)
-                          }
-                          onClick={(event) => event.stopPropagation()}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-300"
-                        >
-                          {STATUS_OPTIONS.map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
-                        </select>
-                        {job.status !== "Entrevista" ? (
+                        <div className="flex gap-1">
                           <button
                             type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleAdvanceTrackedJob(job.id);
-                            }}
-                            className="rounded-full bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                            onClick={() => handleInspectTrackedJob(job)}
+                            className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-50"
                           >
-                            Avancar etapa
+                            Abrir
                           </button>
-                        ) : null}
+                          {job.status !== "Entrevista" && (
+                            <button
+                              type="button"
+                              onClick={() => handleAdvanceTrackedJob(job.id)}
+                              className="rounded-full bg-slate-950 px-2 py-0.5 text-[10px] font-semibold text-white transition hover:bg-slate-800"
+                            >
+                              ↑
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          </div>
-        ) : null}
-      </section>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+          ))}
+        </div>
 
-      {isControlPage ? (
-        <aside className="space-y-6 xl:sticky xl:top-28">
-        <div className="rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(240,249,255,0.9))] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-            Workspace mode
-          </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-[24px] border border-slate-200 bg-white/92 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Source focus
-              </p>
-              <p className="mt-2 text-base font-semibold text-slate-950">
+        {/* Priority comparison */}
+        {comparisonJobs.length > 0 && (
+          <div>
+            <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+              Top oportunidades
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {comparisonJobs.map((job, i) => (
+                <button
+                  key={`cmp-${job.id}`}
+                  type="button"
+                  onClick={() => handleInspectTrackedJob(job)}
+                  className={[
+                    "rounded-2xl border p-4 text-left transition hover:-translate-y-0.5",
+                    i === 0
+                      ? "border-sky-200/60 bg-gradient-to-b from-sky-50 to-white shadow-[0_8px_28px_rgba(14,165,233,0.10)]"
+                      : "border-slate-200/60 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]",
+                  ].join(" ")}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">#{i + 1}</span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ${badgeTone(job.score)}`}>
+                      {job.score}%
+                    </span>
+                  </div>
+                  <p className="mt-2 text-[13px] font-semibold text-slate-950">{job.title}</p>
+                  <p className="mt-0.5 text-[12px] text-slate-500">{job.company} · {job.location}</p>
+                  <p className="mt-3 text-[11px] font-semibold text-slate-400">{nextActionLabel(job.score, job.status)}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ─── CONTROL CENTER MODE ──────────────────────────────────────────────────────
+  return (
+    <div className="grid items-start gap-5 xl:grid-cols-[1fr_360px]">
+      {/* ── Main column ─────────────────────────────────────────────────────── */}
+      <div className="space-y-4">
+        {/* Active job hero */}
+        <div className="overflow-hidden rounded-[28px] border border-slate-900/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
+          {/* Top bar */}
+          <div className="flex items-center justify-between gap-3 border-b border-white/[0.07] px-6 py-3">
+            <div className="flex items-center gap-2.5">
+              <span className={`h-2 w-2 rounded-full ${syncDot}`} />
+              <p className="text-[11px] font-medium text-slate-400">{syncMessage}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
                 {controlSourceFocus}
-              </p>
+              </span>
+              {activeTrackedJob && (
+                <select
+                  value={activeTrackedJob.status}
+                  onChange={(e) => handleUpdateTrackedJobStatus(activeTrackedJob.id, e.target.value)}
+                  className="rounded-full border border-white/10 bg-white/[0.08] px-3 py-1 text-[11px] font-semibold text-slate-200 outline-none transition hover:bg-white/[0.12]"
+                >
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s} className="text-slate-950">{s}</option>
+                  ))}
+                </select>
+              )}
             </div>
-            <div className="rounded-[24px] border border-slate-200 bg-white/92 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Radar sync
-              </p>
-              <p className="mt-2 text-base font-semibold text-slate-950">
-                {syncState === "connected"
-                  ? "Conectado"
-                  : syncState === "checking"
-                    ? "Conectando"
-                    : "Fallback local"}
-              </p>
+          </div>
+
+          {/* Hero content */}
+          <div className="px-6 py-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-400">
+                  Vaga ativa
+                </p>
+                <h1 className="mt-2 text-2xl font-semibold leading-snug tracking-tight">
+                  {parsedJob.title}
+                </h1>
+                <p className="mt-1 text-[13px] text-slate-400">
+                  {parsedJob.company} · {parsedJob.location}
+                </p>
+              </div>
+
+              {/* Score + next action */}
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <div className="flex items-center gap-2">
+                  <span className={`rounded-full px-3 py-1.5 text-[13px] font-bold ring-1 ${badgeTone(analysis.score)}`}>
+                    {analysis.score}%
+                  </span>
+                  {activeTrackedJob && (
+                    <span className={`rounded-full px-3 py-1.5 text-[11px] font-bold ring-1 ${statusTone(activeTrackedJob.status)}`}>
+                      {activeTrackedJob.status}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[12px] font-semibold text-sky-400">{activeNextAction}</p>
+              </div>
             </div>
-            <div className="rounded-[24px] border border-slate-200 bg-white/92 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Active status
-              </p>
-              <p className="mt-2 text-base font-semibold text-slate-950">
-                {activeTrackedJob?.status ?? "Nova leitura"}
-              </p>
+
+            {/* Score bar */}
+            <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-sky-400 transition-all"
+                style={{ width: matchMeterWidth }}
+              />
+            </div>
+
+            {/* Stats row */}
+            <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {activeWorkspaceCards.map((card) => (
+                <div key={card.label} className="rounded-2xl border border-white/[0.07] bg-white/[0.05] px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{card.label}</p>
+                  <p className="mt-1.5 text-[13px] font-semibold text-slate-100">{card.value}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-500">{card.detail}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Action buttons */}
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleCopyRecruiterMessage}
+                className="rounded-full bg-sky-500 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-sky-400"
+              >
+                {copiedState === "copied" ? "✓ Mensagem copiada" : "Copiar abordagem"}
+              </button>
+              {activeDiscovery?.listing.sourceUrl && (
+                <a
+                  href={activeDiscovery.listing.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-300 transition hover:bg-white/[0.12]"
+                >
+                  Vaga original ↗
+                </a>
+              )}
+              {activeTrackedJob && (
+                <button
+                  type="button"
+                  onClick={() => handleAdvanceTrackedJob(activeTrackedJob.id)}
+                  className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-300 transition hover:bg-white/[0.12]"
+                >
+                  Avançar stage →
+                </button>
+              )}
             </div>
           </div>
         </div>
-        <div
-          id="profile"
-          className="rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(239,246,255,0.9))] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"
-        >
-          <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-5">
-            <button
-              type="button"
-              onClick={() => setWorkspaceMode("discovery")}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${modeButtonClass(
-                workspaceMode === "discovery",
-              )}`}
-            >
-              Fonte real
-            </button>
-            <button
-              type="button"
-              onClick={() => setWorkspaceMode("manual")}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${modeButtonClass(
-                workspaceMode === "manual",
-              )}`}
-            >
-              JD manual
-            </button>
-          </div>
 
-          {workspaceMode === "discovery" ? (
-            <div className="mt-5 space-y-5">
-              <div className="flex flex-wrap gap-2">
-                {(Object.entries(DISCOVERY_SOURCES) as Array<
-                  [DiscoverySourceId, (typeof DISCOVERY_SOURCES)[DiscoverySourceId]]
-                >).map(([sourceId, sourceConfig]) => (
-                  <button
-                    key={sourceId}
-                    type="button"
-                    onClick={() => setSelectedDiscoverySource(sourceId)}
-                    className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                      selectedDiscoverySource === sourceId
-                        ? "bg-slate-950 text-white shadow-[0_12px_30px_rgba(15,23,42,0.16)]"
-                        : "bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50"
-                    }`}
-                  >
-                    {sourceConfig.company}
-                  </button>
+        {/* Panel tabs */}
+        <div className="flex gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
+          {(["summary", "match", "message", "history"] as ActivePanel[]).map((panel) => (
+            <button
+              key={panel}
+              type="button"
+              onClick={() => setActivePanel(panel)}
+              className={[
+                "flex-1 rounded-full py-2 text-[12px] font-semibold transition",
+                activePanel === panel
+                  ? "bg-white text-slate-950 shadow-[0_2px_8px_rgba(15,23,42,0.10)]"
+                  : "text-slate-500 hover:text-slate-700",
+              ].join(" ")}
+            >
+              {panel === "summary" ? "Resumo" : panel === "match" ? "Match" : panel === "message" ? "Mensagem" : "Histórico"}
+            </button>
+          ))}
+        </div>
+
+        {/* Panel content */}
+        <div>
+          {activePanel === "summary" && (
+            <div className="grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
+              {/* Role brief */}
+              <div className="rounded-[24px] border border-slate-900/80 bg-gradient-to-b from-slate-950 to-slate-900 p-5 text-white">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-400">Role brief</p>
+                <h3 className="mt-3 text-xl font-semibold">{parsedJob.title}</h3>
+                <p className="mt-0.5 text-[12px] text-slate-400">{parsedJob.company} · {parsedJob.location}</p>
+                <p className="mt-4 text-[13px] leading-6 text-slate-300">{parsedJob.summary}</p>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {parsedJob.skills.slice(0, 6).map((skill) => (
+                    <span key={skill} className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-[11px] font-medium text-slate-300">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              {/* Details */}
+              <div className="space-y-2">
+                {[
+                  { l: "Senioridade", v: parsedJob.seniority },
+                  { l: "Modelo", v: parsedJob.workModel },
+                  { l: "Contrato", v: parsedJob.employmentType },
+                  { l: "Idiomas", v: parsedJob.languages.join(", ") || "Não detectados" },
+                ].map((item) => (
+                  <div key={item.l} className="rounded-2xl border border-slate-200/60 bg-white p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{item.l}</p>
+                    <p className="mt-1.5 text-[14px] font-semibold text-slate-950">{item.v || "—"}</p>
+                  </div>
                 ))}
               </div>
+            </div>
+          )}
 
-              <div className="rounded-[28px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(14,165,233,0.72))] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
-                    {activeDiscoverySourceConfig.label}
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-slate-300">
-                    {activeDiscoverySourceConfig.description}
-                  </p>
+          {activePanel === "match" && (
+            <div className="grid gap-3 xl:grid-cols-2">
+              <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Strengths</p>
+                <div className="mt-3 space-y-2">
+                  {analysis.strengths.length === 0 ? (
+                    <p className="text-[13px] text-slate-400">Sem pontos identificados.</p>
+                  ) : (
+                    analysis.strengths.map((s) => (
+                      <div key={s} className="flex items-start gap-2.5">
+                        <span className="mt-0.5 shrink-0 text-[14px] text-emerald-500">✓</span>
+                        <p className="text-[13px] leading-5 text-slate-700">{s}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
+              </div>
+              <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Risks & gaps</p>
+                <div className="mt-3 space-y-2">
+                  {analysis.risks.length === 0 ? (
+                    <p className="text-[13px] text-slate-400">Sem riscos identificados.</p>
+                  ) : (
+                    analysis.risks.map((r) => (
+                      <div key={r} className="flex items-start gap-2.5">
+                        <span className="mt-0.5 shrink-0 text-[14px] text-amber-500">⚠</span>
+                        <p className="text-[13px] leading-5 text-slate-600">{r}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activePanel === "message" && (
+            <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  Recruiter message
+                </p>
                 <button
                   type="button"
-                  onClick={handleRunSourceDiscovery}
-                  className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-300"
-                  disabled={isDiscovering}
+                  onClick={handleCopyRecruiterMessage}
+                  className="rounded-full bg-slate-950 px-4 py-1.5 text-[12px] font-semibold text-white transition hover:bg-slate-800"
                 >
-                  {isDiscovering
-                    ? "Coletando..."
-                    : activeDiscoverySourceConfig.buttonLabel}
+                  {copiedState === "copied" ? "✓ Copiado" : "Copiar"}
                 </button>
               </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Discovery mode
-                    </p>
-                    <p className="mt-2 text-sm text-slate-200">
-                      Traz cards reais e enriquece o detalhe quando a fonte permite.
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Objetivo
-                    </p>
-                    <p className="mt-2 text-sm text-slate-200">
-                      Escolher rapido o que merece virar vaga ativa.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Foco atual
-                    </p>
-                    <p className="mt-2 text-sm text-white">
-                      {activeDiscoverySourceConfig.company}
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Descobertas
-                    </p>
-                    <p className="mt-2 text-sm text-white">
-                      {filteredDiscoveredJobs.length} visiveis
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Prioridade
-                    </p>
-                    <p className="mt-2 text-sm text-white">
-                      escolher a melhor vaga para o cockpit
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <pre className="whitespace-pre-wrap rounded-2xl border border-slate-100 bg-slate-50 p-4 text-[13px] leading-6 text-slate-700 font-sans">
+                {recruiterMessage}
+              </pre>
+            </div>
+          )}
 
-              {discoveryError ? (
-                <div className="rounded-[24px] border border-rose-200 bg-[linear-gradient(90deg,rgba(255,241,242,0.96),rgba(255,255,255,0.94))] px-4 py-3 text-sm text-rose-700">
-                  {discoveryError}
-                </div>
-              ) : null}
-
-              <div className="rounded-[28px] border border-slate-200 bg-white/88 p-4 shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <input
-                  value={discoveryQuery}
-                  onChange={(event) => setDiscoveryQuery(event.target.value)}
-                  className="w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
-                  placeholder="Filtrar vagas descobertas..."
-                />
-                <div className="text-sm text-slate-500">
-                  {filteredDiscoveredJobs.length} vaga(s)
-                </div>
-              </div>
-              </div>
-
-              <div className="space-y-3">
-                {discoveredJobs.length === 0 ? (
-                  <div className="rounded-[28px] border border-dashed border-slate-300 bg-white/75 px-5 py-6 text-sm leading-7 text-slate-500">
-                    Traga vagas reais para este painel. A ideia aqui e manter o
-                    discovery num lugar proprio e sem competir com o restante da
-                    tela.
-                  </div>
-                ) : filteredDiscoveredJobs.length === 0 ? (
-                  <div className="rounded-[28px] border border-dashed border-slate-300 bg-white/75 px-5 py-6 text-sm leading-7 text-slate-500">
-                    Nenhuma vaga descoberta bate com o filtro atual.
-                  </div>
+          {activePanel === "history" && (
+            <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Histórico de status
+              </p>
+              <div className="mt-3 space-y-2">
+                {activeTimeline.length === 0 ? (
+                  <p className="text-[13px] text-slate-400">Sem histórico ainda.</p>
                 ) : (
-                  filteredDiscoveredJobs.map((job) => (
-                    <article
-                      key={job.listing.externalId}
-                      className={`rounded-[28px] border p-4 shadow-[0_16px_40px_rgba(15,23,42,0.05)] transition ${
-                        activeDiscoveryId === job.listing.externalId
-                          ? "border-sky-300 bg-sky-50/80 shadow-[0_18px_40px_rgba(14,165,233,0.12)]"
-                          : "border-slate-200 bg-white/88"
-                      }`}
+                  activeTimeline.map((entry, i) => (
+                    <div
+                      key={`${entry.status}-${entry.changedAt}-${i}`}
+                      className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
                     >
-                      <div className="flex flex-col gap-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="text-base font-semibold text-slate-950">
-                              {job.listing.title}
-                            </h3>
-                            <p className="mt-1 text-sm text-slate-500">
-                              {job.listing.company} · {job.listing.location}
-                            </p>
-                          </div>
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
-                              job.analysis.score,
-                            )}`}
-                          >
-                            {job.analysis.score}%
-                          </span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 text-xs text-slate-600">
-                          <span className="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">
-                            {job.listing.family}
-                          </span>
-                          {job.listing.detailEnriched ? (
-                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-200">
-                              JD enriquecido
-                            </span>
-                          ) : null}
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleInspectDiscovery(job)}
-                            className="rounded-full bg-[linear-gradient(135deg,#0f172a,#1e293b)] px-3 py-2 text-sm font-medium text-white shadow-[0_12px_26px_rgba(15,23,42,0.16)] transition hover:brightness-105"
-                          >
-                            Tornar ativa
-                          </button>
-                          <a
-                            className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-sky-800 shadow-[0_10px_22px_rgba(15,23,42,0.04)] transition hover:bg-slate-50"
-                            href={job.listing.sourceUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Abrir vaga
-                          </a>
-                        </div>
-                      </div>
-                    </article>
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${statusTone(entry.status).includes("emerald") ? "bg-emerald-500" : statusTone(entry.status).includes("sky") ? "bg-sky-500" : "bg-slate-400"}`} />
+                      <p className="flex-1 text-[13px] font-medium text-slate-800">{entry.status}</p>
+                      <p className="text-[11px] text-slate-400">{formatActivityLabel(entry.changedAt)}</p>
+                    </div>
                   ))
                 )}
               </div>
             </div>
-          ) : (
-            <div className="mt-5 space-y-5">
-              <div className="rounded-[28px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(249,115,22,0.7))] p-5 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
-                <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-amber-300">
-                    JD manual
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-slate-300">
-                    Cole qualquer descricao de vaga sem formatacao. O Argus
-                    estrutura, pontua e joga para o radar.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleProcessDescription}
-                  className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-300"
-                  disabled={isPending}
-                >
-                  {isPending ? "Processando..." : "Estruturar"}
-                </button>
-              </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Fallback inteligente
-                    </p>
-                    <p className="mt-2 text-sm text-slate-200">
-                      Quando o crawler nao entra, o fluxo manual continua sem travar a operacao.
-                    </p>
-                  </div>
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      Resultado
-                    </p>
-                    <p className="mt-2 text-sm text-slate-200">
-                      O texto vira estrutura, score, mensagem e item no radar.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Intake command
-                  </p>
-                  <p className="mt-2 text-sm text-white">
-                    Ideal para portais fechados, JDs enviados por recruiter ou qualquer texto cru que precise virar item operacional.
-                  </p>
-                </div>
-              </div>
-
-              <textarea
-                value={jobDescription}
-                onChange={(event) => setJobDescription(event.target.value)}
-                className="min-h-[420px] w-full rounded-[30px] border border-slate-200 bg-white/90 px-5 py-4 text-sm leading-7 text-slate-700 shadow-[0_16px_40px_rgba(15,23,42,0.04)] outline-none transition focus:border-sky-300 focus:bg-white focus:ring-4 focus:ring-sky-100"
-                placeholder="Cole aqui a vaga inteira, mesmo desorganizada."
-              />
-            </div>
           )}
         </div>
 
-        <div className="rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,248,243,0.9))] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-500">
-            Perfil e fontes
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-950">
-            {activeProfile.name}
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            {activeProfile.location} · {activeProfile.availability}
-          </p>
-
-          <div className="mt-5 grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[24px] border border-slate-200 bg-white/92 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                  Profile sync
-                </p>
-                <p className={`mt-2 text-base font-semibold ${controlDocumentStatusTone}`}>
-                  {controlDocumentStatus}
-                </p>
-                <p className="mt-2 text-sm leading-7 text-slate-500">
-                  {profileSyncMessage}
-                </p>
-              </div>
-              <div className="rounded-[24px] border border-slate-200 bg-white/92 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                  Source coverage
-                </p>
-                <p className="mt-2 text-base font-semibold text-slate-950">
-                  {controlLiveSources} live · {sources.length} catalogadas
-                </p>
-                <p className="mt-2 text-sm leading-7 text-slate-500">
-                  inventario pronto para discovery real e fallback manual.
-                </p>
-              </div>
-            </div>
-            <div className="rounded-[24px] border border-slate-200 bg-white/90 px-4 py-4 shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Headline
-              </p>
-              <p className="mt-2 text-sm leading-7 text-slate-600">
-                {activeProfile.headline}
-              </p>
-            </div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-              Stack principal
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {activeProfile.coreStack.slice(0, 8).map((skill) => (
-                <span
-                  key={skill}
-                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700"
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-[28px] border border-slate-200 bg-white/88 p-4 shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-              Idiomas
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {activeProfile.languages.map((language) => (
-                <span
-                  key={language}
-                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700"
-                >
-                  {language}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
-            <div className="flex flex-col gap-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Documentos ativos
-              </p>
-              <p className="text-sm leading-7 text-slate-500">
-                Atualize seu CV e cover letter aqui. O Argus recalcula o match e a mensagem com base nessas mudanças.
-              </p>
-              <p className={`text-xs font-semibold uppercase tracking-[0.22em] ${controlDocumentStatusTone}`}>
-                {profileSyncMessage}
-              </p>
-            </div>
-
-            <div className="mt-4 grid gap-4">
-              <label className="grid gap-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  CV base
-                </span>
-                <textarea
-                  value={cvText}
-                  onChange={(event) => setCvText(event.target.value)}
-                  className="min-h-[180px] rounded-[24px] border border-slate-200 bg-slate-50/90 px-4 py-4 text-sm leading-7 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-4 focus:ring-sky-100"
-                  placeholder="Cole aqui a versao atual do seu CV."
-                />
-              </label>
-
-              <label className="grid gap-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Cover letter base
-                </span>
-                <textarea
-                  value={coverLetterText}
-                  onChange={(event) => setCoverLetterText(event.target.value)}
-                  className="min-h-[150px] rounded-[24px] border border-slate-200 bg-slate-50/90 px-4 py-4 text-sm leading-7 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-4 focus:ring-sky-100"
-                  placeholder="Cole aqui a base da sua cover letter."
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Coverage map
-              </p>
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 ring-1 ring-slate-200">
-                {controlLiveSources} live
-              </span>
-            </div>
-            <div className="space-y-3">
-            {sources.map((source) => (
-              <article
-                key={source.company}
-                className="rounded-[26px] border border-slate-200 bg-white/90 p-4 shadow-[0_14px_35px_rgba(15,23,42,0.04)]"
+        {/* Intake area */}
+        <div className="overflow-hidden rounded-[24px] border border-slate-200/60 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
+          <div className="flex border-b border-slate-100">
+            {(["discovery", "manual"] as WorkspaceMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setWorkspaceMode(mode)}
+                className={[
+                  "flex-1 py-3 text-[12px] font-semibold transition",
+                  workspaceMode === mode
+                    ? "border-b-2 border-sky-500 text-sky-700"
+                    : "text-slate-500 hover:text-slate-700",
+                ].join(" ")}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="font-semibold text-slate-950">
-                      {source.company}
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {source.strategy}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 ring-1 ring-slate-200">
-                    {source.status}
-                  </span>
-                </div>
-              </article>
+                {mode === "discovery" ? "Discovery real" : "Intake manual"}
+              </button>
             ))}
-            </div>
+          </div>
+
+          <div className="p-5">
+            {workspaceMode === "discovery" ? (
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {(Object.entries(DISCOVERY_SOURCES) as [DiscoverySourceId, (typeof DISCOVERY_SOURCES)[DiscoverySourceId]][]).map(([id, src]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setSelectedDiscoverySource(id)}
+                      className={[
+                        "rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
+                        selectedDiscoverySource === id
+                          ? "border-slate-800 bg-slate-950 text-white"
+                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                      ].join(" ")}
+                    >
+                      {src.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[12px] leading-5 text-slate-500">
+                  {activeDiscoverySourceConfig.description}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void handleRunSourceDiscovery()}
+                  disabled={isDiscovering}
+                  className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {isDiscovering ? "Buscando..." : activeDiscoverySourceConfig.buttonLabel}
+                </button>
+                {discoveryError && (
+                  <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-[12px] text-rose-700">
+                    {discoveryError}
+                  </p>
+                )}
+                {filteredDiscoveredJobs.length > 0 && (
+                  <div className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
+                    {filteredDiscoveredJobs.map((job) => (
+                      <button
+                        key={job.listing.externalId}
+                        type="button"
+                        onClick={() => handleInspectDiscovery(job)}
+                        className={[
+                          "flex w-full items-center gap-3 px-4 py-3 text-left transition",
+                          activeDiscoveryId === job.listing.externalId
+                            ? "bg-sky-50"
+                            : "hover:bg-slate-50",
+                        ].join(" ")}
+                      >
+                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ${badgeTone(job.analysis.score)}`}>
+                          {job.analysis.score}%
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[13px] font-semibold text-slate-950">{job.listing.title}</p>
+                          <p className="text-[11px] text-slate-500">{job.listing.location}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-[12px] text-slate-500">
+                  Cole o texto da vaga (mesmo desorganizado). O Argus estrutura, calcula match e salva no radar.
+                </p>
+                <textarea
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  className="min-h-[200px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[13px] leading-6 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
+                  placeholder="Cole aqui a vaga inteira, mesmo desorganizada."
+                />
+                <button
+                  type="button"
+                  onClick={handleProcessDescription}
+                  disabled={isPending}
+                  className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {isPending ? "Processando..." : "Estruturar vaga"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
-        </aside>
-      ) : null}
+      </div>
+
+      {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
+      <aside className="sticky top-[68px] space-y-4">
+        {/* Radar list */}
+        <div className="overflow-hidden rounded-[24px] border border-slate-200/60 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.05)]">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <p className="text-[12px] font-semibold text-slate-700">
+              Radar ({trackedJobs.length})
+            </p>
+            <div className="flex gap-1">
+              {(["all", "priority"] as ("all" | "priority")[]).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setRadarFilter(f === "priority" ? "priority" : "all")}
+                  className={[
+                    "rounded-full px-2.5 py-1 text-[10px] font-bold transition",
+                    (f === "priority" ? radarFilter === "priority" : radarFilter === "all")
+                      ? "bg-slate-950 text-white"
+                      : "text-slate-500 hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  {f === "all" ? "Todos" : "≥70%"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="max-h-[320px] divide-y divide-slate-100 overflow-y-auto">
+            {filteredTrackedJobs.length === 0 ? (
+              <p className="px-4 py-6 text-center text-[12px] text-slate-400">
+                Nenhuma vaga no radar.
+              </p>
+            ) : (
+              filteredTrackedJobs.map((job) => (
+                <button
+                  key={job.id}
+                  type="button"
+                  onClick={() => handleInspectTrackedJob(job)}
+                  className={[
+                    "flex w-full items-center gap-3 px-4 py-3 text-left transition",
+                    activeTrackedJobId === job.id ? "bg-sky-50" : "hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${badgeTone(job.score)}`}>
+                    {job.score}%
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[12px] font-semibold text-slate-950">{job.title}</p>
+                    <p className="text-[11px] text-slate-400">{job.company}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${statusTone(job.status)}`}>
+                    {job.status.split(" ")[0]}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Profile sync */}
+        <div className="rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[12px] font-semibold text-slate-700">Perfil & documentos</p>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                {sources.filter((s) => /live/i.test(s.status)).length} live
+              </span>
+              <span className={`text-[11px] font-semibold ${controlDocumentStatusTone}`}>
+                {controlDocumentStatus}
+              </span>
+            </div>
+          </div>
+          <p className="mb-1 text-[11px] text-slate-500">{profileSyncMessage}</p>
+          <div className="space-y-3">
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">CV base</span>
+              <textarea
+                value={cvText}
+                onChange={(e) => setCvText(e.target.value)}
+                className="mt-1 min-h-[100px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none focus:border-sky-300 focus:bg-white"
+                placeholder="Cole o CV atual..."
+              />
+            </label>
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Cover letter</span>
+              <textarea
+                value={coverLetterText}
+                onChange={(e) => setCoverLetterText(e.target.value)}
+                className="mt-1 min-h-[80px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none focus:border-sky-300 focus:bg-white"
+                placeholder="Cole a cover letter base..."
+              />
+            </label>
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
