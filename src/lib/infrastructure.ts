@@ -8,6 +8,14 @@ const DIGEST_EMAIL_REQUIRED_ENV = [
   "ARGUS_DIGEST_TO_EMAIL",
 ] as const;
 
+export function getMissingDatabaseEnvKeys() {
+  return DATABASE_REQUIRED_ENV.filter((envKey) => !process.env[envKey]);
+}
+
+export function getMissingDigestEmailEnvKeys() {
+  return DIGEST_EMAIL_REQUIRED_ENV.filter((envKey) => !process.env[envKey]);
+}
+
 export function isDatabaseConfigured() {
   return DATABASE_REQUIRED_ENV.every((envKey) => Boolean(process.env[envKey]));
 }

@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { isAuthConfigured } from "@/lib/auth";
 import {
+  getMissingDatabaseEnvKeys,
+  getMissingDigestEmailEnvKeys,
   hasMigrationFiles,
   hasVercelCronPath,
   isCronSecretConfigured,
@@ -27,7 +29,7 @@ async function getDatabaseCheck(): Promise<ReadinessCheck> {
       status: "blocked",
       summary: "Banco ainda nao configurado",
       detail:
-        "Defina DATABASE_URL e DIRECT_URL para ligar o Postgres de producao e persistir o radar de forma real.",
+        `Defina ${getMissingDatabaseEnvKeys().join(", ")} para ligar o Postgres de producao e persistir o radar de forma real.`,
     };
   }
 
@@ -191,7 +193,17 @@ function getDigestCheck(): ReadinessCheck {
       status: "warning",
       summary: "Motor de digest pronto, configuracao externa ainda parcial",
       detail:
-        "O preview e o envio manual ja existem. Falta fechar `CRON_SECRET` e/ou as envs de email para operacao totalmente automatizada.",
+        `O preview e o envio manual ja existem. Falta fechar ${
+          !isCronSecretConfigured() ? "CRON_SECRET" : ""
+        }${
+          !isCronSecretConfigured() && getMissingDigestEmailEnvKeys().length > 0
+            ? " e "
+            : ""
+        }${
+          getMissingDigestEmailEnvKeys().length > 0
+            ? getMissingDigestEmailEnvKeys().join(", ")
+            : ""
+        } para operacao totalmente automatizada.`,
     };
   }
 
@@ -201,7 +213,10 @@ function getDigestCheck(): ReadinessCheck {
     status: "blocked",
     summary: "Motor do digest existe, mas automacao ainda nao foi configurada",
     detail:
-      "Adicione `vercel.json` com cron, `CRON_SECRET`, `RESEND_API_KEY`, `ARGUS_DIGEST_FROM_EMAIL` e `ARGUS_DIGEST_TO_EMAIL` para fechar o ciclo matinal.",
+      `Adicione vercel cron + ${[
+        "CRON_SECRET",
+        ...getMissingDigestEmailEnvKeys(),
+      ].join(", ")} para fechar o ciclo matinal.`,
   };
 }
 
