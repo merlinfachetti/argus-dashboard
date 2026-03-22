@@ -18,8 +18,9 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className="min-h-screen">
-        <div className="relative flex min-h-screen flex-col overflow-x-hidden">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.10),transparent_56%)]" />
+        <div className="argus-shell relative flex min-h-screen flex-col overflow-x-hidden">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[24rem] bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_54%)]" />
+          <div className="pointer-events-none absolute inset-x-0 top-[32rem] h-[18rem] bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.10),transparent_58%)]" />
           <Suspense fallback={null}>
             <AppHeader />
           </Suspense>
