@@ -103,3 +103,65 @@ a {
   background: rgba(15, 23, 42, 0.22);
   background-clip: padding-box;
 }
+
+.auth-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.auth-reveal::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12rem;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.98) 0%, rgba(233, 213, 255, 0.96) 28%, rgba(192, 132, 252, 0.9) 48%, rgba(124, 58, 237, 0.42) 66%, rgba(124, 58, 237, 0) 84%);
+  transform: translate(-50%, -50%) scale(0.08);
+  filter: blur(8px);
+  animation: auth-reveal-bloom 760ms cubic-bezier(0.2, 0.84, 0.2, 1) forwards;
+}
+
+.auth-reveal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(245, 243, 255, 0.52), rgba(255, 255, 255, 0.92) 68%, rgba(255, 255, 255, 1) 100%);
+  opacity: 0;
+  animation: auth-reveal-wash 760ms ease-out forwards;
+}
+
+@keyframes auth-reveal-bloom {
+  0% {
+    transform: translate(-50%, -50%) scale(0.08);
+    opacity: 0.12;
+  }
+
+  45% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(16);
+    opacity: 1;
+  }
+}
+
+@keyframes auth-reveal-wash {
+  0% {
+    opacity: 0;
+  }
+
+  48% {
+    opacity: 0.25;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
