@@ -44,6 +44,7 @@ type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "message" | "history";
 type JobsSort = "updated" | "score" | "company";
 type DiscoverySourceId = "siemens" | "rheinmetall";
+type ProfileSyncState = "checking" | "syncing" | "synced" | "offline" | "error";
 
 const STORAGE_KEY = "argus-workbench-state";
 const DISCOVERY_SOURCES: Record<
@@ -223,6 +224,15 @@ export function ArgusWorkbench({
   );
   const [cvText, setCvText] = useState(profile.cvText);
   const [coverLetterText, setCoverLetterText] = useState(profile.coverLetterText);
+  const [profileSyncState, setProfileSyncState] =
+    useState<ProfileSyncState>("checking");
+  const [profileSyncMessage, setProfileSyncMessage] = useState(
+    "Conectando documentos server-side...",
+  );
+  const [hasStoredProfileDraft, setHasStoredProfileDraft] = useState(false);
+  const [localProfileLoaded, setLocalProfileLoaded] = useState(false);
+  const [remoteProfileChecked, setRemoteProfileChecked] = useState(false);
+  const [lastSyncedDocuments, setLastSyncedDocuments] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const isControlPage = pageMode === "control";
   const isDashboardPage = pageMode === "dashboard";
@@ -235,6 +245,10 @@ export function ArgusWorkbench({
         coverLetterText,
       }),
     [coverLetterText, cvText, profile],
+  );
+  const documentSignature = useMemo(
+    () => `${cvText.trim()}::${coverLetterText.trim()}`,
+    [coverLetterText, cvText],
   );
 
   const applyAnalysisState = useCallback(
@@ -280,6 +294,7 @@ export function ArgusWorkbench({
         cvText?: string;
         coverLetterText?: string;
       };
+      let storedDraftDetected = false;
 
       if (parsedState.jobDescription) setJobDescription(parsedState.jobDescription);
       if (parsedState.parsedJob) setParsedJob(parsedState.parsedJob);
@@ -315,14 +330,89 @@ export function ArgusWorkbench({
       if (parsedState.jobsSort) setJobsSort(parsedState.jobsSort);
       if (parsedState.syncState) setSyncState(parsedState.syncState);
       if (parsedState.syncMessage) setSyncMessage(parsedState.syncMessage);
-      if (parsedState.cvText !== undefined) setCvText(parsedState.cvText);
+      if (parsedState.cvText !== undefined) {
+        setCvText(parsedState.cvText);
+        storedDraftDetected = true;
+      }
       if (parsedState.coverLetterText !== undefined) {
         setCoverLetterText(parsedState.coverLetterText);
+        storedDraftDetected = true;
       }
+      setHasStoredProfileDraft(storedDraftDetected);
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
+    } finally {
+      setLocalProfileLoaded(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!localProfileLoaded) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadPersistedProfile() {
+      try {
+        const response = await fetch("/api/profile", {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as {
+          available?: boolean;
+          source?: "database" | "default";
+          profile?: CandidateProfile;
+          error?: string;
+        };
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (!response.ok || !payload.profile) {
+          setProfileSyncState("error");
+          setProfileSyncMessage(payload.error ?? "Falha ao carregar perfil do servidor");
+          return;
+        }
+
+        const serverSignature = `${payload.profile.cvText.trim()}::${payload.profile.coverLetterText.trim()}`;
+        setLastSyncedDocuments(serverSignature);
+
+        if (!payload.available) {
+          setProfileSyncState("offline");
+          setProfileSyncMessage("Banco ainda nao configurado para sync server-side");
+          return;
+        }
+
+        if (!hasStoredProfileDraft) {
+          setCvText(payload.profile.cvText);
+          setCoverLetterText(payload.profile.coverLetterText);
+          setProfileSyncMessage("Documentos ativos carregados do banco");
+        } else {
+          setProfileSyncMessage("Draft local detectado e pronto para sincronizar");
+        }
+
+        setProfileSyncState("synced");
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setProfileSyncState("error");
+        setProfileSyncMessage("Falha ao verificar documentos persistidos");
+      } finally {
+        if (isMounted) {
+          setRemoteProfileChecked(true);
+        }
+      }
+    }
+
+    void loadPersistedProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hasStoredProfileDraft, localProfileLoaded]);
 
   useEffect(() => {
     if (initialRadarQuery.trim().length > 0) {
@@ -493,6 +583,81 @@ export function ArgusWorkbench({
     syncMessage,
     cvText,
     coverLetterText,
+  ]);
+
+  useEffect(() => {
+    if (!localProfileLoaded || !remoteProfileChecked) {
+      return;
+    }
+
+    if (!cvText.trim() || !coverLetterText.trim()) {
+      setProfileSyncState("error");
+      setProfileSyncMessage("CV e cover letter precisam estar preenchidos para sync");
+      return;
+    }
+
+    if (documentSignature === lastSyncedDocuments) {
+      return;
+    }
+
+    setProfileSyncState("syncing");
+    setProfileSyncMessage("Sincronizando CV e cover letter no servidor...");
+
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const response = await fetch("/api/profile", {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              cvText,
+              coverLetterText,
+            }),
+          });
+          const payload = (await response.json()) as {
+            error?: string;
+            profile?: CandidateProfile;
+          };
+
+          if (!response.ok || !payload.profile) {
+            if (response.status === 503) {
+              setProfileSyncState("offline");
+              setProfileSyncMessage(
+                payload.error ?? "Banco ainda nao configurado para sync server-side",
+              );
+              return;
+            }
+
+            throw new Error(payload.error ?? "Falha ao sincronizar perfil no servidor");
+          }
+
+          const nextSignature = `${payload.profile.cvText.trim()}::${payload.profile.coverLetterText.trim()}`;
+          setLastSyncedDocuments(nextSignature);
+          setProfileSyncState("synced");
+          setProfileSyncMessage("Documentos sincronizados com o banco");
+        } catch (error) {
+          setProfileSyncState("error");
+          setProfileSyncMessage(
+            error instanceof Error
+              ? error.message
+              : "Falha ao sincronizar documentos do perfil",
+          );
+        }
+      })();
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    coverLetterText,
+    cvText,
+    documentSignature,
+    lastSyncedDocuments,
+    localProfileLoaded,
+    remoteProfileChecked,
   ]);
 
   useEffect(() => {
@@ -2340,6 +2505,19 @@ export function ArgusWorkbench({
               </p>
               <p className="text-sm leading-7 text-slate-500">
                 Atualize seu CV e cover letter aqui. O Argus recalcula o match e a mensagem com base nessas mudanças.
+              </p>
+              <p
+                className={`text-xs font-semibold uppercase tracking-[0.22em] ${
+                  profileSyncState === "error"
+                    ? "text-rose-500"
+                    : profileSyncState === "offline"
+                      ? "text-amber-500"
+                      : profileSyncState === "syncing"
+                        ? "text-sky-500"
+                        : "text-emerald-600"
+                }`}
+              >
+                {profileSyncMessage}
               </p>
             </div>
 

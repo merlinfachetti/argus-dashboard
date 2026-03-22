@@ -1,12 +1,11 @@
 import { ArgusWorkbench } from "@/components/argus-workbench";
 import { PageHero } from "@/components/page-hero";
-import {
-  candidateProfile,
-  defaultJobDescription,
-  trackedSources,
-} from "@/lib/profile";
+import { defaultJobDescription, trackedSources } from "@/lib/profile";
+import { getPersistedCandidateProfile } from "@/lib/profile-store";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const { profile } = await getPersistedCandidateProfile();
+
   return (
     <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-6 py-10 lg:px-10 lg:py-12">
       <PageHero
@@ -15,8 +14,8 @@ export default function DashboardPage() {
         description="Aqui a interface fica mais ampla e mais limpa para o funil. O objetivo é ver gargalos, prioridade e movimento do pipeline com menos ruído."
         metrics={[
           { label: "Portais foco", value: `${trackedSources.length}`, tone: "accent" },
-          { label: "Core stack", value: `${candidateProfile.coreStack.length}`, tone: "light" },
-          { label: "Languages", value: `${candidateProfile.languages.length}`, tone: "light" },
+          { label: "Core stack", value: `${profile.coreStack.length}`, tone: "light" },
+          { label: "Languages", value: `${profile.languages.length}`, tone: "light" },
           { label: "Mode", value: "Pipeline", tone: "dark" },
         ]}
         aside={
@@ -44,7 +43,7 @@ export default function DashboardPage() {
       />
 
       <ArgusWorkbench
-        profile={candidateProfile}
+        profile={profile}
         sources={trackedSources}
         initialJobDescription={defaultJobDescription}
         pageMode="dashboard"

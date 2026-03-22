@@ -48,6 +48,8 @@ model CandidateProfile {
   coreStack       Json
   targetRoles     Json
   strengthSignals Json
+  cvText          String      @db.Text
+  coverLetterText String      @db.Text
   jobMatches      JobMatch[]
   dailyDigests    DailyDigest[]
   createdAt       DateTime    @default(now())

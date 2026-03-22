@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { JobDetailWorkspace } from "@/components/job-detail-workspace";
 import { PageHero } from "@/components/page-hero";
-import { candidateProfile } from "@/lib/profile";
+import { getPersistedCandidateProfile } from "@/lib/profile-store";
 
 export default async function JobDetailPage({
   params,
@@ -9,6 +9,7 @@ export default async function JobDetailPage({
   params: Promise<{ jobId: string }>;
 }) {
   const { jobId } = await params;
+  const { profile } = await getPersistedCandidateProfile();
 
   return (
     <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-6 py-10 lg:px-10 lg:py-12">
@@ -17,9 +18,9 @@ export default async function JobDetailPage({
         title="Uma leitura dedicada para decidir se vale priorizar, aplicar ou seguir para operação."
         description="Esta tela isola a vaga em uma experiência própria, com mais respiro e mais clareza para revisar match, histórico e próxima ação."
         metrics={[
-          { label: "Languages", value: `${candidateProfile.languages.length}`, tone: "accent" },
-          { label: "Core stack", value: `${candidateProfile.coreStack.length}`, tone: "light" },
-          { label: "Target roles", value: `${candidateProfile.targetRoles.length}`, tone: "light" },
+          { label: "Languages", value: `${profile.languages.length}`, tone: "accent" },
+          { label: "Core stack", value: `${profile.coreStack.length}`, tone: "light" },
+          { label: "Target roles", value: `${profile.targetRoles.length}`, tone: "light" },
           { label: "Mode", value: "Read", tone: "dark" },
         ]}
         actions={
@@ -60,7 +61,7 @@ export default async function JobDetailPage({
         }
       />
 
-      <JobDetailWorkspace jobId={decodeURIComponent(jobId)} profile={candidateProfile} />
+      <JobDetailWorkspace jobId={decodeURIComponent(jobId)} profile={profile} />
     </div>
   );
 }

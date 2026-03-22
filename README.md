@@ -34,6 +34,10 @@ Copy `.env.example` to `.env.local` and set:
 - `DIRECT_URL`
 - `ARGUS_ACCESS_PASSWORD`
 - `ARGUS_SESSION_SECRET`
+- `CRON_SECRET`
+- `RESEND_API_KEY`
+- `ARGUS_DIGEST_FROM_EMAIL`
+- `ARGUS_DIGEST_TO_EMAIL`
 
 If `ARGUS_ACCESS_PASSWORD` and `ARGUS_SESSION_SECRET` are defined, the app is protected by private login at `/login`.
 
@@ -59,6 +63,19 @@ When a production database is configured, deploy migrations with:
 ```bash
 npm run prisma:migrate:deploy
 ```
+
+The repository already includes an initial Prisma migration baseline in `prisma/migrations/202603220001_initial_schema`.
+
+## Daily digest automation
+
+- Preview route: `/digests`
+- Preview API: `GET /api/digests/today`
+- Manual send API: `POST /api/digests/send`
+- Scheduled cron route: `GET /api/cron/daily-digest`
+
+`vercel.json` schedules the cron at `0 6 * * *` UTC. On March 22, 2026 this corresponds to `07:00` in Berlin; after daylight saving starts on March 29, 2026 it becomes `08:00` in Berlin.
+
+The cron endpoint expects `Authorization: Bearer <CRON_SECRET>`. Email delivery uses Resend through the REST API.
 
 ## Next implementation steps
 

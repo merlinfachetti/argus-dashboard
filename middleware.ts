@@ -3,7 +3,11 @@ import { NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME, isAuthConfigured, verifySessionToken } from "@/lib/auth";
 
 const PUBLIC_PATHS = new Set(["/login"]);
-const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/auth/logout"];
+const PUBLIC_API_PREFIXES = [
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/api/cron/daily-digest",
+];
 
 export async function middleware(request: NextRequest) {
   if (!isAuthConfigured()) {

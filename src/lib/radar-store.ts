@@ -6,15 +6,15 @@ import {
   type Prisma,
 } from "@prisma/client";
 import { db } from "@/lib/db";
-import { candidateProfile, trackedSources } from "@/lib/profile";
+import { trackedSources } from "@/lib/profile";
+import { isDatabaseConfigured } from "@/lib/infrastructure";
+import { ensureCandidateProfileRecord } from "@/lib/profile-store";
 import {
   createHistoryEntry,
   type TrackedJob,
   type UiJobStatus,
   type UiMatchVerdict,
 } from "@/lib/radar-types";
-
-const DATABASE_REQUIRED_ENV = ["DATABASE_URL", "DIRECT_URL"] as const;
 
 const statusToDb: Record<UiJobStatus, JobStatus> = {
   Nova: JobStatus.NEW,
@@ -58,10 +58,6 @@ type JobWithRelations = Prisma.JobPostingGetPayload<{
     };
   };
 }>;
-
-function isDatabaseConfigured() {
-  return DATABASE_REQUIRED_ENV.every((envKey) => Boolean(process.env[envKey]));
-}
 
 function slugify(value: string) {
   return value
@@ -120,28 +116,6 @@ function mapTrackedJob(job: JobWithRelations): TrackedJob {
           }))
         : [createHistoryEntry(statusFromDb[job.status], job.updatedAt.toISOString())],
   };
-}
-
-async function ensureCandidateProfile() {
-  const existing = await db.candidateProfile.findFirst();
-
-  if (existing) {
-    return existing;
-  }
-
-  return db.candidateProfile.create({
-    data: {
-      name: candidateProfile.name,
-      headline: candidateProfile.headline,
-      location: candidateProfile.location,
-      availability: candidateProfile.availability,
-      summary: candidateProfile.summary,
-      languages: candidateProfile.languages,
-      coreStack: candidateProfile.coreStack,
-      targetRoles: candidateProfile.targetRoles,
-      strengthSignals: candidateProfile.strengthSignals,
-    },
-  });
 }
 
 async function ensureSources() {
@@ -236,7 +210,7 @@ export async function fetchRadarJobs() {
   }
 
   await ensureSources();
-  await ensureCandidateProfile();
+  await ensureCandidateProfileRecord();
 
   const jobs = await db.jobPosting.findMany({
     include: {
@@ -262,7 +236,7 @@ export async function persistRadarJob(job: TrackedJob, rawDescription?: string) 
   }
 
   await ensureSources();
-  const profile = await ensureCandidateProfile();
+  const profile = await ensureCandidateProfileRecord();
   const sourceId = await getSourceIdForJob(job);
   const postingData = buildPostingData(job, rawDescription);
 

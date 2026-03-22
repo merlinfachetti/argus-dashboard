@@ -15,6 +15,7 @@ export function AppHeader() {
   const currentQuery = searchParams.get("q") ?? "";
   const isJobsRoute = pathname === "/jobs" || pathname.startsWith("/jobs/");
   const isSourcesRoute = pathname === "/sources";
+  const isDigestsRoute = pathname === "/digests";
   const isOpsRoute = pathname === "/ops";
   const isLoginRoute = pathname === "/login";
 
@@ -91,6 +92,9 @@ export function AppHeader() {
             </Link>
             <Link href="/jobs" className={navClass(isJobsRoute)}>
               Jobs
+            </Link>
+            <Link href="/digests" className={navClass(isDigestsRoute)}>
+              Digests
             </Link>
             <Link href="/sources" className={navClass(isSourcesRoute)}>
               Sources

@@ -1,10 +1,7 @@
 import { ArgusWorkbench } from "@/components/argus-workbench";
 import { PageHero } from "@/components/page-hero";
-import {
-  candidateProfile,
-  defaultJobDescription,
-  trackedSources,
-} from "@/lib/profile";
+import { defaultJobDescription, trackedSources } from "@/lib/profile";
+import { getPersistedCandidateProfile } from "@/lib/profile-store";
 
 export default async function ControlCenterPage({
   searchParams,
@@ -12,6 +9,7 @@ export default async function ControlCenterPage({
   searchParams: Promise<{ job?: string; source?: "siemens" | "rheinmetall" }>;
 }) {
   const params = await searchParams;
+  const { profile } = await getPersistedCandidateProfile();
 
   return (
     <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-6 py-10 lg:px-10 lg:py-12">
@@ -21,8 +19,8 @@ export default async function ControlCenterPage({
         description="Aqui a interface fica centrada na vaga em foco. O objetivo é revisar aderência, entender riscos, gerar mensagem e mudar o status sem misturar com leitura de lista."
         metrics={[
           { label: "Portais foco", value: `${trackedSources.length}`, tone: "accent" },
-          { label: "Stack core", value: `${candidateProfile.coreStack.length}`, tone: "light" },
-          { label: "Languages", value: `${candidateProfile.languages.length}`, tone: "light" },
+          { label: "Stack core", value: `${profile.coreStack.length}`, tone: "light" },
+          { label: "Languages", value: `${profile.languages.length}`, tone: "light" },
           { label: "Mode", value: "Operate", tone: "dark" },
         ]}
         aside={
@@ -48,7 +46,7 @@ export default async function ControlCenterPage({
       />
 
       <ArgusWorkbench
-        profile={candidateProfile}
+        profile={profile}
         sources={trackedSources}
         initialJobDescription={defaultJobDescription}
         pageMode="control"

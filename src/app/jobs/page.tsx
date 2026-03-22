@@ -1,10 +1,7 @@
 import { ArgusWorkbench } from "@/components/argus-workbench";
 import { PageHero } from "@/components/page-hero";
-import {
-  candidateProfile,
-  defaultJobDescription,
-  trackedSources,
-} from "@/lib/profile";
+import { defaultJobDescription, trackedSources } from "@/lib/profile";
+import { getPersistedCandidateProfile } from "@/lib/profile-store";
 
 export default async function JobsPage({
   searchParams,
@@ -13,6 +10,7 @@ export default async function JobsPage({
 }) {
   const params = await searchParams;
   const initialRadarQuery = params.q ?? "";
+  const { profile } = await getPersistedCandidateProfile();
 
   return (
     <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-6 py-10 lg:px-10 lg:py-12">
@@ -23,7 +21,7 @@ export default async function JobsPage({
         metrics={[
           { label: "Busca ativa", value: initialRadarQuery.trim() ? "1" : "0", tone: "accent" },
           { label: "Portais foco", value: `${trackedSources.length}`, tone: "light" },
-          { label: "Roles alvo", value: `${candidateProfile.targetRoles.length}`, tone: "light" },
+          { label: "Roles alvo", value: `${profile.targetRoles.length}`, tone: "light" },
           { label: "Mode", value: "Explorer", tone: "dark" },
         ]}
         aside={
@@ -49,7 +47,7 @@ export default async function JobsPage({
       />
 
       <ArgusWorkbench
-        profile={candidateProfile}
+        profile={profile}
         sources={trackedSources}
         initialJobDescription={defaultJobDescription}
         pageMode="jobs"
