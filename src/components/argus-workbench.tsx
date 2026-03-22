@@ -225,6 +225,12 @@ function formatActivityLabel(value?: string | null) {
   }).format(date);
 }
 
+function trackedJobLastTouch(job: TrackedJob) {
+  return formatActivityLabel(
+    job.updatedAt ?? job.history[job.history.length - 1]?.changedAt ?? job.createdAt,
+  );
+}
+
 export function ArgusWorkbench({
   profile,
   sources,
@@ -1223,6 +1229,17 @@ export function ArgusWorkbench({
     "all",
     ...new Set(trackedJobs.map((job) => job.seniority).filter(Boolean)),
   ];
+  const jobsExplorerSearchLabel = radarQuery.trim()
+    ? `Busca ativa por "${radarQuery.trim()}"`
+    : "Busca global aguardando termo";
+  const jobsReadyCount = jobsFilteredTrackedJobs.filter((job) => job.score >= 70).length;
+  const jobsLiveCount = jobsFilteredTrackedJobs.filter((job) =>
+    job.intakeMode.toLowerCase().includes("crawler"),
+  ).length;
+  const jobsSpotlight = jobsFilteredTrackedJobs.slice(0, 3);
+  const jobsPreviewLastTouch = jobsPreviewJob
+    ? trackedJobLastTouch(jobsPreviewJob)
+    : "Selecione uma vaga";
 
   return (
     <div
@@ -1856,12 +1873,16 @@ export function ArgusWorkbench({
                 <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
                   Jobs Explorer
                 </p>
-                <p className="mt-3 text-3xl font-semibold">
-                  {jobsFilteredTrackedJobs.length}
-                </p>
+                <p className="mt-3 text-3xl font-semibold">{jobsFilteredTrackedJobs.length}</p>
                 <p className="mt-3 text-sm leading-7 text-slate-300">
-                  vagas apos busca do header, filtros locais e ordenacao.
+                  vagas visiveis apos header search, filtros locais e ordenacao.
                 </p>
+                <div className="mt-5 rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Search state
+                  </p>
+                  <p className="mt-2 text-sm text-white">{jobsExplorerSearchLabel}</p>
+                </div>
               </div>
               <div className="rounded-[34px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -1943,19 +1964,19 @@ export function ArgusWorkbench({
                       Live sources
                     </p>
                     <p className="mt-2 text-2xl font-semibold text-slate-950">
-                      {crawlerJobs}
+                      {jobsLiveCount}
                     </p>
                   </div>
                   <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
                     <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                      Manual fallback
+                      Ready now
                     </p>
                     <p className="mt-2 text-2xl font-semibold text-slate-950">
-                      {manualJobs}
+                      {jobsReadyCount}
                     </p>
                   </div>
                   <p className="text-sm leading-7 text-slate-500">
-                    A ideia aqui é procurar com rapidez, comparar com contexto e sair para o detalhe só quando houver sinal forte.
+                    Explorer para priorizar rapido, mover o melhor item para o `Control Center` e deixar o resto bem organizado.
                   </p>
                 </div>
               </div>
@@ -1996,11 +2017,60 @@ export function ArgusWorkbench({
 
                 {jobsPreviewJob && jobsPreviewAnalysis ? (
                   <>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
+                        {jobsPreviewJob.intakeMode}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
+                        {jobsPreviewJob.status}
+                      </span>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white">
+                        {jobsPreviewLastTouch}
+                      </span>
+                    </div>
                     <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
                       <div
                         className="h-full rounded-full bg-sky-400"
                         style={{ width: jobsPreviewMeterWidth }}
                       />
+                    </div>
+                    <div className="mt-5 grid gap-4 md:grid-cols-3">
+                      <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                          Senioridade
+                        </p>
+                        <p className="mt-2 text-base font-semibold text-white">
+                          {jobsPreviewJob.seniority}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-300">
+                          {jobsPreviewJob.workModel}
+                        </p>
+                      </div>
+                      <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                          Proximo passo
+                        </p>
+                        <p className="mt-2 text-base font-semibold text-white">
+                          {nextActionLabel(
+                            jobsPreviewAnalysis.score,
+                            jobsPreviewJob.status,
+                          )}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-300">
+                          baseado no match atual e no estagio da vaga.
+                        </p>
+                      </div>
+                      <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                          Stack detectada
+                        </p>
+                        <p className="mt-2 text-base font-semibold text-white">
+                          {jobsPreviewJob.skills.length}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-300">
+                          skill(s) estruturadas nesta leitura.
+                        </p>
+                      </div>
                     </div>
                     <div className="mt-5 grid gap-4 lg:grid-cols-2">
                       <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
@@ -2065,18 +2135,18 @@ export function ArgusWorkbench({
 
               <div className="rounded-[32px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
                 <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                  Leitura rapida do radar
+                  Explorer command
                 </p>
                 <div className="mt-4 grid gap-3">
                   <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
                     <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                      Resultado visivel
+                      Search command
                     </p>
-                    <p className="mt-2 text-3xl font-semibold text-slate-950">
-                      {jobsFilteredTrackedJobs.length}
+                    <p className="mt-2 text-base font-semibold text-slate-950">
+                      {jobsExplorerSearchLabel}
                     </p>
                     <p className="mt-2 text-sm leading-7 text-slate-500">
-                      vagas combinando com a busca principal e filtros locais.
+                      A busca do header continua sendo o comando principal desta pagina.
                     </p>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -2093,10 +2163,31 @@ export function ArgusWorkbench({
                         Prontas p/ revisar
                       </p>
                       <p className="mt-2 text-2xl font-semibold text-slate-950">
-                        {
-                          jobsFilteredTrackedJobs.filter((job) => job.score >= 70)
-                            .length
-                        }
+                        {jobsReadyCount}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                        Live mix
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-slate-950">
+                        {jobsLiveCount}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        vagas de discovery real na selecao atual.
+                      </p>
+                    </div>
+                    <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                        Manual mix
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold text-slate-950">
+                        {Math.max(0, jobsFilteredTrackedJobs.length - jobsLiveCount)}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        fallback manual ainda vivo no radar.
                       </p>
                     </div>
                   </div>
@@ -2115,6 +2206,58 @@ export function ArgusWorkbench({
                   </div>
                 </div>
               </div>
+            </div>
+          ) : null}
+
+          {isJobsPage ? (
+            <div className="mt-6 grid gap-4 lg:grid-cols-3">
+              {jobsSpotlight.length > 0 ? (
+                jobsSpotlight.map((job, index) => (
+                  <button
+                    key={`spotlight-${job.id}`}
+                    type="button"
+                    onClick={() => handleInspectTrackedJob(job)}
+                    className={`rounded-[30px] border p-5 text-left shadow-[0_18px_50px_rgba(15,23,42,0.05)] transition ${
+                      activeTrackedJobId === job.id
+                        ? "border-sky-300 bg-[linear-gradient(180deg,rgba(240,249,255,0.96),rgba(255,255,255,0.98))] shadow-[0_20px_50px_rgba(14,165,233,0.12)]"
+                        : "border-slate-200 bg-white/92 hover:border-slate-300 hover:bg-slate-50/80"
+                    }`}
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                      Spotlight {index + 1}
+                    </p>
+                    <p className="mt-3 text-lg font-semibold text-slate-950">{job.title}</p>
+                    <p className="mt-2 text-sm leading-7 text-slate-500">
+                      {job.company} · {job.location}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${badgeTone(
+                          job.score,
+                        )}`}
+                      >
+                        {job.score}% match
+                      </span>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${statusTone(
+                          job.status,
+                        )}`}
+                      >
+                        {job.status}
+                      </span>
+                    </div>
+                    <p className="mt-4 text-sm leading-7 text-slate-500">
+                      {nextActionLabel(job.score, job.status)} · ultimo toque {trackedJobLastTouch(
+                        job,
+                      )}
+                    </p>
+                  </button>
+                ))
+              ) : (
+                <div className="rounded-[30px] border border-dashed border-slate-300 bg-white/80 px-5 py-6 text-sm text-slate-500 lg:col-span-3">
+                  Quando houver mais vagas filtradas, o explorer monta um spotlight automatico das melhores oportunidades.
+                </div>
+              )}
             </div>
           ) : null}
 
@@ -2282,8 +2425,18 @@ export function ArgusWorkbench({
             <div className="border-b border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(255,255,255,0.98))] px-4 py-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 {isJobsPage ? (
-                  <div className="text-sm leading-7 text-slate-600">
-                    A busca principal fica no header e atualiza esta pagina.
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Radar operacional de vagas
+                    </p>
+                    <p className="mt-1 text-sm leading-7 text-slate-500">
+                      {jobsExplorerSearchLabel}. Selecione uma linha para atualizar o preview e tome a decisao aqui mesmo.
+                    </p>
+                    {jobsPreviewJob ? (
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        Em foco: {jobsPreviewJob.title}
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   <input
@@ -2293,8 +2446,15 @@ export function ArgusWorkbench({
                     placeholder="Buscar no radar por titulo, empresa, local ou origem..."
                   />
                 )}
-                <div className="text-sm text-slate-500">
-                  {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).length} item(ns) visivel(is)
+                <div className="flex items-center gap-3">
+                  {isJobsPage ? (
+                    <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+                      {jobsFilteredTrackedJobs.length} visiveis
+                    </div>
+                  ) : null}
+                  <div className="text-sm text-slate-500">
+                    {(isJobsPage ? jobsFilteredTrackedJobs : filteredTrackedJobs).length} item(ns) visivel(is)
+                  </div>
                 </div>
               </div>
             </div>
@@ -2333,6 +2493,16 @@ export function ArgusWorkbench({
                     <span className="rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
                       {job.intakeMode}
                     </span>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${statusTone(
+                        job.status,
+                      )}`}
+                    >
+                      {job.status}
+                    </span>
+                    <span className="rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
+                      {trackedJobLastTouch(job)}
+                    </span>
                     {job.sourceUrl ? (
                       <a
                         className="rounded-full bg-white px-3 py-1 text-sky-700 ring-1 ring-slate-200"
@@ -2353,6 +2523,9 @@ export function ArgusWorkbench({
                         Ver detalhe
                       </Link>
                     ) : null}
+                  </div>
+                  <div className="rounded-[22px] bg-slate-50/80 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
+                    {nextActionLabel(job.score, job.status)}
                   </div>
                   <select
                     value={job.status}
@@ -2375,9 +2548,10 @@ export function ArgusWorkbench({
               <thead className="bg-[linear-gradient(180deg,rgba(248,250,252,0.98),rgba(255,255,255,0.98))]">
                 <tr className="text-xs uppercase tracking-[0.22em] text-slate-500">
                   <th className="px-4 py-3 font-semibold">Vaga</th>
+                  <th className="px-4 py-3 font-semibold">Signal</th>
                   <th className="px-4 py-3 font-semibold">Origem</th>
-                  <th className="px-4 py-3 font-semibold">Score</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold">Stage</th>
+                  <th className="px-4 py-3 font-semibold">Acao</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white/95">
@@ -2395,6 +2569,9 @@ export function ArgusWorkbench({
                       <p className="font-semibold text-slate-900">{job.title}</p>
                       <p className="mt-1 text-sm text-slate-500">
                         {job.company} · {job.location}
+                      </p>
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        ultimo toque {trackedJobLastTouch(job)}
                       </p>
                       {job.sourceUrl ? (
                         <a
@@ -2416,33 +2593,74 @@ export function ArgusWorkbench({
                         </Link>
                       ) : null}
                     </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">
-                      {job.intakeMode}
-                    </td>
                     <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
-                          job.score,
-                        )}`}
-                      >
-                        {job.score}%
-                      </span>
+                      <div className="space-y-3">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1 ${badgeTone(
+                            job.score,
+                          )}`}
+                        >
+                          {job.score}%
+                        </span>
+                        <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-full rounded-full bg-sky-500"
+                            style={{ width: `${Math.max(8, Math.min(job.score, 100))}%` }}
+                          />
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-600">
-                      <select
-                        value={job.status}
-                        onChange={(event) =>
-                          handleUpdateTrackedJobStatus(job.id, event.target.value)
-                        }
-                        onClick={(event) => event.stopPropagation()}
-                        className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-300"
-                      >
-                        {STATUS_OPTIONS.map((status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="space-y-2">
+                        <div>{job.intakeMode}</div>
+                        <div className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                          {job.seniority}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-slate-600">
+                      <div className="space-y-3">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${statusTone(
+                            job.status,
+                          )}`}
+                        >
+                          {job.status}
+                        </span>
+                        <div className="text-sm text-slate-500">
+                          {nextActionLabel(job.score, job.status)}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-slate-600">
+                      <div className="flex flex-col gap-2">
+                        <select
+                          value={job.status}
+                          onChange={(event) =>
+                            handleUpdateTrackedJobStatus(job.id, event.target.value)
+                          }
+                          onClick={(event) => event.stopPropagation()}
+                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-sky-300"
+                        >
+                          {STATUS_OPTIONS.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+                        {job.status !== "Entrevista" ? (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleAdvanceTrackedJob(job.id);
+                            }}
+                            className="rounded-full bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                          >
+                            Avancar etapa
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
