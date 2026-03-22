@@ -352,7 +352,13 @@ export function ArgusWorkbench({
       if (parsedState.recruiterMessage) {
         setRecruiterMessage(parsedState.recruiterMessage);
       }
-      if (parsedState.trackedJobs?.length) setTrackedJobs(parsedState.trackedJobs);
+      if (parsedState.trackedJobs?.length) {
+        setTrackedJobs(parsedState.trackedJobs);
+        // Se o localStorage tem mais de 1 vaga ou a única tem createdAt, são vagas reais
+        if (parsedState.trackedJobs.length > 1 || parsedState.trackedJobs[0]?.createdAt) {
+          setHasRealJobs(true);
+        }
+      }
       if (parsedState.discoveredJobs) setDiscoveredJobs(parsedState.discoveredJobs);
       if (parsedState.activeDiscoveryId !== undefined) {
         setActiveDiscoveryId(parsedState.activeDiscoveryId);
@@ -534,13 +540,11 @@ export function ArgusWorkbench({
         if (!response.ok || !payload.available) {
           setSyncState("offline");
           setSyncMessage(payload.reason ?? "Banco ainda nao configurado");
-          setRadarLoaded(true);
           return;
         }
 
         setSyncState("connected");
         setSyncMessage("Radar conectado — pronto para uso");
-        setRadarLoaded(true);
 
         if (payload.jobs.length > 0) {
           setHasRealJobs(true);
@@ -1537,7 +1541,7 @@ export function ArgusWorkbench({
   // ─── DASHBOARD MODE ───────────────────────────────────────────────────────────
   if (isDashboardPage) {
     // Dashboard sem vagas reais — mostrar CTA de onboarding
-    if (!hasRealJobs && trackedJobs.length <= 1 && radarLoaded) {
+    if (!hasRealJobs && radarLoaded) {
       return (
         <div className="space-y-5">
           <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium ${syncPill}`}>
@@ -1712,7 +1716,7 @@ export function ArgusWorkbench({
   // ─── CONTROL CENTER MODE ──────────────────────────────────────────────────────
 
   // Welcome screen — radar ainda carregando ou sem vagas reais
-  if (!radarLoaded || (!hasRealJobs && trackedJobs.length <= 1 && syncState !== "checking")) {
+  if (!radarLoaded || !hasRealJobs) {
     return (
       <div className="grid items-start gap-5 xl:grid-cols-[1fr_360px]">
         {/* Welcome / onboarding */}
