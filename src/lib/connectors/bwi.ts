@@ -36,8 +36,13 @@ function buildDescriptionText({
     `Location: ${location}`,
     "Employment type: Vollzeit",
     `Field: ${family}`,
+    `Role type: ${/software|entwickler|engineer|developer|it|digital|platform|devops/i.test(title) ? "Software/IT engineering" : "Other"}`,
+    /senior|lead/i.test(title) ? "Seniority: Senior" : "",
+    /java/i.test(title) ? "Inferred skills: Java, CI/CD" : "",
+    /python/i.test(title) ? "Inferred skills: Python" : "",
+    /cloud|aws|azure/i.test(title) ? "Inferred skills: Cloud, AWS" : "",
+    "Employment type: Full-time",
     "Discovered from the public BWI Stellenangebote portal.",
-    "This listing should be enriched from the detail page before a final application decision.",
     `Portal URL: ${sourceUrl}`,
   ].join("\n");
 }

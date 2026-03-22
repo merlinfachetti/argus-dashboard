@@ -52,10 +52,26 @@ export const candidateProfile: CandidateProfile = {
     "Vivência atual na Alemanha e operação em ambiente high-throughput na Amazon",
   ],
   languages: ["Portuguese", "English", "German"],
-  cvText:
-    "Merlin Fachetti\nSenior Software Engineer based in Cologne, Germany.\n10+ years building production web applications with TypeScript, Node.js, React, SQL and PostgreSQL. Experience across full stack delivery, internal platforms, workflow automation, CI/CD, GitHub Actions, debugging, incident investigation, mentoring and engineering quality improvements.",
-  coverLetterText:
-    "I am particularly interested in engineering roles where I can contribute quickly across product delivery, reliability, internal tooling and collaboration with cross-functional teams.",
+  cvText: `Merlin Fachetti
+Senior Software Engineer — Cologne, Germany
+
+10+ years of professional experience building and operating production web applications. Strong track record in full stack TypeScript / Node.js / React development, internal platform engineering, workflow automation, and incident response.
+
+Technical stack: TypeScript, JavaScript, Node.js, React, Next.js, SQL, PostgreSQL, REST APIs, Docker, CI/CD, GitHub Actions, AWS.
+
+Experience highlights:
+- Full stack delivery for internal platforms and business-critical tools
+- Workflow automation and scheduled jobs in production environments
+- Incident investigation, root cause analysis and observability practices
+- Engineering leadership, mentoring and code review at scale
+- Cross-functional collaboration with product, ops and data teams
+- Amazon operations environment — high throughput, high reliability bar
+
+Languages: Portuguese (native), English (fluent), German (B2 — working proficiency)
+Location: Cologne, Germany — open to hybrid and remote roles across Germany`,
+  coverLetterText: `I am particularly interested in senior engineering roles where I can contribute quickly across product delivery, platform reliability and internal tooling. My background combines hands-on full stack development with a strong operational mindset — I care about systems that work in production, not just in demos.
+
+I thrive in cross-functional environments where engineering quality, automation and clear communication matter. Based in Cologne, open to hybrid or remote opportunities across Germany.`,
 };
 
 export const trackedSources: PortalSource[] = [

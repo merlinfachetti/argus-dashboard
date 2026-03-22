@@ -258,6 +258,7 @@ export function ArgusWorkbench({
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
   const [copiedState, setCopiedState] = useState<"idle" | "copied">("idle");
+  const [messageLang, setMessageLang] = useState<"en" | "de" | "pt">("en");
   const [radarFilter, setRadarFilter] = useState<RadarFilter>("all");
   const [radarQuery, setRadarQuery] = useState(initialRadarQuery);
   const [discoveryQuery, setDiscoveryQuery] = useState("");
@@ -946,6 +947,11 @@ export function ArgusWorkbench({
       setActiveTrackedJobId(trackedJobs[0].id);
     }
   }, [activeTrackedJob, trackedJobs]);
+
+  // Recalcular recruiterMessage quando idioma muda
+  useEffect(() => {
+    setRecruiterMessage(buildRecruiterMessage(parsedJob, activeProfile, analysis, messageLang));
+  }, [messageLang, parsedJob, activeProfile, analysis]);
 
   function handleProcessDescription() {
     startTransition(() => {
@@ -2173,13 +2179,33 @@ export function ArgusWorkbench({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                   Recruiter message
                 </p>
-                <button
-                  type="button"
-                  onClick={handleCopyRecruiterMessage}
-                  className="rounded-full bg-slate-950 px-4 py-1.5 text-[12px] font-semibold text-white transition hover:bg-slate-800"
-                >
-                  {copiedState === "copied" ? "✓ Copiado" : "Copiar"}
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Seletor de idioma */}
+                  <div className="flex gap-1 rounded-full border border-slate-200 bg-slate-50 p-0.5">
+                    {(["en", "de", "pt"] as const).map((lang) => (
+                      <button
+                        key={lang}
+                        type="button"
+                        onClick={() => setMessageLang(lang)}
+                        className={[
+                          "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition",
+                          messageLang === lang
+                            ? "bg-slate-950 text-white"
+                            : "text-slate-500 hover:text-slate-700",
+                        ].join(" ")}
+                      >
+                        {lang === "en" ? "EN" : lang === "de" ? "DE" : "PT"}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyRecruiterMessage}
+                    className="rounded-full bg-slate-950 px-4 py-1.5 text-[12px] font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    {copiedState === "copied" ? "✓ Copiado" : "Copiar"}
+                  </button>
+                </div>
               </div>
               <pre className="whitespace-pre-wrap rounded-2xl border border-slate-100 bg-slate-50 p-4 text-[13px] leading-6 text-slate-700 font-sans">
                 {recruiterMessage}

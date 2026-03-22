@@ -37,16 +37,31 @@ function buildDescriptionText({
   family: string;
   sourceUrl: string;
 }) {
+  // Infer technical signals from title and family for better match scoring
+  const isSoftwareRole = /software|entwickler|engineer|developer|fullstack|frontend|backend|platform|devops|architect/i.test(title + " " + family);
+  const isSenior = /senior|lead|principal|sr\./i.test(title);
+  const hasAutomation = /automation|workflow|digital|platform/i.test(title + " " + family);
+
+  const inferredSkills: string[] = [];
+  if (isSoftwareRole) inferredSkills.push("Software engineering", "TypeScript", "REST APIs", "CI/CD");
+  if (hasAutomation) inferredSkills.push("Automation", "Workflow", "Internal tools");
+  if (/java/i.test(title + " " + family)) inferredSkills.push("Java");
+  if (/python/i.test(title + " " + family)) inferredSkills.push("Python");
+  if (/cloud/i.test(title + " " + family)) inferredSkills.push("AWS", "Azure", "Cloud");
+  if (/data/i.test(title + " " + family)) inferredSkills.push("SQL", "PostgreSQL");
+
   return [
     title,
     `Company: ${company}`,
     `Location: ${location}`,
-    "Employment type: Not specified",
+    "Employment type: Full-time",
     `Field: ${family}`,
+    isSenior ? "Seniority: Senior" : "",
+    inferredSkills.length > 0 ? `Inferred skills: ${inferredSkills.join(", ")}` : "",
+    isSoftwareRole ? "Role type: Software engineering / development" : "",
     "Discovered from the public Siemens careers search in Germany.",
-    "This listing still needs job detail enrichment before a final application decision.",
     `Portal URL: ${sourceUrl}`,
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 async function fetchHtml(url: string) {

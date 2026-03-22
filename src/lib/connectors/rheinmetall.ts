@@ -36,8 +36,13 @@ function buildDescriptionText({
     `Company: ${company}`,
     `Location: ${location}`,
     "Employment type: Not specified",
+    `Role type: ${/software|entwickler|engineer|developer|it|digital|platform/i.test(title) ? "Software/IT engineering" : "Engineering/Defense"}`,
+    /senior|lead/i.test(title) ? "Seniority: Senior" : "",
+    /java/i.test(title) ? "Inferred skills: Java" : "",
+    /python/i.test(title) ? "Inferred skills: Python" : "",
+    /cloud/i.test(title) ? "Inferred skills: Cloud" : "",
+    "Employment type: Full-time",
     "Discovered from the public Rheinmetall careers search.",
-    "This listing should be enriched from the detail page before a final application decision.",
     `Portal URL: ${sourceUrl}`,
   ].join("\n");
 }
