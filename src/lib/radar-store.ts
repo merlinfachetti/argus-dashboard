@@ -83,6 +83,12 @@ function normalizeSourceStatus(status: string) {
   return SourceStatus.DISCOVERY;
 }
 
+function arrayFromJson(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
 function mapTrackedJob(job: JobWithRelations): TrackedJob {
   return {
     id: job.id,
@@ -92,8 +98,8 @@ function mapTrackedJob(job: JobWithRelations): TrackedJob {
     seniority: job.seniority,
     workModel: job.workModel,
     employmentType: job.employmentType,
-    languages: (job.languages as string[]) ?? [],
-    skills: (job.skills as string[]) ?? [],
+    languages: arrayFromJson(job.languages),
+    skills: arrayFromJson(job.skills),
     summary: job.summary,
     score: job.match?.score ?? 0,
     verdict: job.match?.verdict
@@ -115,6 +121,10 @@ function mapTrackedJob(job: JobWithRelations): TrackedJob {
             note: entry.note ?? undefined,
           }))
         : [createHistoryEntry(statusFromDb[job.status], job.updatedAt.toISOString())],
+    // Match detail restaurado do DB
+    strengths: arrayFromJson(job.match?.strengths),
+    risks: arrayFromJson(job.match?.risks),
+    recruiterMessage: job.match?.recruiterMessage ?? undefined,
   };
 }
 
@@ -273,17 +283,18 @@ export async function persistRadarJob(job: TrackedJob, rawDescription?: string) 
       candidateProfileId: profile.id,
       score: job.score,
       verdict: verdictToDb[job.verdict],
-      strengths: [],
-      risks: [],
+      strengths: job.strengths ?? [],
+      risks: job.risks ?? [],
+      recruiterMessage: job.recruiterMessage ?? null,
     },
     create: {
       candidateProfileId: profile.id,
       jobId: posting.id,
       score: job.score,
       verdict: verdictToDb[job.verdict],
-      strengths: [],
-      risks: [],
-      recruiterMessage: null,
+      strengths: job.strengths ?? [],
+      risks: job.risks ?? [],
+      recruiterMessage: job.recruiterMessage ?? null,
     },
   });
 

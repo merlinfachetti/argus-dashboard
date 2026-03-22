@@ -41,6 +41,10 @@ export type TrackedJob = ParsedJob & {
   createdAt?: string;
   updatedAt?: string;
   history: JobHistoryEntry[];
+  // Match detail — persistido no DB e restaurado
+  strengths?: string[];
+  risks?: string[];
+  recruiterMessage?: string;
 };
 
 export function createHistoryEntry(

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
 const NAV_ITEMS = [
+  { href: "/", label: "Home" },
   { href: "/control-center", label: "Control Center" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/jobs", label: "Jobs" },
@@ -21,7 +22,8 @@ export function AppHeader() {
 
   function isActive(href: string) {
     if (href === "/jobs") return isJobsRoute;
-    return pathname === href;
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(href + "/");
   }
 
   async function handleLogout() {
@@ -30,22 +32,31 @@ export function AppHeader() {
   }
 
   return (
-    /* BG sólido — sem opacidade que vaza o fundo claro */
-    <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950">
-      <div className="mx-auto flex w-full max-w-[92rem] items-center gap-5 px-6 lg:px-10">
+    <header
+      style={{ backgroundColor: "#0a0f1e", borderBottom: "1px solid #1e293b" }}
+      className="sticky top-0 z-40"
+    >
+      <div className="mx-auto flex w-full max-w-[92rem] items-center gap-4 px-6 lg:px-10">
 
-        {/* Logo + Brand */}
+        {/* Logo */}
         <Link
           href="/"
-          className="flex h-[52px] shrink-0 items-center gap-3 border-r border-slate-800 pr-5"
+          style={{ borderRight: "1px solid #1e293b" }}
+          className="flex h-[52px] shrink-0 items-center gap-2.5 pr-4"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-slate-200 via-sky-100 to-sky-200 text-[11px] font-bold text-slate-900">
+          <span
+            style={{ background: "linear-gradient(135deg, #e2e8f0, #bae6fd, #7dd3fc)" }}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-bold text-slate-900"
+          >
             A
           </span>
-          <span className="text-[13px] font-semibold text-white">
+          <span style={{ color: "#f8fafc" }} className="text-[13px] font-semibold">
             Argus
           </span>
-          <span className="rounded-full bg-sky-900/60 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-sky-400">
+          <span
+            style={{ background: "#0c4a6e", color: "#38bdf8" }}
+            className="rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em]"
+          >
             v2
           </span>
         </Link>
@@ -59,14 +70,21 @@ export function AppHeader() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  style={{
+                    color: active ? "#f8fafc" : "#94a3b8",
+                  }}
                   className={[
-                    "relative flex h-[52px] items-center px-3.5 text-[13px] transition-colors",
-                    active
-                      ? "font-semibold text-white after:absolute after:inset-x-3 after:bottom-0 after:h-[2px] after:rounded-full after:bg-sky-400"
-                      : "font-medium text-slate-400 hover:text-slate-100",
+                    "relative flex h-[52px] items-center px-3 text-[13px] transition-all",
+                    active ? "font-semibold" : "font-medium hover:!text-white",
                   ].join(" ")}
                 >
                   {item.label}
+                  {active && (
+                    <span
+                      style={{ background: "#38bdf8" }}
+                      className="absolute inset-x-3 bottom-0 h-[2px] rounded-full"
+                    />
+                  )}
                 </Link>
               );
             })}
@@ -77,10 +95,12 @@ export function AppHeader() {
         {!isLoginRoute && (
           <form
             action="/jobs"
-            className="ml-auto flex h-8 w-full max-w-[240px] items-center gap-2 rounded-full border border-slate-700 bg-slate-900 px-3 transition-all focus-within:border-sky-600 focus-within:bg-slate-800"
+            style={{ background: "#0f172a", border: "1px solid #334155" }}
+            className="ml-auto flex h-8 w-full max-w-[220px] items-center gap-2 rounded-full px-3 transition-all focus-within:border-sky-600"
           >
             <svg
-              className="h-3 w-3 shrink-0 text-slate-400"
+              style={{ color: "#64748b" }}
+              className="h-3 w-3 shrink-0"
               fill="none"
               viewBox="0 0 16 16"
               stroke="currentColor"
@@ -94,7 +114,8 @@ export function AppHeader() {
               name="q"
               defaultValue={currentQuery}
               placeholder="Buscar vagas..."
-              className="h-full w-full bg-transparent text-[12px] text-slate-100 outline-none placeholder:text-slate-500"
+              style={{ color: "#f1f5f9", background: "transparent" }}
+              className="h-full w-full text-[12px] outline-none placeholder:text-slate-500"
             />
           </form>
         )}
@@ -104,7 +125,12 @@ export function AppHeader() {
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="shrink-0 rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-[11px] font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-800 hover:text-white"
+            style={{
+              background: "#0f172a",
+              border: "1px solid #334155",
+              color: "#cbd5e1",
+            }}
+            className="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-medium transition hover:!bg-slate-700 hover:!text-white"
           >
             Sair
           </button>

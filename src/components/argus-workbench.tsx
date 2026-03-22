@@ -88,6 +88,9 @@ function toTrackedJob(
     sourceUrl?: string;
     externalId?: string;
     family?: string;
+    strengths?: string[];
+    risks?: string[];
+    recruiterMessage?: string;
   },
 ): TrackedJob {
   const initialStatus =
@@ -107,6 +110,9 @@ function toTrackedJob(
     externalId: metadata.externalId,
     family: metadata.family,
     history: [createHistoryEntry(initialStatus)],
+    strengths: metadata.strengths ?? analysis.strengths,
+    risks: metadata.risks ?? analysis.risks,
+    recruiterMessage: metadata.recruiterMessage,
   };
 }
 
@@ -568,7 +574,9 @@ export function ArgusWorkbench({
           const nextAnalysis = analyzeJobMatch(nextParsedJob, activeProfile);
           setParsedJob(nextParsedJob);
           setAnalysis(nextAnalysis);
+          // Usar recruiterMessage persistido no DB se existir, senão gerar
           setRecruiterMessage(
+            nextActiveJob.recruiterMessage ??
             buildRecruiterMessage(nextParsedJob, activeProfile, nextAnalysis),
           );
         }
@@ -943,8 +951,12 @@ export function ArgusWorkbench({
     startTransition(() => {
       const nextParsedJob = parseJobDescription(jobDescription);
       const nextAnalysis = analyzeJobMatch(nextParsedJob, activeProfile);
+      const nextRecruiterMessage = buildRecruiterMessage(nextParsedJob, activeProfile, nextAnalysis);
       const nextTrackedJob = toTrackedJob(nextParsedJob, nextAnalysis, {
         intakeMode: "Input manual",
+        strengths: nextAnalysis.strengths,
+        risks: nextAnalysis.risks,
+        recruiterMessage: nextRecruiterMessage,
       });
 
       applyAnalysisState(nextParsedJob, nextAnalysis);
@@ -1014,14 +1026,18 @@ export function ArgusWorkbench({
         const seenIds = new Set(currentJobs.map((job) => job.id));
         const additions = nextDiscoveries
           .filter((job) => !seenIds.has(job.listing.externalId))
-          .map((job) =>
-            toTrackedJob(job.parsedJob, job.analysis, {
-              intakeMode: `${job.listing.source} crawler`,
-              sourceUrl: job.listing.sourceUrl,
-              externalId: job.listing.externalId,
-              family: job.listing.family,
-            }),
-          );
+          .map((job) => {
+              const msg = buildRecruiterMessage(job.parsedJob, activeProfile, job.analysis);
+              return toTrackedJob(job.parsedJob, job.analysis, {
+                intakeMode: `${job.listing.source} crawler`,
+                sourceUrl: job.listing.sourceUrl,
+                externalId: job.listing.externalId,
+                family: job.listing.family,
+                strengths: job.analysis.strengths,
+                risks: job.analysis.risks,
+                recruiterMessage: msg,
+              });
+            });
 
         jobsToPersist.push(...additions);
         return [...additions, ...currentJobs].slice(0, 12);
@@ -1071,7 +1087,14 @@ export function ArgusWorkbench({
         .filter(Boolean)
         .join("\n"),
     );
-    applyAnalysisState(nextParsedJob, nextAnalysis);
+    // Manter recruiterMessage persistido se disponível
+    if (job.recruiterMessage) {
+      setParsedJob(nextParsedJob);
+      setAnalysis(nextAnalysis);
+      setRecruiterMessage(job.recruiterMessage);
+    } else {
+      applyAnalysisState(nextParsedJob, nextAnalysis);
+    }
     setActivePanel("summary");
   }
 
@@ -1178,22 +1201,7 @@ export function ArgusWorkbench({
         (activeDiscovery ? "Discovery live" : "Input manual"),
       },
   ];
-  const controlDocumentStatus =
-    profileSyncState === "error"
-      ? "Ajustar sync"
-      : profileSyncState === "offline"
-        ? "Modo local"
-        : profileSyncState === "syncing"
-          ? "Sincronizando"
-          : "Documentos prontos";
-  const controlDocumentStatusTone =
-    profileSyncState === "error"
-      ? "text-rose-500"
-      : profileSyncState === "offline"
-        ? "text-amber-500"
-        : profileSyncState === "syncing"
-          ? "text-sky-500"
-          : "text-emerald-600";
+
   const controlSourceFocus =
     workspaceMode === "discovery"
       ? activeDiscoverySourceConfig.company
@@ -2384,26 +2392,36 @@ export function ArgusWorkbench({
 
         {/* Profile sync */}
         <div className="rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
+          {/* Header com status */}
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-[12px] font-semibold text-slate-700">Perfil & documentos</p>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-                {sources.filter((s) => /live/i.test(s.status)).length} live
-              </span>
-              <span className={`text-[11px] font-semibold ${controlDocumentStatusTone}`}>
-                {controlDocumentStatus}
-              </span>
-            </div>
+            <p className="text-[12px] font-semibold text-slate-700">CV & Cover Letter</p>
+            <span className={[
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
+              profileSyncState === "synced" ? "bg-emerald-50 text-emerald-700" :
+              profileSyncState === "syncing" ? "bg-sky-50 text-sky-700" :
+              profileSyncState === "error" ? "bg-rose-50 text-rose-700" :
+              "bg-slate-50 text-slate-500",
+            ].join(" ")}>
+              {profileSyncState === "synced" ? "✓ Sincronizado" :
+               profileSyncState === "syncing" ? "Salvando..." :
+               profileSyncState === "error" ? "Erro ao salvar" :
+               profileSyncState === "offline" ? "Local" : "Verificando..."}
+            </span>
           </div>
-          <p className="mb-1 text-[11px] text-slate-600">{profileSyncMessage}</p>
-          <div className="space-y-3">
+
+          {/* Info contextual */}
+          <p className="mb-3 text-[11px] leading-5 text-slate-500">
+            Atualizar o CV e a cover letter recalcula o match de todas as vagas automaticamente.
+          </p>
+
+          <div className="space-y-2.5">
             <label className="block">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">CV base</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">CV</span>
               <textarea
                 value={cvText}
                 onChange={(e) => setCvText(e.target.value)}
-                className="mt-1 min-h-[100px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none focus:border-sky-300 focus:bg-white"
-                placeholder="Cole o CV atual..."
+                className="mt-1 min-h-[110px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
+                placeholder="Cole o texto completo do seu CV..."
               />
             </label>
             <label className="block">
@@ -2411,11 +2429,16 @@ export function ArgusWorkbench({
               <textarea
                 value={coverLetterText}
                 onChange={(e) => setCoverLetterText(e.target.value)}
-                className="mt-1 min-h-[80px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none focus:border-sky-300 focus:bg-white"
-                placeholder="Cole a cover letter base..."
+                className="mt-1 min-h-[80px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
+                placeholder="Cole o parágrafo base da sua cover letter..."
               />
             </label>
           </div>
+
+          {/* Feedback de último sync */}
+          {profileSyncState !== "checking" && (
+            <p className="mt-2.5 text-[10px] text-slate-400">{profileSyncMessage}</p>
+          )}
         </div>
       </aside>
     </div>

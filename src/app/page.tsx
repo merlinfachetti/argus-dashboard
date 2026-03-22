@@ -65,13 +65,15 @@ export default function Home() {
             <div className="mt-7 flex flex-wrap gap-2.5">
               <Link
                 href="/jobs"
-                className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_8px_20px_rgba(15,23,42,0.2)] transition hover:bg-slate-800"
+                style={{ background: "#0f172a", color: "#ffffff" }}
+                className="rounded-full px-5 py-2.5 text-[13px] font-semibold shadow-[0_8px_20px_rgba(15,23,42,0.2)] transition hover:opacity-80"
               >
                 Entrar em Jobs
               </Link>
               <Link
                 href="/control-center"
-                className="rounded-full border border-slate-300 bg-white px-5 py-2.5 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                style={{ background: "#ffffff", border: "1px solid #cbd5e1", color: "#334155" }}
+                className="rounded-full px-5 py-2.5 text-[13px] font-semibold transition hover:opacity-80"
               >
                 Abrir Control Center
               </Link>
@@ -168,29 +170,26 @@ export default function Home() {
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.06),transparent_50%)]" />
             <div className="relative">
               <p
-                className={[
-                  "text-[11px] font-semibold uppercase tracking-[0.22em]",
-                  card.dark ? "text-sky-400" : "text-slate-400",
-                ].join(" ")}
+                style={{ color: card.dark ? "#38bdf8" : "#64748b" }}
+                className="text-[11px] font-semibold uppercase tracking-[0.22em]"
               >
                 {card.eyebrow}
               </p>
-              <p className="mt-4 text-2xl font-semibold tracking-tight">
+              <p
+                style={{ color: card.dark ? "#f8fafc" : "#0f172a" }}
+                className="mt-4 text-2xl font-semibold tracking-tight"
+              >
                 {card.title}
               </p>
               <p
-                className={[
-                  "mt-3 text-[13px] leading-6",
-                  card.dark ? "text-slate-400" : "text-slate-500",
-                ].join(" ")}
+                style={{ color: card.dark ? "#94a3b8" : "#64748b" }}
+                className="mt-3 text-[13px] leading-6"
               >
                 {card.description}
               </p>
               <p
-                className={[
-                  "mt-6 text-[13px] font-semibold transition group-hover:translate-x-0.5",
-                  card.dark ? "text-sky-400" : "text-slate-950",
-                ].join(" ")}
+                style={{ color: card.dark ? "#38bdf8" : "#0f172a" }}
+                className="mt-6 text-[13px] font-semibold transition group-hover:translate-x-0.5"
               >
                 {card.cta}
               </p>
