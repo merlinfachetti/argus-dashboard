@@ -5,6 +5,7 @@ import { trackedSources } from "@/lib/profile";
 const liveDiscoveryLinks: Record<string, string> = {
   Siemens: "/control-center?source=siemens",
   Rheinmetall: "/control-center?source=rheinmetall",
+  BWI: "/control-center?source=bwi",
 };
 
 export default function SourcesPage() {

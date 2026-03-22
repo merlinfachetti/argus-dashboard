@@ -86,8 +86,8 @@ export const trackedSources: PortalSource[] = [
   {
     company: "BWI",
     url: "https://www.bwi.de/karriere/stellenangebote",
-    strategy: "Mapear busca pública, paginação e detalhe com fallback manual.",
-    status: "Catalogado para crawler",
+    strategy: "Crawler ativo na listagem pública com enriquecimento do detalhe por vaga.",
+    status: "Discovery live",
   },
   {
     company: "Eviden",

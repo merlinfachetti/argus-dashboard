@@ -43,7 +43,7 @@ type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "message" | "history";
 type JobsSort = "updated" | "score" | "company";
-type DiscoverySourceId = "siemens" | "rheinmetall";
+type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi";
 type ProfileSyncState = "checking" | "syncing" | "synced" | "offline" | "error";
 
 const STORAGE_KEY = "argus-workbench-state";
@@ -70,6 +70,13 @@ const DISCOVERY_SOURCES: Record<
     description: "Listagem publica com detalhe enriquecido direto da vaga.",
     buttonLabel: "Buscar vagas Rheinmetall",
     endpoint: "/api/sources/rheinmetall/discover?limit=6&enrich=1",
+  },
+  bwi: {
+    label: "BWI Germany",
+    company: "BWI",
+    description: "Listagem publica de Stellenangebote com detalhe enriquecido por vaga.",
+    buttonLabel: "Buscar vagas BWI",
+    endpoint: "/api/sources/bwi/discover?limit=6&enrich=1",
   },
 };
 

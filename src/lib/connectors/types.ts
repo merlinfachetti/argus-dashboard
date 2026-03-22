@@ -1,4 +1,4 @@
-export type SupportedConnectorSource = "Siemens" | "Rheinmetall";
+export type SupportedConnectorSource = "Siemens" | "Rheinmetall" | "BWI";
 
 export type DiscoveredJobListing = {
   source: SupportedConnectorSource;
