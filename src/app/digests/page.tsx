@@ -7,7 +7,7 @@ export default async function DigestsPage() {
   const digest = await buildDailyDigestPreview();
 
   return (
-    <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-6 py-10 lg:px-10 lg:py-12">
+    <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
       <PageHero
         variant="minimal"
         eyebrow="Digests"
@@ -37,7 +37,7 @@ export default async function DigestsPage() {
         }
       />
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
+      <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
         {/* Preview do digest */}
         <article className="rounded-[28px] border border-slate-200/60 bg-white/90 p-6 shadow-[0_16px_50px_rgba(15,23,42,0.05)]">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">

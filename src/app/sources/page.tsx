@@ -13,7 +13,7 @@ export default function SourcesPage() {
   const queuedSources = trackedSources.filter((s) => !/live/i.test(s.status));
 
   return (
-    <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-6 py-10 lg:px-10 lg:py-12">
+    <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
       <PageHero
         variant="minimal"
         eyebrow="Sources"
@@ -42,7 +42,7 @@ export default function SourcesPage() {
         }
       />
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid grid gap-4">
         {/* Live */}
         <div className="rounded-[28px] border border-emerald-200/60 bg-gradient-to-b from-emerald-50/60 to-white p-6 shadow-[0_16px_50px_rgba(15,23,42,0.05)]">
           <div className="mb-5 flex items-center justify-between">

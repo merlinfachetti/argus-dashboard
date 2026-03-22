@@ -1341,7 +1341,7 @@ export function ArgusWorkbench({
         )}
 
         {/* Main grid — list + preview */}
-        <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
+        <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
           {/* List */}
           <div className="overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
             {/* List header */}
@@ -1431,9 +1431,9 @@ export function ArgusWorkbench({
             </div>
           </div>
 
-          {/* Preview panel */}
+          {/* Preview panel — hidden em mobile */}
           {jobsPreviewJob ? (
-            <div className="sticky top-[68px] space-y-3">
+            <div className="hidden xl:block sticky top-[68px] space-y-3">
               {/* Job header */}
               <div className="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
                 <div className="flex items-start justify-between gap-2">
@@ -1591,7 +1591,7 @@ export function ArgusWorkbench({
         </div>
 
         {/* KPIs row */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {[
             { label: "Total radar", value: trackedJobs.length, accent: false },
             { label: "Alta prioridade", value: priorityJobs, accent: true },
@@ -1615,11 +1615,11 @@ export function ArgusWorkbench({
         </div>
 
         {/* Kanban board */}
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 xl:grid-cols-4">
           {dashboardLanes.map((lane) => (
             <section
               key={lane.status}
-              className={`rounded-[24px] border p-4 ${laneTone(lane.status)}`}
+              className={`min-w-[240px] flex-shrink-0 rounded-2xl border p-4 sm:min-w-0 ${laneTone(lane.status)}`}
             >
               {/* Lane header */}
               <div className="mb-3 flex items-center justify-between">
@@ -1732,7 +1732,7 @@ export function ArgusWorkbench({
   // Welcome screen — radar ainda carregando ou sem vagas reais
   if (!radarLoaded || !hasRealJobs) {
     return (
-      <div className="grid items-start gap-5 xl:grid-cols-[1fr_360px]">
+      <div className="grid items-start gap-4 xl:grid-cols-[1fr_360px]">
         {/* Welcome / onboarding */}
         <div className="space-y-4">
           {/* Status bar */}
@@ -1769,7 +1769,7 @@ export function ArgusWorkbench({
               </div>
 
               {/* Two action paths */}
-              <div className="grid gap-0 sm:grid-cols-2">
+              <div className="grid gap-0 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
                 <button
                   type="button"
                   onClick={() => setWorkspaceMode("discovery")}
@@ -1951,7 +1951,7 @@ export function ArgusWorkbench({
   }
 
   return (
-    <div className="grid items-start gap-5 xl:grid-cols-[1fr_360px]">
+    <div className="grid items-start gap-4 xl:grid-cols-[1fr_360px]">
       {/* ── Main column ─────────────────────────────────────────────────────── */}
       <div className="space-y-4">
         {/* Active job hero */}
@@ -2027,7 +2027,7 @@ export function ArgusWorkbench({
             </div>
 
             {/* Stats row */}
-            <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {activeWorkspaceCards.map((card) => (
                 <div key={card.label} className="rounded-2xl border border-white/[0.07] bg-white/[0.05] px-4 py-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{card.label}</p>
@@ -2346,7 +2346,7 @@ export function ArgusWorkbench({
       </div>
 
       {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
-      <aside className="sticky top-[68px] space-y-4">
+      <aside className="space-y-4 xl:sticky xl:top-[68px]">
         {/* Radar list */}
         <div className="overflow-hidden rounded-[24px] border border-slate-200/60 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.05)]">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">

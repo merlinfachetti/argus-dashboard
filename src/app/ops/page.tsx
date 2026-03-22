@@ -24,7 +24,7 @@ export default async function OpsPage() {
   const readiness = await getOperationalReadiness();
 
   return (
-    <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-6 py-10 lg:px-10 lg:py-12">
+    <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
       <PageHero
         variant="minimal"
         eyebrow="Ops"
@@ -53,7 +53,7 @@ export default async function OpsPage() {
         }
       />
 
-      <div className="grid gap-3 xl:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {readiness.checks.map((check) => (
           <article
             key={check.id}

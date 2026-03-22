@@ -1,268 +1,152 @@
 import Link from "next/link";
 import { candidateProfile, trackedSources } from "@/lib/profile";
 
-const launcherCards = [
+const NAV_CARDS = [
   {
     href: "/control-center",
-    eyebrow: "Operate",
-    title: "Control Center",
-    description:
-      "Workspace principal para agir sobre a vaga ativa — match, riscos, mensagem e status sem distração.",
+    label: "Control Center",
+    desc: "Operar a vaga ativa — match, riscos, mensagem e status.",
     dark: true,
-    cta: "Abrir workspace →",
   },
   {
     href: "/jobs",
-    eyebrow: "Explore",
-    title: "Jobs Explorer",
-    description:
-      "Busca viva, preview rápido, filtros e acesso ao detalhe de cada oportunidade no radar.",
+    label: "Jobs Explorer",
+    desc: "Buscar, filtrar e inspecionar vagas do radar.",
     dark: false,
-    cta: "Explorar vagas →",
   },
   {
     href: "/dashboard",
-    eyebrow: "Pipeline",
-    title: "Dashboard",
-    description:
-      "Leitura executiva do funil com lanes, comparação de prioridade e foco no próximo movimento.",
+    label: "Dashboard",
+    desc: "Funil, lanes por status e prioridade do pipeline.",
     dark: false,
-    cta: "Ver pipeline →",
   },
-] as const;
-
-const operatingLoop = [
-  { n: "01", label: "Puxar vagas reais dos portais vivos" },
-  { n: "02", label: "Priorizar por aderência e próxima ação" },
-  { n: "03", label: "Operar no control center sem perda de contexto" },
-  { n: "04", label: "Receber o digest matinal e reagir ao radar" },
 ] as const;
 
 export default function Home() {
   const liveSources = trackedSources.filter((s) => /live/i.test(s.status));
 
   return (
-    <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-8 px-6 py-10 lg:px-10 lg:py-12">
+    <div className="mx-auto w-full max-w-[92rem] px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
 
-      {/* Hero — split clean */}
-      <section className="relative overflow-hidden rounded-[36px] border border-slate-200/60 bg-white/80 shadow-[0_24px_80px_rgba(15,23,42,0.06)] backdrop-blur-sm">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_5%_10%,rgba(56,189,248,0.08),transparent_35%),radial-gradient(circle_at_90%_80%,rgba(249,115,22,0.06),transparent_35%)]" />
-
-        <div className="relative grid gap-0 xl:grid-cols-[1fr_340px]">
-          {/* Left */}
-          <div className="border-r border-slate-200/60 p-8 xl:p-12">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-              Private Radar
-            </div>
-
-            <h1 className="mt-5 max-w-xl text-[2.6rem] font-semibold leading-[1.08] tracking-[-0.04em] text-slate-950">
-              Um cockpit privado para transformar hunting em operação.
+      {/* Hero — compacto, direto */}
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-xl">
+            <span className="inline-block rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Private radar
+            </span>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+              Argus — cockpit privado para job hunting.
             </h1>
-            <p className="mt-4 max-w-lg text-[15px] leading-7 text-slate-500">
-              Discovery real, leitura estruturada, score de aderência, prioridade e rotina de candidatura em uma experiência única.
+            <p className="mt-2 text-[14px] leading-6 text-slate-500">
+              Discovery real, score de aderência, recruiter message e pipeline operável em um lugar.
             </p>
-
-            <div className="mt-7 flex flex-wrap gap-2.5">
-              <Link
-                href="/jobs"
-                style={{ background: "#0f172a", color: "#ffffff" }}
-                className="rounded-full px-5 py-2.5 text-[13px] font-semibold shadow-[0_8px_20px_rgba(15,23,42,0.2)] transition hover:opacity-80"
-              >
-                Entrar em Jobs
-              </Link>
+            <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href="/control-center"
-                style={{ background: "#ffffff", border: "1px solid #cbd5e1", color: "#334155" }}
-                className="rounded-full px-5 py-2.5 text-[13px] font-semibold transition hover:opacity-80"
+                style={{ background: "#0f172a", color: "#fff" }}
+                className="rounded-full px-4 py-2 text-[13px] font-semibold transition hover:opacity-80"
               >
                 Abrir Control Center
               </Link>
-            </div>
-
-            {/* Metrics row */}
-            <div className="mt-8 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              {[
-                { label: "Perfil ativo", value: "1", accent: true },
-                { label: "Live sources", value: `${liveSources.length}` },
-                { label: "Total portais", value: `${trackedSources.length}` },
-                { label: "Mode", value: "Command", dark: true },
-              ].map((m) => (
-                <div
-                  key={m.label}
-                  className={[
-                    "rounded-2xl border p-4",
-                    m.dark
-                      ? "border-slate-800 bg-slate-950 text-white"
-                      : m.accent
-                        ? "border-sky-200/80 bg-gradient-to-b from-sky-50 to-white text-slate-950"
-                        : "border-slate-200/80 bg-white/90 text-slate-950",
-                  ].join(" ")}
-                >
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-50">
-                    {m.label}
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold tracking-tight">
-                    {m.value}
-                  </p>
-                </div>
-              ))}
+              <Link
+                href="/jobs"
+                style={{ border: "1px solid #e2e8f0", color: "#334155" }}
+                className="rounded-full px-4 py-2 text-[13px] font-semibold transition hover:bg-slate-50"
+              >
+                Ver Jobs
+              </Link>
             </div>
           </div>
 
-          {/* Right — profile snapshot */}
-          <div className="relative bg-gradient-to-b from-slate-950 to-slate-900 p-8 text-white xl:rounded-r-[36px]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.12),transparent_40%)] xl:rounded-r-[36px]" />
-            <div className="relative">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-400">
-                Strategic profile
-              </p>
-              <p className="mt-4 text-xl font-semibold leading-snug tracking-tight">
-                {candidateProfile.headline}
-              </p>
-              <p className="mt-3 text-[13px] leading-6 text-slate-400">
-                {candidateProfile.location} · {candidateProfile.availability}
-              </p>
-
-              <div className="mt-6 space-y-2.5">
-                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.05] px-4 py-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Core stack
-                  </p>
-                  <p className="mt-1.5 text-[13px] font-medium text-slate-200">
-                    {candidateProfile.coreStack.slice(0, 4).join(" · ")}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.05] px-4 py-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Idiomas
-                  </p>
-                  <p className="mt-1.5 text-[13px] font-medium text-slate-200">
-                    {candidateProfile.languages.join(" · ")}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.05] px-4 py-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Target roles
-                  </p>
-                  <p className="mt-1.5 text-[13px] font-medium text-slate-200">
-                    {candidateProfile.targetRoles.slice(0, 2).join(" · ")}
-                  </p>
-                </div>
+          {/* Stats — compacto */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 lg:min-w-[220px]">
+            {[
+              { label: "Perfil", value: candidateProfile.name.split(" ")[0] },
+              { label: "Live", value: `${liveSources.length} fontes` },
+              { label: "Stack", value: `${candidateProfile.coreStack.length} techs` },
+              { label: "Idiomas", value: candidateProfile.languages.join(", ") },
+            ].map((s) => (
+              <div key={s.label} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{s.label}</p>
+                <p className="mt-0.5 text-[13px] font-semibold text-slate-800 truncate">{s.value}</p>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Launcher cards */}
-      <section className="grid gap-4 xl:grid-cols-3">
-        {launcherCards.map((card) => (
+      {/* Nav cards — 3 áreas principais */}
+      <section className="mb-6 grid gap-3 sm:grid-cols-3">
+        {NAV_CARDS.map((card) => (
           <Link
             key={card.href}
             href={card.href}
-            className={[
-              "group relative overflow-hidden rounded-[28px] border p-7 transition hover:-translate-y-0.5 hover:shadow-[0_28px_80px_rgba(15,23,42,0.12)]",
-              card.dark
-                ? "border-slate-800 bg-gradient-to-b from-slate-950 to-slate-900 text-white"
-                : "border-slate-200/80 bg-white/90 text-slate-950",
-            ].join(" ")}
+            style={card.dark ? { background: "#0f172a", border: "1px solid #1e293b" } : { border: "1px solid #e2e8f0" }}
+            className="group flex flex-col gap-2 rounded-2xl p-5 transition hover:opacity-90 bg-white"
           >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.06),transparent_50%)]" />
-            <div className="relative">
-              <p
-                style={{ color: card.dark ? "#38bdf8" : "#64748b" }}
-                className="text-[11px] font-semibold uppercase tracking-[0.22em]"
-              >
-                {card.eyebrow}
-              </p>
-              <p
-                style={{ color: card.dark ? "#f8fafc" : "#0f172a" }}
-                className="mt-4 text-2xl font-semibold tracking-tight"
-              >
-                {card.title}
-              </p>
-              <p
-                style={{ color: card.dark ? "#94a3b8" : "#64748b" }}
-                className="mt-3 text-[13px] leading-6"
-              >
-                {card.description}
-              </p>
-              <p
-                style={{ color: card.dark ? "#38bdf8" : "#0f172a" }}
-                className="mt-6 text-[13px] font-semibold transition group-hover:translate-x-0.5"
-              >
-                {card.cta}
-              </p>
-            </div>
+            <p
+              style={{ color: card.dark ? "#38bdf8" : "#64748b" }}
+              className="text-[11px] font-semibold uppercase tracking-[0.2em]"
+            >
+              {card.dark ? "Operate" : card.href === "/jobs" ? "Explore" : "Pipeline"}
+            </p>
+            <p
+              style={{ color: card.dark ? "#f8fafc" : "#0f172a" }}
+              className="text-[16px] font-semibold"
+            >
+              {card.label}
+            </p>
+            <p
+              style={{ color: card.dark ? "#94a3b8" : "#64748b" }}
+              className="text-[13px] leading-5"
+            >
+              {card.desc}
+            </p>
+            <p
+              style={{ color: card.dark ? "#38bdf8" : "#475569" }}
+              className="mt-1 text-[12px] font-semibold transition group-hover:translate-x-0.5"
+            >
+              Acessar →
+            </p>
           </Link>
         ))}
       </section>
 
-      {/* Operating loop + value props */}
-      <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        {/* Loop */}
-        <div className="rounded-[28px] border border-slate-800 bg-gradient-to-b from-slate-950 to-slate-900 p-7 text-white">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-400">
-            Operating loop
-          </p>
-          <h2 className="mt-4 text-2xl font-semibold tracking-[-0.02em]">
-            Descobrir, priorizar, operar, repetir.
-          </h2>
-          <div className="mt-6 space-y-2">
-            {operatingLoop.map((step) => (
-              <div
-                key={step.n}
-                className="flex items-center gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.04] px-5 py-4"
-              >
-                <span className="shrink-0 text-[11px] font-bold tabular-nums text-slate-600">
-                  {step.n}
+      {/* Info strip — fontes live + stack em linha, sem cards pesados */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Fontes live</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {liveSources.map((s) => (
+                <span key={s.company} className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-medium text-emerald-700">
+                  {s.company}
                 </span>
-                <span className="text-[13px] font-medium text-slate-200">
-                  {step.label}
+              ))}
+              {trackedSources.filter((s) => !/live/i.test(s.status)).slice(0, 4).map((s) => (
+                <span key={s.company} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] text-slate-500">
+                  {s.company}
                 </span>
-              </div>
-            ))}
+              ))}
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] text-slate-400">
+                +{trackedSources.length - liveSources.length - 4} catalogadas
+              </span>
+            </div>
           </div>
-        </div>
-
-        {/* Value */}
-        <div className="rounded-[28px] border border-slate-200/80 bg-white/90 p-7 shadow-[0_20px_60px_rgba(15,23,42,0.05)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-            Product moat
-          </p>
-          <h2 className="mt-4 text-2xl font-semibold tracking-[-0.02em] text-slate-950">
-            Valor real vem de compressão de workflow, não de UI bonita.
-          </h2>
-          <div className="mt-6 space-y-3">
-            {[
-              {
-                title: "Private opportunity intelligence",
-                body: "Consolida descoberta, leitura, triagem, score e operação em uma superfície única.",
-              },
-              {
-                title: "Moat through workflow compression",
-                body: "O ganho está em cortar fricção repetitiva em toda a rotina diária de hunting.",
-              },
-              {
-                title: "Action-first architecture",
-                body: "Cada área foi separada por intenção: buscar, decidir, operar, automatizar e governar.",
-              },
-            ].map((p) => (
-              <article
-                key={p.title}
-                className="rounded-2xl border border-slate-200/60 bg-slate-50/60 p-4"
-              >
-                <h3 className="text-[13px] font-semibold text-slate-950">
-                  {p.title}
-                </h3>
-                <p className="mt-1.5 text-[13px] leading-6 text-slate-500">
-                  {p.body}
-                </p>
-              </article>
-            ))}
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Stack do perfil</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {candidateProfile.coreStack.slice(0, 8).map((s) => (
+                <span key={s} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] text-slate-600">
+                  {s}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
+
     </div>
   );
 }

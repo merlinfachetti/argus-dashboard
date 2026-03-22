@@ -346,7 +346,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
+      <div className="flex gap-0.5 rounded-full border border-slate-200 bg-slate-50 p-1">
         {(["overview", "match", "message", "history"] as const).map((tab) => (
           <button
             key={tab}
@@ -366,7 +366,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
 
       {/* Tab content */}
       {activeTab === "overview" && (
-        <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
           {/* Summary + skills */}
           <div className="rounded-[24px] border border-slate-200/60 bg-white p-6 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -405,7 +405,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
       )}
 
       {activeTab === "match" && (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-[24px] border border-emerald-200/60 bg-gradient-to-b from-emerald-50/60 to-white p-5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-600">
               O que favorece

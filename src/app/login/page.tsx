@@ -12,7 +12,7 @@ export default async function LoginPage({
     params.next && params.next.startsWith("/") ? params.next : "/control-center";
 
   return (
-    <div className="flex min-h-[calc(100vh-60px)] items-center justify-center px-6 py-16">
+    <div className="flex min-h-[calc(100vh-48px)] items-center justify-center px-4 py-10 sm:px-6">
       <div className="w-full max-w-[400px]">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3 text-center">

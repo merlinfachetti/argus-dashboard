@@ -39,7 +39,7 @@ function DefaultHero({ eyebrow, title, description, metrics, actions, aside }: P
 
       <div className="relative grid gap-0 xl:grid-cols-[1fr_340px]">
         {/* Left — content */}
-        <div className="border-r border-slate-200/60 p-8 xl:p-10">
+        <div className="border-r border-slate-200/60 p-5 sm:p-7 xl:p-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
             {eyebrow}
           </div>
@@ -92,13 +92,13 @@ function DefaultHero({ eyebrow, title, description, metrics, actions, aside }: P
 // Variante minimal — sem aside, para páginas de conteúdo simples
 function MinimalHero({ eyebrow, title, description, metrics, actions }: PageHeroProps) {
   return (
-    <section className="border-b border-slate-200/60 pb-8">
+    <section className="border-b border-slate-200/60 pb-5">
       <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
         {eyebrow}
       </div>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="max-w-2xl text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-[2rem]">
+          <h1 className="max-w-2xl text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
             {title}
           </h1>
           {description && (

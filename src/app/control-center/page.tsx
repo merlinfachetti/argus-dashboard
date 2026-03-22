@@ -11,7 +11,7 @@ export default async function ControlCenterPage({
   const { profile } = await getPersistedCandidateProfile();
 
   return (
-    <div className="mx-auto flex w-full max-w-[92rem] px-6 py-8 lg:px-10 lg:py-10">
+    <div className="mx-auto flex w-full max-w-[92rem] px-4 py-5 sm:px-6 sm:py-6 lg:px-10 lg:py-8">
       {/* Control Center não usa PageHero — a vaga ativa É o hero */}
       <ArgusWorkbench
         profile={profile}
