@@ -70,37 +70,31 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
     <>
       {isSuccessAnimating ? <div className="auth-reveal" aria-hidden="true" /> : null}
 
-      <form className="mt-8 grid gap-4" onSubmit={handleSubmit}>
-        <label className="grid gap-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+      <form className="mt-6 grid gap-3" onSubmit={handleSubmit}>
+        <label className="grid gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
             Senha de acesso
           </span>
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="h-13 rounded-[20px] border border-slate-200 bg-white px-4 text-sm text-slate-800 outline-none transition focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
-            placeholder="Digite a senha privada do Argus"
+            className="h-11 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-[13px] text-slate-800 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-4 focus:ring-sky-100"
+            placeholder="Senha privada do Argus"
           />
         </label>
 
         {passwordStrength ? (
-          <div className="rounded-[20px] border border-violet-200 bg-violet-50/90 px-4 py-3 text-sm text-violet-700 shadow-[0_12px_30px_rgba(139,92,246,0.08)]">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
             <div className="flex items-center justify-between gap-3">
-              <span className="font-semibold">{passwordStrength.label}</span>
-              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-500">
-                Password signal
-              </span>
+              <span className="text-[12px] font-semibold text-slate-700">{passwordStrength.label}</span>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-violet-100">
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
               <div
-                className="h-full rounded-full bg-[linear-gradient(90deg,#a855f7,#7c3aed)] transition-all duration-300"
+                className="h-full rounded-full bg-slate-900 transition-all duration-300"
                 style={{ width: passwordStrength.width }}
               />
             </div>
-            <p className="mt-3 text-sm leading-7 text-violet-700">
-              {passwordStrength.message}
-            </p>
           </div>
         ) : null}
 
@@ -113,9 +107,9 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
         <button
           type="submit"
           disabled={isSubmitting || isSuccessAnimating}
-          className="inline-flex h-12 items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#0f172a,#1e293b)] px-5 text-sm font-semibold uppercase tracking-[0.18em] text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)] transition duration-300 hover:scale-[1.02] hover:shadow-[0_20px_40px_rgba(15,23,42,0.22)] active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-11 w-full rounded-2xl bg-slate-950 text-[13px] font-semibold text-white shadow-[0_8px_20px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSubmitting || isSuccessAnimating ? "Authenticating..." : "Authenticate"}
+          {isSubmitting || isSuccessAnimating ? "Autenticando..." : "Entrar"}
         </button>
       </form>
     </>

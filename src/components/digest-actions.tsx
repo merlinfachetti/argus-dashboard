@@ -2,91 +2,79 @@
 
 import { useState, useTransition } from "react";
 
-type DigestActionState = {
+type ActionState = {
   tone: "idle" | "success" | "error";
   message: string;
 };
 
-const idleState: DigestActionState = {
+const idleState: ActionState = {
   tone: "idle",
-  message: "Use os controles abaixo para persistir o preview ou disparar um email de teste.",
+  message: "Persistir o preview no banco ou disparar um email de teste.",
 };
 
 export function DigestActions() {
-  const [status, setStatus] = useState<DigestActionState>(idleState);
+  const [status, setStatus] = useState<ActionState>(idleState);
   const [isPending, startTransition] = useTransition();
 
   function runAction(pathname: string) {
     startTransition(async () => {
       try {
-        const response = await fetch(pathname, {
-          method: "POST",
-        });
+        const response = await fetch(pathname, { method: "POST" });
         const payload = (await response.json()) as {
           error?: string;
           preview?: { subject?: string };
         };
 
-        if (!response.ok) {
-          throw new Error(payload.error ?? "Falha na operacao do digest");
-        }
+        if (!response.ok) throw new Error(payload.error ?? "Falha na operação");
 
         setStatus({
           tone: "success",
           message:
             pathname === "/api/digests/send"
-              ? `Email disparado com sucesso${payload.preview?.subject ? `: ${payload.preview.subject}` : ""}.`
-              : "Preview persistido no banco com sucesso.",
+              ? `Email disparado${payload.preview?.subject ? `: ${payload.preview.subject}` : ""}.`
+              : "Preview persistido no banco.",
         });
-      } catch (error) {
+      } catch (err) {
         setStatus({
           tone: "error",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Falha ao executar acao de digest",
+          message: err instanceof Error ? err.message : "Falha ao executar",
         });
       }
     });
   }
 
   return (
-    <div className="rounded-[28px] border border-slate-200 bg-white/88 p-5 shadow-[0_14px_35px_rgba(15,23,42,0.04)]">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-            Testes operacionais
-          </p>
-          <p
-            className={`mt-2 text-sm leading-7 ${
-              status.tone === "error"
-                ? "text-rose-600"
-                : status.tone === "success"
-                  ? "text-emerald-700"
-                  : "text-slate-500"
-            }`}
-          >
-            {status.message}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled={isPending}
-            onClick={() => runAction("/api/digests/today")}
-            className="rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Persistir preview
-          </button>
-          <button
-            type="button"
-            disabled={isPending}
-            onClick={() => runAction("/api/digests/send")}
-            className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Enviar email de teste
-          </button>
-        </div>
+    <div className="rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+        Testes operacionais
+      </p>
+      <p
+        className={[
+          "mt-2 text-[12px] leading-5",
+          status.tone === "error" ? "text-rose-600" :
+          status.tone === "success" ? "text-emerald-700" :
+          "text-slate-500",
+        ].join(" ")}
+      >
+        {status.message}
+      </p>
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => runAction("/api/digests/today")}
+          className="flex-1 rounded-full border border-slate-200 bg-white py-2 text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+        >
+          Persistir preview
+        </button>
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => runAction("/api/digests/send")}
+          className="flex-1 rounded-full bg-slate-950 py-2 text-[12px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+        >
+          Enviar email
+        </button>
       </div>
     </div>
   );
