@@ -186,6 +186,45 @@ function laneTone(status: string) {
   return "border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.92))]";
 }
 
+function nextActionLabel(score: number, status?: string | null) {
+  if (status === "Entrevista") {
+    return "Preparar conversa";
+  }
+
+  if (status === "Aplicada") {
+    return "Acompanhar retorno";
+  }
+
+  if (status === "Aplicar" || score >= 78) {
+    return "Executar aplicacao";
+  }
+
+  if (status === "Pronta para revisar" || score >= 64) {
+    return "Revisao final";
+  }
+
+  return "Triagem e contexto";
+}
+
+function formatActivityLabel(value?: string | null) {
+  if (!value) {
+    return "Ainda sem sync";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Sem data valida";
+  }
+
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function ArgusWorkbench({
   profile,
   sources,
@@ -1128,6 +1167,42 @@ export function ArgusWorkbench({
       : activeTrackedJob
         ? [createHistoryEntry(activeTrackedJob.status)]
         : [];
+  const activeLastTouch =
+    activeTrackedJob?.updatedAt ??
+    activeTimeline[activeTimeline.length - 1]?.changedAt ??
+    activeTrackedJob?.createdAt ??
+    null;
+  const activeNextAction = nextActionLabel(
+    analysis.score,
+    activeTrackedJob?.status ?? null,
+  );
+  const activeWorkspaceCards = [
+    {
+      label: "Signal",
+      value: `${analysis.score}%`,
+      detail: analysis.verdict,
+    },
+    {
+      label: "Stage",
+      value: activeTrackedJob?.status ?? "Nova leitura",
+      detail: activeSourceLabel,
+    },
+    {
+      label: "Next move",
+      value: activeNextAction,
+      detail:
+        analysis.score >= 70
+          ? "Ja ha contexto para agir."
+          : "Vale triagem antes de executar.",
+    },
+    {
+      label: "Last touch",
+      value: formatActivityLabel(activeLastTouch),
+      detail:
+        activeTrackedJob?.intakeMode ??
+        (activeDiscovery ? "Discovery live" : "Input manual"),
+    },
+  ];
   const comparisonJobs = [...filteredTrackedJobs]
     .sort((left, right) => right.score - left.score)
     .slice(0, 3);
@@ -1153,23 +1228,23 @@ export function ArgusWorkbench({
     <div
       className={
         isControlPage
-          ? "grid gap-8 xl:grid-cols-[1.12fr_0.88fr]"
-          : "space-y-8"
+          ? "grid items-start gap-10 xl:grid-cols-[minmax(0,1.18fr)_minmax(22rem,0.82fr)]"
+          : "space-y-10"
       }
     >
       <section className="space-y-8">
         {!isJobsPage ? (
-          <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr_0.75fr]">
-          <div className="rounded-[36px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(14,165,233,0.78))] p-6 text-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+          <div className="grid gap-4 xl:grid-cols-[1.35fr_0.72fr_0.72fr]">
+          <div className="rounded-[38px] border border-slate-900/85 bg-[linear-gradient(140deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_45%,rgba(14,165,233,0.78))] p-6 text-white shadow-[0_28px_90px_rgba(15,23,42,0.18)]">
             <p className="text-sm font-medium uppercase tracking-[0.24em] text-sky-300">
-              Match em foco
+              Decision signal
             </p>
             <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-5xl font-semibold">{analysis.score}%</p>
                 <p className="mt-2 text-sm text-slate-300">{analysis.verdict}</p>
                 <p className="mt-4 max-w-sm text-sm leading-7 text-slate-200">
-                  Um snapshot rapido da vaga ativa para decidir se ela merece aprofundamento imediato.
+                  Um snapshot de decisão para dizer se a vaga ativa merece atenção imediata ou só monitoramento.
                 </p>
               </div>
               <div className="min-w-[14rem] flex-1">
@@ -1180,29 +1255,29 @@ export function ArgusWorkbench({
                   />
                 </div>
                 <p className="mt-3 text-sm leading-7 text-slate-300">
-                  Score da vaga ativa contra o seu perfil principal.
+                  Leitura de aderência da vaga ativa contra o perfil atual do candidato.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-[32px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
-            <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">Pipeline forte</p>
+          <div className="rounded-[34px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
+            <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">Priority queue</p>
             <p className="mt-3 text-4xl font-semibold text-slate-950">
               {priorityJobs}
             </p>
             <p className="mt-3 text-sm leading-7 text-slate-500">
-              Vagas com score alto para puxar acao imediata.
+              vagas já fortes o suficiente para virar ação nas próximas horas.
             </p>
           </div>
 
-          <div className="rounded-[32px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,247,237,0.92))] p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
-            <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">Cobertura real</p>
+          <div className="rounded-[34px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,247,237,0.92))] p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
+            <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">Live coverage</p>
             <p className="mt-3 text-4xl font-semibold text-slate-950">
               {crawlerJobs}
             </p>
             <p className="mt-3 text-sm leading-7 text-slate-500">
-              Itens vindos de discovery real contra {manualJobs} manuais.
+              fontes reais já abastecendo o radar contra {manualJobs} entradas manuais.
             </p>
           </div>
           </div>
@@ -1344,7 +1419,22 @@ export function ArgusWorkbench({
             </button>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-2 border-b border-slate-200 pb-5">
+          <div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {activeWorkspaceCards.map((card) => (
+              <article
+                key={card.label}
+                className="rounded-[26px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,250,252,0.92))] px-5 py-4 shadow-[0_16px_40px_rgba(15,23,42,0.04)]"
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                  {card.label}
+                </p>
+                <p className="mt-3 text-lg font-semibold text-slate-950">{card.value}</p>
+                <p className="mt-2 text-sm leading-7 text-slate-500">{card.detail}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-8 flex flex-wrap gap-2 border-b border-slate-200 pb-6">
             {[
               { id: "summary", label: "Resumo" },
               { id: "match", label: "Match" },
@@ -1368,32 +1458,64 @@ export function ArgusWorkbench({
 
           <div className="mt-6">
             {activePanel === "summary" ? (
-              <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
-                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                    Resumo da vaga
+              <div className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
+                <div className="rounded-[30px] border border-slate-900/85 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_50%,rgba(14,165,233,0.72))] p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
+                  <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
+                    Role brief
                   </p>
-                  <p className="mt-4 text-sm leading-8 text-slate-600">
+                  <h3 className="mt-3 text-3xl font-semibold">{parsedJob.title}</h3>
+                  <p className="mt-2 text-sm leading-7 text-slate-300">
+                    {parsedJob.company} · {parsedJob.location}
+                  </p>
+                  <p className="mt-6 text-sm leading-8 text-slate-200">
                     {parsedJob.summary}
                   </p>
+                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        Senioridade
+                      </p>
+                      <p className="mt-2 text-sm text-white">{parsedJob.seniority}</p>
+                    </div>
+                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        Work model
+                      </p>
+                      <p className="mt-2 text-sm text-white">{parsedJob.workModel}</p>
+                    </div>
+                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        Contrato
+                      </p>
+                      <p className="mt-2 text-sm text-white">{parsedJob.employmentType}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-4">
-                  <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
+                <div className="grid gap-4">
+                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
                     <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                      Fit rapido
+                      Decision read
                     </p>
                     <p className="mt-3 text-2xl font-semibold text-slate-950">
                       {analysis.verdict}
                     </p>
                     <p className="mt-2 text-sm leading-7 text-slate-500">
-                      Leitura curta para decidir se vale revisar agora ou deixar no radar.
+                      Leitura curta para decidir se o item sobe para execucao agora ou continua em triagem.
                     </p>
                   </div>
-                  <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
+                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,248,240,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
                     <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
-                      Skills detectadas
+                      Linguas e stack
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">
+                      {parsedJob.languages.map((language) => (
+                        <span
+                          key={language}
+                          className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
+                        >
+                          {language}
+                        </span>
+                      ))}
                       {parsedJob.skills.length > 0 ? (
                         parsedJob.skills.map((skill) => (
                           <span
@@ -1410,13 +1532,24 @@ export function ArgusWorkbench({
                       )}
                     </div>
                   </div>
+                  <div className="rounded-[28px] border border-slate-200 bg-white/92 p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
+                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                      Recommended move
+                    </p>
+                    <p className="mt-3 text-xl font-semibold text-slate-950">
+                      {activeNextAction}
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-slate-500">
+                      Combine esse sinal com o contexto da empresa e com a mensagem sugerida antes de executar.
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : null}
 
             {activePanel === "match" ? (
-              <div className="grid gap-5 lg:grid-cols-[0.9fr_1.05fr_1.05fr]">
-                <div className="rounded-[28px] border border-slate-900/80 bg-slate-950 p-6 text-white">
+              <div className="grid gap-5 xl:grid-cols-[0.92fr_1.04fr_1.04fr]">
+                <div className="rounded-[30px] border border-slate-900/80 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_45%,rgba(14,165,233,0.65))] p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
                   <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
                     Match score
                   </p>
@@ -1429,40 +1562,66 @@ export function ArgusWorkbench({
                     />
                   </div>
                   <div className="mt-6 grid gap-3">
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
-                      {analysis.strengths.length} sinais positivos
+                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        Sinais positivos
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-white">
+                        {analysis.strengths.length}
+                      </p>
                     </div>
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">
-                      {analysis.risks.length} riscos ou gaps
+                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        Riscos ou gaps
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-white">
+                        {analysis.risks.length}
+                      </p>
+                    </div>
+                    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        Proximo passo
+                      </p>
+                      <p className="mt-2 text-sm text-white">{activeNextAction}</p>
                     </div>
                   </div>
                 </div>
-                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
+                <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(240,253,244,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
                   <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
                     O que favorece
                   </p>
-                  <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
+                  <div className="mt-4 grid gap-3">
                     {analysis.strengths.map((item) => (
-                      <li key={item}>• {item}</li>
+                      <div
+                        key={item}
+                        className="rounded-[22px] bg-white px-4 py-4 text-sm leading-7 text-slate-600 ring-1 ring-emerald-100"
+                      >
+                        {item}
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
-                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
+                <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(255,241,242,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
                   <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
                     Pontos de atenção
                   </p>
-                  <ul className="mt-4 space-y-3 text-sm leading-7 text-slate-600">
+                  <div className="mt-4 grid gap-3">
                     {analysis.risks.map((item) => (
-                      <li key={item}>• {item}</li>
+                      <div
+                        key={item}
+                        className="rounded-[22px] bg-white px-4 py-4 text-sm leading-7 text-slate-600 ring-1 ring-rose-100"
+                      >
+                        {item}
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               </div>
             ) : null}
 
             {activePanel === "message" ? (
-              <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-                <div className="rounded-[28px] border border-slate-200 bg-slate-950 p-6 text-white">
+              <div className="grid gap-5 xl:grid-cols-[1.08fr_0.92fr]">
+                <div className="rounded-[30px] border border-slate-900/80 bg-[linear-gradient(145deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_45%,rgba(14,165,233,0.65))] p-6 text-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
                       Mensagem sugerida
@@ -1479,19 +1638,47 @@ export function ArgusWorkbench({
                     {recruiterMessage}
                   </p>
                 </div>
-                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
-                  <p className="text-sm font-medium text-slate-700">
-                    Como usar esta mensagem
-                  </p>
-                  <div className="mt-4 grid gap-2 text-sm text-slate-600">
-                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                      1. Revise se o tom combina com a vaga e empresa
+                <div className="grid gap-4">
+                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
+                    <p className="text-sm font-medium text-slate-700">
+                      Como usar esta mensagem
+                    </p>
+                    <div className="mt-4 grid gap-2 text-sm text-slate-600">
+                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
+                        1. Revise se o tom combina com a vaga e a empresa
+                      </div>
+                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
+                        2. Ajuste detalhes especificos antes de enviar
+                      </div>
+                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
+                        3. Atualize o status no radar assim que aplicar
+                      </div>
                     </div>
-                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                      2. Ajuste detalhes específicos antes de enviar
-                    </div>
-                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                      3. Marque o status no radar assim que aplicar
+                  </div>
+                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,248,240,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
+                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                      Documentos ativos
+                    </p>
+                    <p className="mt-3 text-sm leading-7 text-slate-500">
+                      O texto atual esta sendo calibrado usando o CV e a cover letter ativos no painel lateral.
+                    </p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-[22px] bg-white px-4 py-4 ring-1 ring-slate-200">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                          CV base
+                        </p>
+                        <p className="mt-2 text-sm text-slate-700">
+                          {cvText.trim() ? "Conectado ao match" : "Ainda vazio"}
+                        </p>
+                      </div>
+                      <div className="rounded-[22px] bg-white px-4 py-4 ring-1 ring-slate-200">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                          Cover letter
+                        </p>
+                        <p className="mt-2 text-sm text-slate-700">
+                          {coverLetterText.trim() ? "Personalizando outreach" : "Ainda vazia"}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1499,31 +1686,17 @@ export function ArgusWorkbench({
             ) : null}
 
             {activePanel === "history" ? (
-              <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
+              <div className="grid gap-5 xl:grid-cols-[1.04fr_0.96fr]">
+                <div className="rounded-[30px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
                   <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
                     Linha do tempo
                   </p>
-                  <div className="mt-4 grid gap-4">
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {activeSnapshot.map((item) => (
-                        <div
-                          key={`${item.label}-${item.value}`}
-                          className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200"
-                        >
-                          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                            {item.label}
-                          </p>
-                          <p className="mt-1 text-sm text-slate-700">{item.value}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="space-y-3">
-                      {activeTimeline.map((entry, index) => (
+                  <div className="mt-5 space-y-3">
+                    {activeTimeline.length > 0 ? (
+                      activeTimeline.map((entry, index) => (
                         <div
                           key={`${entry.status}-${entry.changedAt}-${index}`}
-                          className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200"
+                          className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200 shadow-[0_10px_24px_rgba(15,23,42,0.03)]"
                         >
                           <div className="flex items-center justify-between gap-3">
                             <span
@@ -1541,30 +1714,53 @@ export function ArgusWorkbench({
                             <p className="mt-2 text-sm text-slate-600">{entry.note}</p>
                           ) : null}
                         </div>
+                      ))
+                    ) : (
+                      <div className="rounded-[24px] border border-dashed border-slate-300 bg-white/80 px-4 py-5 text-sm text-slate-500">
+                        Ainda nao ha eventos para esta vaga.
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="grid gap-4">
+                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(240,249,255,0.9))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
+                    <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                      Snapshot operacional
+                    </p>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      {activeSnapshot.map((item) => (
+                        <div
+                          key={`${item.label}-${item.value}`}
+                          className="rounded-[22px] bg-white px-4 py-4 ring-1 ring-slate-200"
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                            {item.label}
+                          </p>
+                          <p className="mt-2 text-sm text-slate-700">{item.value}</p>
+                        </div>
                       ))}
                     </div>
                   </div>
-                </div>
-                <div className="rounded-[28px] border border-slate-200 bg-slate-50/80 p-6">
-                  <p className="text-sm font-medium text-slate-700">
-                    Como testar o fluxo agora
-                  </p>
-                  <p className="mt-1 text-sm leading-7 text-slate-500">
-                    Use um único modo por vez. O objetivo aqui é ver o produto
-                    funcionando sem poluição e com decisões rápidas.
-                  </p>
-                  <div className="mt-4 grid gap-2 text-sm text-slate-600">
-                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                      1. Escolha `Fonte real` ou `JD manual`
-                    </div>
-                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                      2. Torne uma vaga ativa no painel
-                    </div>
-                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                      3. Valide resumo, match e mensagem
-                    </div>
-                    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
-                      4. Atualize o status para manter o radar limpo
+                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(255,248,240,0.92))] p-6 shadow-[0_16px_40px_rgba(15,23,42,0.04)]">
+                    <p className="text-sm font-medium text-slate-700">
+                      Workflow sugerido
+                    </p>
+                    <p className="mt-1 text-sm leading-7 text-slate-500">
+                      Use um modo por vez e mantenha a vaga ativa sempre como referencia principal do trabalho.
+                    </p>
+                    <div className="mt-4 grid gap-2 text-sm text-slate-600">
+                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
+                        1. Escolha `Fonte real` ou `JD manual`
+                      </div>
+                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
+                        2. Torne uma vaga ativa no painel
+                      </div>
+                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
+                        3. Valide resumo, match e abordagem
+                      </div>
+                      <div className="rounded-[22px] bg-white px-4 py-3 ring-1 ring-slate-200">
+                        4. Atualize status para manter o radar limpo
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1576,7 +1772,7 @@ export function ArgusWorkbench({
         {isDashboardPage || isJobsPage ? (
           <div
           id="radar"
-          className="rounded-[40px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(243,248,255,0.88))] p-7 shadow-[0_28px_90px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8"
+          className="rounded-[42px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(243,248,255,0.88))] p-7 shadow-[0_30px_100px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8"
         >
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -1655,8 +1851,8 @@ export function ArgusWorkbench({
           </div>
 
           {isJobsPage ? (
-            <div className="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-              <div className="rounded-[32px] border border-slate-900/80 bg-[linear-gradient(135deg,rgba(15,23,42,1),rgba(30,41,59,0.98)_55%,rgba(14,165,233,0.75))] p-6 text-white shadow-[0_22px_60px_rgba(15,23,42,0.16)]">
+            <div className="mt-6 grid gap-4 xl:grid-cols-[0.92fr_1.08fr_0.72fr]">
+              <div className="rounded-[34px] border border-slate-900/80 bg-[linear-gradient(140deg,rgba(8,17,31,1),rgba(15,23,42,0.98)_50%,rgba(14,165,233,0.75))] p-6 text-white shadow-[0_22px_60px_rgba(15,23,42,0.16)]">
                 <p className="text-sm font-medium uppercase tracking-[0.22em] text-sky-300">
                   Jobs Explorer
                 </p>
@@ -1667,7 +1863,7 @@ export function ArgusWorkbench({
                   vagas apos busca do header, filtros locais e ordenacao.
                 </p>
               </div>
-              <div className="rounded-[32px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+              <div className="rounded-[34px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <label className="grid gap-2">
                     <span className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
@@ -1734,6 +1930,33 @@ export function ArgusWorkbench({
                       <option value="company">Empresa</option>
                     </select>
                   </label>
+                </div>
+              </div>
+
+              <div className="rounded-[34px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,248,240,0.92))] p-5 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+                <p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-500">
+                  Explorer lens
+                </p>
+                <div className="mt-4 grid gap-3">
+                  <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                      Live sources
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-950">
+                      {crawlerJobs}
+                    </p>
+                  </div>
+                  <div className="rounded-[24px] bg-white px-4 py-4 ring-1 ring-slate-200">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                      Manual fallback
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-950">
+                      {manualJobs}
+                    </p>
+                  </div>
+                  <p className="text-sm leading-7 text-slate-500">
+                    A ideia aqui é procurar com rapidez, comparar com contexto e sair para o detalhe só quando houver sinal forte.
+                  </p>
                 </div>
               </div>
             </div>
@@ -1900,7 +2123,7 @@ export function ArgusWorkbench({
             {dashboardLanes.map((lane) => (
               <section
                 key={lane.status}
-                className={`rounded-[30px] border p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05)] ${laneTone(
+                className={`rounded-[32px] border p-4 shadow-[0_18px_50px_rgba(15,23,42,0.05)] ${laneTone(
                   lane.status,
                 )}`}
               >
@@ -1917,6 +2140,17 @@ export function ArgusWorkbench({
                     Lane
                   </span>
                 </div>
+                <p className="mt-3 text-sm leading-7 text-slate-500">
+                  {lane.status === "Pronta para revisar"
+                    ? "Sinal forte, precisa de leitura final antes de aplicar."
+                    : lane.status === "Aplicar"
+                      ? "Vagas que já deveriam estar em execução."
+                      : lane.status === "Aplicada"
+                        ? "Histórico de movimentação já convertida."
+                        : lane.status === "Entrevista"
+                          ? "Pipeline quente, máxima atenção."
+                          : "Itens novos ainda aguardando direção."}
+                </p>
 
                 <div className="mt-4 space-y-3">
                   {lane.jobs.length > 0 ? (
@@ -2220,7 +2454,7 @@ export function ArgusWorkbench({
       </section>
 
       {isControlPage ? (
-        <aside className="space-y-6">
+        <aside className="space-y-6 xl:sticky xl:top-28">
         <div
           id="profile"
           className="rounded-[36px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(239,246,255,0.9))] p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur"
