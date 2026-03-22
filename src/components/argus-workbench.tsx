@@ -1218,14 +1218,9 @@ export function ArgusWorkbench({
   if (isJobsPage) {
     return (
       <div className="space-y-5">
-        {/* Sync status */}
-        <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium ${syncPill}`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${syncDot}`} />
-          {syncMessage}
-        </div>
-
-        {/* Filters row */}
+        {/* Filters + sync row */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Radar filter pills */}
           {(["all", "crawler", "manual", "priority"] as RadarFilter[]).map((f) => (
             <button
               key={f}
@@ -1238,10 +1233,28 @@ export function ArgusWorkbench({
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
               ].join(" ")}
             >
-              {f === "all" ? "Todos" : f === "crawler" ? "Crawler" : f === "manual" ? "Manual" : "Prioridade ≥ 70%"}
+              {f === "all" ? "Todos" : f === "crawler" ? "Crawler" : f === "manual" ? "Manual" : "≥ 70%"}
             </button>
           ))}
+
+          {/* Seniority filter */}
+          <select
+            value={jobsSeniorityFilter}
+            onChange={(e) => setJobsSeniorityFilter(e.target.value)}
+            className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-[12px] font-medium text-slate-700 outline-none"
+          >
+            <option value="all">Senioridade</option>
+            {[...new Set(trackedJobs.map((j) => j.seniority).filter(Boolean))].map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+
           <div className="ml-auto flex items-center gap-2">
+            {/* Sync pill integrado */}
+            <div className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${syncPill}`}>
+              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${syncDot}`} />
+              <span className="hidden sm:inline">{syncMessage}</span>
+            </div>
             {/* Sort */}
             <select
               value={jobsSort}
@@ -1253,7 +1266,7 @@ export function ArgusWorkbench({
               <option value="company">Empresa</option>
             </select>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px] font-semibold text-slate-500">
-              {jobsFilteredTrackedJobs.length} vagas
+              {jobsFilteredTrackedJobs.length}
             </span>
           </div>
         </div>
@@ -1316,8 +1329,22 @@ export function ArgusWorkbench({
             {/* Rows */}
             <div className="divide-y divide-slate-100">
               {jobsFilteredTrackedJobs.length === 0 ? (
-                <div className="px-5 py-8 text-center text-[13px] text-slate-400">
-                  Nenhuma vaga encontrada para os filtros atuais.
+                <div className="flex flex-col items-center gap-3 px-5 py-12 text-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[18px]">
+                    ◎
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-slate-600">
+                      {radarFilter !== "all" || jobsSeniorityFilter !== "all"
+                        ? "Nenhuma vaga para esses filtros"
+                        : "Radar vazio — adicione vagas pelo Control Center"}
+                    </p>
+                    <p className="mt-1 text-[12px] text-slate-400">
+                      {radarFilter !== "all" || jobsSeniorityFilter !== "all"
+                        ? "Tente remover alguns filtros para ver mais resultados."
+                        : "Use o intake manual ou dispare um discovery de fonte real."}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 jobsFilteredTrackedJobs.map((job) => (
@@ -1516,7 +1543,7 @@ export function ArgusWorkbench({
               </div>
 
               {/* Cards */}
-              <div className="space-y-2">
+              <div className="max-h-[480px] space-y-2 overflow-y-auto">
                 {lane.jobs.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-center text-[12px] text-slate-400">
                     Vazio
@@ -1558,9 +1585,10 @@ export function ArgusWorkbench({
                             <button
                               type="button"
                               onClick={() => handleAdvanceTrackedJob(job.id)}
+                              title="Avançar stage"
                               className="rounded-full bg-slate-950 px-2 py-0.5 text-[10px] font-semibold text-white transition hover:bg-slate-800"
                             >
-                              ↑
+                              →
                             </button>
                           )}
                         </div>
@@ -1624,7 +1652,7 @@ export function ArgusWorkbench({
               <p className="text-[11px] font-medium text-slate-400">{syncMessage}</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                 {controlSourceFocus}
               </span>
               {activeTrackedJob && (
@@ -1645,14 +1673,21 @@ export function ArgusWorkbench({
           <div className="px-6 py-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-400">
-                  Vaga ativa
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-400">
+                    Vaga ativa
+                  </p>
+                  {parsedJob.company && (
+                    <span className="rounded-full border border-white/10 bg-white/[0.08] px-2.5 py-0.5 text-[10px] font-semibold text-slate-300">
+                      {parsedJob.company}
+                    </span>
+                  )}
+                </div>
                 <h1 className="mt-2 text-2xl font-semibold leading-snug tracking-tight">
                   {parsedJob.title}
                 </h1>
                 <p className="mt-1 text-[13px] text-slate-400">
-                  {parsedJob.company} · {parsedJob.location}
+                  {parsedJob.location}{parsedJob.seniority ? ` · ${parsedJob.seniority}` : ""}
                 </p>
               </div>
 
@@ -1684,9 +1719,9 @@ export function ArgusWorkbench({
             <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               {activeWorkspaceCards.map((card) => (
                 <div key={card.label} className="rounded-2xl border border-white/[0.07] bg-white/[0.05] px-4 py-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{card.label}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{card.label}</p>
                   <p className="mt-1.5 text-[13px] font-semibold text-slate-100">{card.value}</p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">{card.detail}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-400">{card.detail}</p>
                 </div>
               ))}
             </div>
@@ -1750,8 +1785,8 @@ export function ArgusWorkbench({
               <div className="rounded-[24px] border border-slate-900/80 bg-gradient-to-b from-slate-950 to-slate-900 p-5 text-white">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-400">Role brief</p>
                 <h3 className="mt-3 text-xl font-semibold">{parsedJob.title}</h3>
-                <p className="mt-0.5 text-[12px] text-slate-400">{parsedJob.company} · {parsedJob.location}</p>
-                <p className="mt-4 text-[13px] leading-6 text-slate-300">{parsedJob.summary}</p>
+                <p className="mt-0.5 text-[12px] text-slate-300">{parsedJob.company} · {parsedJob.location}</p>
+                <p className="mt-4 text-[13px] leading-6 text-slate-200">{parsedJob.summary}</p>
                 <div className="mt-4 flex flex-wrap gap-1.5">
                   {parsedJob.skills.slice(0, 6).map((skill) => (
                     <span key={skill} className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-[11px] font-medium text-slate-300">
@@ -1932,7 +1967,7 @@ export function ArgusWorkbench({
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-[13px] font-semibold text-slate-950">{job.listing.title}</p>
-                          <p className="text-[11px] text-slate-500">{job.listing.location}</p>
+                          <p className="text-[11px] text-slate-400">{job.listing.location}</p>
                         </div>
                       </button>
                     ))}
@@ -1992,7 +2027,7 @@ export function ArgusWorkbench({
           </div>
           <div className="max-h-[320px] divide-y divide-slate-100 overflow-y-auto">
             {filteredTrackedJobs.length === 0 ? (
-              <p className="px-4 py-6 text-center text-[12px] text-slate-400">
+              <p className="px-4 py-6 text-center text-[12px] text-slate-300">
                 Nenhuma vaga no radar.
               </p>
             ) : (
@@ -2035,7 +2070,7 @@ export function ArgusWorkbench({
               </span>
             </div>
           </div>
-          <p className="mb-1 text-[11px] text-slate-500">{profileSyncMessage}</p>
+          <p className="mb-1 text-[11px] text-slate-600">{profileSyncMessage}</p>
           <div className="space-y-3">
             <label className="block">
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">CV base</span>

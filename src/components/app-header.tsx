@@ -30,8 +30,8 @@ export function AppHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[rgba(5,11,23,0.95)] backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-[92rem] items-center gap-5 px-6 py-0 lg:px-10">
+    <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[rgba(5,11,23,0.96)] backdrop-blur-xl">
+      <div className="mx-auto flex w-full max-w-[92rem] items-center gap-5 px-6 lg:px-10">
         {/* Logo + Brand */}
         <Link
           href="/"
@@ -40,7 +40,7 @@ export function AppHeader() {
           <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-gradient-to-br from-slate-200 via-sky-100 to-sky-200 text-[11px] font-bold text-slate-900 shadow-[0_4px_14px_rgba(56,189,248,0.25)]">
             A
           </span>
-          <span className="text-[13px] font-semibold tracking-tight text-white">
+          <span className="text-[13px] font-semibold tracking-tight text-slate-100">
             Argus
           </span>
           <span className="rounded-full border border-sky-500/25 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-sky-400">
@@ -61,7 +61,7 @@ export function AppHeader() {
                     "relative flex h-[52px] items-center px-3.5 text-[13px] transition-colors",
                     active
                       ? "font-semibold text-white after:absolute after:inset-x-3 after:bottom-0 after:h-[2px] after:rounded-full after:bg-sky-400"
-                      : "font-medium text-slate-400 hover:text-slate-200",
+                      : "font-medium text-slate-300 hover:text-white",
                   ].join(" ")}
                 >
                   {item.label}
@@ -75,10 +75,11 @@ export function AppHeader() {
         {!isLoginRoute && (
           <form
             action="/jobs"
-            className="ml-auto flex h-8 w-full max-w-[240px] items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 transition-all focus-within:border-sky-500/40 focus-within:bg-white/[0.07]"
+            className="ml-auto flex h-8 w-full max-w-[240px] items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 transition-all focus-within:border-sky-500/40 focus-within:bg-white/[0.10]"
           >
+            {/* Search icon — branco para contrastar com dark bg */}
             <svg
-              className="h-3 w-3 shrink-0 text-slate-500"
+              className="h-3 w-3 shrink-0 text-slate-400"
               fill="none"
               viewBox="0 0 16 16"
               stroke="currentColor"
@@ -92,7 +93,7 @@ export function AppHeader() {
               name="q"
               defaultValue={currentQuery}
               placeholder="Buscar vagas..."
-              className="h-full w-full bg-transparent text-[12px] text-white outline-none placeholder:text-slate-600"
+              className="h-full w-full bg-transparent text-[12px] text-white outline-none placeholder:text-slate-500"
             />
           </form>
         )}
@@ -102,7 +103,7 @@ export function AppHeader() {
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="shrink-0 rounded-full border border-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-slate-500 transition hover:border-white/14 hover:text-slate-300"
+            className="shrink-0 rounded-full border border-white/[0.10] px-3 py-1.5 text-[11px] font-medium text-slate-300 transition hover:border-white/20 hover:text-white"
           >
             Sair
           </button>

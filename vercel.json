@@ -5,5 +5,9 @@
       "path": "/api/cron/daily-digest",
       "schedule": "0 6 * * *"
     }
-  ]
+  ],
+  "buildCommand": "prisma generate && next build --webpack",
+  "env": {
+    "PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING": "1"
+  }
 }

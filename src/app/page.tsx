@@ -123,7 +123,7 @@ export default function Home() {
 
               <div className="mt-6 space-y-2.5">
                 <div className="rounded-2xl border border-white/[0.08] bg-white/[0.05] px-4 py-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                     Core stack
                   </p>
                   <p className="mt-1.5 text-[13px] font-medium text-slate-200">
@@ -131,7 +131,7 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/[0.08] bg-white/[0.05] px-4 py-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                     Idiomas
                   </p>
                   <p className="mt-1.5 text-[13px] font-medium text-slate-200">
@@ -139,7 +139,7 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/[0.08] bg-white/[0.05] px-4 py-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                     Target roles
                   </p>
                   <p className="mt-1.5 text-[13px] font-medium text-slate-200">
