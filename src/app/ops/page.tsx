@@ -2,6 +2,9 @@ import Link from "next/link";
 import { PageHero } from "@/components/page-hero";
 import { getOperationalReadiness } from "@/lib/ops-readiness";
 
+export const dynamic = "force-dynamic";
+
+
 function statusBadgeStyle(status: "ready" | "warning" | "blocked"): React.CSSProperties {
   const map = {
     ready:   { background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0" },

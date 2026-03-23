@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { trackedSources } from "@/lib/profile";
 
+export const dynamic = "force-dynamic";
+
+
 const liveDiscoveryLinks: Record<string, string> = {
   Siemens:          "/control-center?source=siemens",
   Rheinmetall:      "/control-center?source=rheinmetall",

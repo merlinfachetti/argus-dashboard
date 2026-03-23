@@ -56,15 +56,17 @@ function slugify(value: string) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeSourceStatus(status: string): any {
-  if (/live/i.test(status))    return "DISCOVERY";
-  if (/pausado/i.test(status)) return "PAUSED";
-  if (/degrad/i.test(status))  return "DEGRADED";
-  return "QUEUED";
+  // Valid SourceStatus values: DISCOVERY | READY | DEGRADED | PAUSED
+  if (/live/i.test(status))     return "DISCOVERY";
+  if (/pausado/i.test(status))  return "PAUSED";
+  if (/degrad/i.test(status))   return "DEGRADED";
+  return "READY";  // catalogado/queued → READY (aguardando implementação)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeIntakeMode(intakeMode: string): any {
-  return /manual/i.test(intakeMode) ? "MANUAL" : "CRAWLER";
+  // Valid SourceKind values: CAREER_SITE | MANUAL
+  return /manual/i.test(intakeMode) ? "MANUAL" : "CAREER_SITE";
 }
 
 function arrayFromJson(value: unknown): string[] {
@@ -89,7 +91,7 @@ function mapTrackedJob(job: any): TrackedJob {
     score:          job.match?.score ?? 0,
     verdict:        VERDICT_FROM_DB[job.match?.verdict ?? ""] ?? "Aderência parcial",
     status:         STATUS_FROM_DB[job.status] ?? "Nova",
-    intakeMode:     job.intakeMode === "MANUAL" ? "Input manual" : `${job.company} crawler`,
+    intakeMode:     job.intakeMode === "MANUAL" ? "Input manual" : `${job.company} crawler`,  // MANUAL | CAREER_SITE
     sourceUrl:      job.sourceUrl ?? undefined,
     externalId:     job.externalId ?? undefined,
     family:         undefined,

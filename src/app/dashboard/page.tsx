@@ -3,6 +3,9 @@ import { PageHero } from "@/components/page-hero";
 import { defaultJobDescription, trackedSources } from "@/lib/profile";
 import { getPersistedCandidateProfile } from "@/lib/profile-store";
 
+export const dynamic = "force-dynamic";
+
+
 export default async function DashboardPage() {
   const { profile } = await getPersistedCandidateProfile();
 

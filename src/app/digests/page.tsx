@@ -3,6 +3,9 @@ import { DigestActions } from "@/components/digest-actions";
 import { PageHero } from "@/components/page-hero";
 import { buildDailyDigestPreview } from "@/lib/daily-digest";
 
+export const dynamic = "force-dynamic";
+
+
 export default async function DigestsPage() {
   const digest = await buildDailyDigestPreview();
 
