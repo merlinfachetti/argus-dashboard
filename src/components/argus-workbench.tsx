@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useT } from "@/lib/i18n/context";
 import { buildInterviewPrep, type InterviewPrep } from "@/lib/interview-prep";
+import { buildCandidacyPackage, downloadCandidacyPackage } from "@/lib/export-candidacy";
+import { computePipelineAnalytics } from "@/lib/pipeline-analytics";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { DiscoveredJobListing } from "@/lib/connectors/types";
 import {
@@ -305,6 +307,11 @@ export function ArgusWorkbench({
   );
   const [coverCopied, setCoverCopied] = useState(false);
   const [interviewPrep, setInterviewPrep] = useState<InterviewPrep | null>(null);
+  const [exportState, setExportState] = useState<"idle" | "done">("idle");
+  const analytics = useMemo(
+    () => computePipelineAnalytics(trackedJobs),
+    [trackedJobs]
+  );
   const [radarFilter, setRadarFilter] = useState<RadarFilter>("all");
   const [radarQuery, setRadarQuery] = useState(initialRadarQuery);
   const [discoveryQuery, setDiscoveryQuery] = useState("");
@@ -647,7 +654,7 @@ export function ArgusWorkbench({
     return () => {
       isMounted = false;
     };
-  }, [activeProfile]);
+  }, [activeProfile, t]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -1752,6 +1759,78 @@ export function ArgusWorkbench({
         </div>
 
         {/* Priority comparison */}
+        {/* Pipeline analytics */}
+        {analytics.totalJobs > 0 && (
+          <div className="rounded-2xl border border-slate-200/60 bg-white p-5">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Pipeline analytics</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 mb-4">
+              {[
+                { label: "Apply rate",     value: `${analytics.applyRate}%`,   sub: `${analytics.appliedJobs}/${analytics.totalJobs}` },
+                { label: "Interview rate", value: `${analytics.interviewRate}%`, sub: `${analytics.interviewJobs} interviews` },
+                { label: "Avg score",      value: `${analytics.avgScore}%`,    sub: `top ${analytics.topScore}%` },
+                { label: "Days → apply",   value: analytics.avgDaysToApply !== null ? `${analytics.avgDaysToApply}d` : "—", sub: "Nova → Applied" },
+              ].map((k) => (
+                <div key={k.label} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{k.label}</p>
+                  <p className="mt-0.5 text-[18px] font-semibold text-slate-950">{k.value}</p>
+                  <p className="text-[11px] text-slate-400">{k.sub}</p>
+                </div>
+              ))}
+            </div>
+            {analytics.scoreBuckets.length > 0 && (
+              <div className="mb-4 space-y-1.5">
+                <p className="text-[11px] font-semibold text-slate-400 mb-2">Score distribution</p>
+                {analytics.scoreBuckets.map((b) => (
+                  <div key={b.label} className="flex items-center gap-3">
+                    <span className="w-14 shrink-0 text-[11px] font-semibold text-slate-600">{b.label}</span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-full rounded-full bg-sky-400" style={{ width: `${(b.count / analytics.totalJobs) * 100}%` }} />
+                    </div>
+                    <span className="w-10 shrink-0 text-right text-[11px] text-slate-500">{b.count}</span>
+                    {b.conversion > 0 && (
+                      <span style={{ background: "#ecfdf5", color: "#047857" }} className="rounded-full px-2 py-0.5 text-[10px] font-bold">{b.conversion}% →</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {analytics.sourceStats.length > 0 && (
+              <div className="mb-4">
+                <p className="text-[11px] font-semibold text-slate-400 mb-2">By source</p>
+                <div className="space-y-1.5">
+                  {analytics.sourceStats.map((s) => (
+                    <div key={s.source} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5">
+                      <span className="text-[12px] font-medium text-slate-700">{s.source}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-400">{s.count} jobs · avg {s.avgScore}%</span>
+                        {s.applied > 0 && <span style={{ background: "#eff6ff", color: "#1d4ed8" }} className="rounded-full px-2 py-0.5 text-[10px] font-bold">{s.applied} applied</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              {analytics.stalledJobs.length > 0 && (
+                <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 p-3">
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-600">Stalled ({analytics.stalledJobs.length})</p>
+                  {analytics.stalledJobs.slice(0, 3).map((j) => (
+                    <p key={j.id} className="truncate text-[12px] text-slate-600">{j.title} — {j.company}</p>
+                  ))}
+                </div>
+              )}
+              {analytics.readyToApply.length > 0 && (
+                <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-3">
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600">Ready to apply ({analytics.readyToApply.length})</p>
+                  {analytics.readyToApply.slice(0, 3).map((j) => (
+                    <p key={j.id} className="truncate text-[12px] text-slate-600">{j.score}% · {j.title} — {j.company}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {comparisonJobs.length > 0 && (
           <div>
             <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -2137,6 +2216,21 @@ export function ArgusWorkbench({
                 </button>
               )}
             </div>
+              {activeTrackedJob && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const pkg = buildCandidacyPackage(activeTrackedJob, activeProfile, messageLang);
+                    downloadCandidacyPackage(pkg);
+                    setExportState("done");
+                    setTimeout(() => setExportState("idle"), 2000);
+                  }}
+                  style={{ border: "1px solid rgba(255,255,255,0.12)", color: exportState === "done" ? "#4ade80" : "#94a3b8" }}
+                  className="rounded-full bg-transparent px-4 py-2 text-[12px] font-semibold transition hover:text-white"
+                >
+                  {exportState === "done" ? "✓ Package ready" : "Export package ↓"}
+                </button>
+              )}
           </div>
         </div>
 

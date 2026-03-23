@@ -67,7 +67,7 @@ export function DigestActions() {
           onClick={() => runAction("/api/digests/today")}
           className="flex-1 rounded-full border border-slate-200 bg-white py-2 text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
         >
-          Persistir preview
+          {t("digests.persist")}
         </button>
         <button
           type="button"
@@ -75,7 +75,7 @@ export function DigestActions() {
           onClick={() => runAction("/api/digests/send")}
           className="flex-1 rounded-full bg-slate-950 py-2 text-[12px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
         >
-          Enviar email
+          {t("digests.sendTest")}
         </button>
       </div>
     </div>
