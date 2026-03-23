@@ -54,14 +54,16 @@ function slugify(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-function normalizeSourceStatus(status: string): string {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeSourceStatus(status: string): any {
   if (/live/i.test(status))    return "DISCOVERY";
   if (/pausado/i.test(status)) return "PAUSED";
   if (/degrad/i.test(status))  return "DEGRADED";
   return "QUEUED";
 }
 
-function normalizeIntakeMode(intakeMode: string): string {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeIntakeMode(intakeMode: string): any {
   return /manual/i.test(intakeMode) ? "MANUAL" : "CRAWLER";
 }
 
@@ -145,7 +147,8 @@ async function getSourceIdForJob(job: TrackedJob) {
   return source?.id ?? null;
 }
 
-async function createStatusEventIfNeeded(jobId: string, dbStatus: string, note?: string) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function createStatusEventIfNeeded(jobId: string, dbStatus: any, note?: string) {
   const latestEvent = await db.jobStatusEvent.findFirst({
     where:   { jobId },
     orderBy: { createdAt: "desc" },
@@ -190,7 +193,8 @@ export async function persistRadarJob(job: TrackedJob, rawDescription?: string) 
   await ensureSources();
   const profile  = await ensureCandidateProfileRecord();
   const sourceId = await getSourceIdForJob(job);
-  const dbStatus = STATUS_TO_DB[job.status] ?? "NEW";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dbStatus = (STATUS_TO_DB[job.status] ?? "NEW") as any;
 
   const postingData = {
     intakeMode:           normalizeIntakeMode(job.intakeMode),
@@ -227,7 +231,8 @@ export async function persistRadarJob(job: TrackedJob, rawDescription?: string) 
     update: {
       candidateProfileId: profile.id,
       score:              job.score,
-      verdict:            VERDICT_TO_DB[job.verdict] ?? "PARTIAL_FIT",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      verdict:            (VERDICT_TO_DB[job.verdict] ?? "PARTIAL_FIT") as any,
       strengths:          job.strengths ?? [],
       risks:              job.risks ?? [],
       recruiterMessage:   job.recruiterMessage ?? null,
@@ -236,7 +241,8 @@ export async function persistRadarJob(job: TrackedJob, rawDescription?: string) 
       candidateProfileId: profile.id,
       jobId:              posting.id,
       score:              job.score,
-      verdict:            VERDICT_TO_DB[job.verdict] ?? "PARTIAL_FIT",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      verdict:            (VERDICT_TO_DB[job.verdict] ?? "PARTIAL_FIT") as any,
       strengths:          job.strengths ?? [],
       risks:              job.risks ?? [],
       recruiterMessage:   job.recruiterMessage ?? null,
@@ -256,7 +262,8 @@ export async function persistRadarJob(job: TrackedJob, rawDescription?: string) 
 export async function updateRadarJobStatus(jobId: string, status: UiJobStatus) {
   if (!isDatabaseConfigured()) throw new Error("Database not configured");
 
-  const dbStatus = STATUS_TO_DB[status] ?? "NEW";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dbStatus = (STATUS_TO_DB[status] ?? "NEW") as any;
 
   await db.jobPosting.update({
     where: { id: jobId },
