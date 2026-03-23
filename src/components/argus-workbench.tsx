@@ -8,11 +8,12 @@ import { computePipelineAnalytics } from "@/lib/pipeline-analytics";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { DiscoveredJobListing } from "@/lib/connectors/types";
 import {
-  analyzeGaps,
+  analyzeGap,
   analyzeJobMatch,
   buildCustomCoverParagraph,
   buildRecruiterMessage,
   parseJobDescription,
+  type GapAnalysis,
   type MatchAnalysis,
   type ParsedJob,
 } from "@/lib/job-intake";
@@ -2305,148 +2306,7 @@ export function ArgusWorkbench({
             </div>
           )}
 
-          {activePanel === "match" && (() => {
-            const gaps = analyzeGaps(parsedJob, activeProfile);
-            return (
-              <div className="space-y-3">
-                {/* Overall note */}
-                <div className="rounded-2xl border border-slate-200/60 bg-slate-50 px-4 py-3">
-                  <p className="text-[12px] text-slate-600">{gaps.overallNote}</p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {/* Strengths */}
-                  <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      Strengths
-                      {gaps.coveredSkills.length > 0 && (
-                        <span className="ml-2 normal-case font-normal text-slate-400">({gaps.coveredSkills.length} skills cobertas)</span>
-                      )}
-                    </p>
-                    <div className="mt-3 space-y-2">
-                      {analysis.strengths.length === 0 ? (
-                        <p className="text-[13px] text-slate-400">Sem pontos identificados.</p>
-                      ) : (
-                        analysis.strengths.map((s) => (
-                          <div key={s} className="flex items-start gap-2.5">
-                            <span className="mt-0.5 shrink-0 text-[14px] text-emerald-500">✓</span>
-                            <p className="text-[13px] leading-5 text-slate-700">{s}</p>
-                          </div>
-                        ))
-                      )}
-                      {gaps.coveredSkills.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {gaps.coveredSkills.map((s) => (
-                            <span key={s} className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: "#ecfdf5", color: "#047857" }}>{s}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Gaps com posicionamento */}
-                  <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      Gaps & posicionamento
-                      {gaps.gaps.length > 0 && (
-                        <span className="ml-2 normal-case font-normal text-slate-400">({gaps.gaps.length} itens)</span>
-                      )}
-                    </p>
-                    <div className="mt-3 space-y-3">
-                      {gaps.gaps.length === 0 && !gaps.languageGap && !gaps.seniorityNote ? (
-                        <p className="text-[13px] text-slate-400">Sem gaps críticos identificados.</p>
-                      ) : (
-                        <>
-                          {gaps.gaps.map((g) => (
-                            <div key={g.skill} className="rounded-xl border border-slate-100 p-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-bold" style={{
-                                  color: g.severity === "critical" ? "#be123c" : g.severity === "moderate" ? "#b45309" : "#64748b"
-                                }}>
-                                  {g.severity === "critical" ? "●" : g.severity === "moderate" ? "◐" : "○"}
-                                </span>
-                                <span className="text-[12px] font-semibold text-slate-800">{g.skill}</span>
-                                <span className="ml-auto text-[10px] font-semibold uppercase" style={{
-                                  color: g.severity === "critical" ? "#be123c" : g.severity === "moderate" ? "#b45309" : "#64748b"
-                                }}>{g.severity}</span>
-                              </div>
-                              <p className="mt-1.5 text-[11px] leading-5 text-slate-500">{g.positioning}</p>
-                            </div>
-                          ))}
-                          {gaps.languageGap && (
-                            <div className="rounded-xl border px-3 py-2.5" style={{ borderColor: "#fde68a", background: "#fffbeb" }}>
-                              <p className="text-[11px] font-semibold text-amber-700">Idioma</p>
-                              <p className="mt-1 text-[11px] leading-5 text-amber-600">{gaps.languageGap}</p>
-                            </div>
-                          )}
-                          {gaps.seniorityNote && (
-                            <div className="rounded-xl border px-3 py-2.5" style={{ borderColor: "#bfdbfe", background: "#eff6ff" }}>
-                              <p className="text-[11px] font-semibold text-blue-700">Senioridade</p>
-                              <p className="mt-1 text-[11px] leading-5 text-blue-600">{gaps.seniorityNote}</p>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {activePanel === "gap" && gapAnalysis && (
-            <div className="space-y-3">
-              {/* Next step */}
-              <div className="rounded-2xl border border-sky-200/60 bg-gradient-to-b from-sky-50 to-white p-4">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-600">{t("gap.nextStep")}</p>
-                <p className="mt-1.5 text-[14px] font-semibold text-slate-950">{gapAnalysis.nextStep}</p>
-              </div>
-
-              {/* Missing skills */}
-              {gapAnalysis.missingSkills.length > 0 ? (
-                <div className="rounded-2xl border border-slate-200/60 bg-white p-4">
-                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("gap.missingSkills")}</p>
-                  <div className="space-y-2.5">
-                    {gapAnalysis.missingSkills.map((g) => (
-                      <div key={g.skill} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-[13px] text-slate-950">{g.skill}</span>
-                          <span style={g.severity === "critical"
-                            ? { background: "#fff1f2", color: "#be123c", outline: "1px solid #fecdd3" }
-                            : { background: "#fffbeb", color: "#b45309", outline: "1px solid #fde68a" }}
-                            className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                          >
-                            {g.severity === "critical" ? t("gap.critical") : t("gap.minor")}
-                          </span>
-                        </div>
-                        <p className="mt-1.5 text-[12px] leading-5 text-slate-500">{g.suggestion}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-emerald-200/60 bg-gradient-to-b from-emerald-50 to-white p-4">
-                  <p className="text-[13px] font-semibold text-emerald-800">{t("gap.noGaps")}</p>
-                </div>
-              )}
-
-              {/* Language gap */}
-              {gapAnalysis.languageGap && (
-                <div className="rounded-2xl border border-amber-200/60 bg-gradient-to-b from-amber-50 to-white p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-600">{t("gap.languageGap")}</p>
-                  <p className="mt-1.5 text-[13px] leading-5 text-slate-700">{gapAnalysis.languageGap.note}</p>
-                </div>
-              )}
-
-              {/* Seniority gap */}
-              {gapAnalysis.seniorityGap && (
-                <div className="rounded-2xl border border-violet-200/60 bg-gradient-to-b from-violet-50 to-white p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-600">{t("gap.seniorityGap")}</p>
-                  <p className="mt-1.5 text-[13px] leading-5 text-slate-700">{gapAnalysis.seniorityGap.note}</p>
-                </div>
-              )}
-            </div>
-          )}
+          
 
           {activePanel === "message" && (
             <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">

@@ -1,8 +1,8 @@
-export type SupportedConnectorSource = "Siemens" | "Rheinmetall" | "BWI";
+export type SupportedConnectorSource = "Siemens" | "Rheinmetall" | "BWI" | "Hensoldt" | "secunet" | "Rohde & Schwarz" | "Airbus" | string;
 
 export type DiscoveredJobListing = {
   source: SupportedConnectorSource;
-  sourceLabel: string;
+  sourceLabel?: string;
   externalId: string;
   title: string;
   company: string;

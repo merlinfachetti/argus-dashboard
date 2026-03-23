@@ -1,10 +1,7 @@
-import {
-  JobStatus,
-  MatchVerdict,
-  SourceKind,
-  SourceStatus,
-  type Prisma,
-} from "@prisma/client";
+// radar-store.ts — DB persistence layer for the Argus radar
+// Uses string literals directly to avoid dependency on Prisma-generated enum types
+// (which are not available during Vercel build without a DATABASE_URL).
+
 import { db } from "@/lib/db";
 import { trackedSources } from "@/lib/profile";
 import { isDatabaseConfigured } from "@/lib/infrastructure";
@@ -16,71 +13,56 @@ import {
   type UiMatchVerdict,
 } from "@/lib/radar-types";
 
-const statusToDb: Record<UiJobStatus, JobStatus> = {
-  Nova: JobStatus.NEW,
-  "Pronta para revisar": JobStatus.READY_TO_REVIEW,
-  "Requer triagem": JobStatus.TRIAGE,
-  Aplicar: JobStatus.APPLY,
-  Aplicada: JobStatus.APPLIED,
-  Entrevista: JobStatus.INTERVIEW,
+// ─── String-literal enum maps ─────────────────────────────────────────────────
+// Mirror the Prisma schema enums without importing from @prisma/client.
+
+const STATUS_TO_DB: Record<UiJobStatus, string> = {
+  "Nova":                "NEW",
+  "Pronta para revisar": "READY_TO_REVIEW",
+  "Requer triagem":      "TRIAGE",
+  "Aplicar":             "APPLY",
+  "Aplicada":            "APPLIED",
+  "Entrevista":          "INTERVIEW",
 };
 
-const statusFromDb: Record<JobStatus, UiJobStatus> = {
-  [JobStatus.NEW]: "Nova",
-  [JobStatus.READY_TO_REVIEW]: "Pronta para revisar",
-  [JobStatus.TRIAGE]: "Requer triagem",
-  [JobStatus.APPLY]: "Aplicar",
-  [JobStatus.APPLIED]: "Aplicada",
-  [JobStatus.INTERVIEW]: "Entrevista",
-  [JobStatus.REJECTED]: "Requer triagem",
-  [JobStatus.ARCHIVED]: "Requer triagem",
+const STATUS_FROM_DB: Record<string, UiJobStatus> = {
+  NEW:            "Nova",
+  READY_TO_REVIEW:"Pronta para revisar",
+  TRIAGE:         "Requer triagem",
+  APPLY:          "Aplicar",
+  APPLIED:        "Aplicada",
+  INTERVIEW:      "Entrevista",
+  REJECTED:       "Requer triagem",
+  ARCHIVED:       "Requer triagem",
 };
 
-const verdictToDb: Record<UiMatchVerdict, MatchVerdict> = {
-  "Alta prioridade": MatchVerdict.HIGH_PRIORITY,
-  "Boa aderência": MatchVerdict.GOOD_FIT,
-  "Aderência parcial": MatchVerdict.PARTIAL_FIT,
+const VERDICT_TO_DB: Record<UiMatchVerdict, string> = {
+  "Alta prioridade": "HIGH_PRIORITY",
+  "Boa aderência":   "GOOD_FIT",
+  "Aderência parcial":"PARTIAL_FIT",
 };
 
-const verdictFromDb: Record<MatchVerdict, UiMatchVerdict> = {
-  [MatchVerdict.HIGH_PRIORITY]: "Alta prioridade",
-  [MatchVerdict.GOOD_FIT]: "Boa aderência",
-  [MatchVerdict.PARTIAL_FIT]: "Aderência parcial",
+const VERDICT_FROM_DB: Record<string, UiMatchVerdict> = {
+  HIGH_PRIORITY:  "Alta prioridade",
+  GOOD_FIT:       "Boa aderência",
+  PARTIAL_FIT:    "Aderência parcial",
 };
 
-type JobWithRelations = Prisma.JobPostingGetPayload<{
-  include: {
-    match: true;
-    statusEvents: {
-      orderBy: {
-        createdAt: "desc";
-      };
-    };
-  };
-}>;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-function normalizeSourceStatus(status: string) {
-  if (/pronto/i.test(status)) {
-    return SourceStatus.READY;
-  }
+function normalizeSourceStatus(status: string): string {
+  if (/live/i.test(status))    return "DISCOVERY";
+  if (/pausado/i.test(status)) return "PAUSED";
+  if (/degrad/i.test(status))  return "DEGRADED";
+  return "QUEUED";
+}
 
-  if (/pausado/i.test(status)) {
-    return SourceStatus.PAUSED;
-  }
-
-  if (/degrad/i.test(status)) {
-    return SourceStatus.DEGRADED;
-  }
-
-  return SourceStatus.DISCOVERY;
+function normalizeIntakeMode(intakeMode: string): string {
+  return /manual/i.test(intakeMode) ? "MANUAL" : "CRAWLER";
 }
 
 function arrayFromJson(value: unknown): string[] {
@@ -89,64 +71,65 @@ function arrayFromJson(value: unknown): string[] {
     : [];
 }
 
-function mapTrackedJob(job: JobWithRelations): TrackedJob {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapTrackedJob(job: any): TrackedJob {
   return {
-    id: job.id,
-    title: job.title,
-    company: job.company,
-    location: job.location,
-    seniority: job.seniority,
-    workModel: job.workModel,
-    employmentType: job.employmentType,
-    languages: arrayFromJson(job.languages),
-    skills: arrayFromJson(job.skills),
-    summary: job.summary,
-    score: job.match?.score ?? 0,
-    verdict: job.match?.verdict
-      ? verdictFromDb[job.match.verdict]
-      : "Aderência parcial",
-    status: statusFromDb[job.status],
-    intakeMode:
-      job.intakeMode === SourceKind.MANUAL ? "Input manual" : `${job.company} crawler`,
-    sourceUrl: job.sourceUrl ?? undefined,
-    externalId: job.externalId ?? undefined,
-    family: undefined,
-    createdAt: job.createdAt.toISOString(),
-    updatedAt: job.updatedAt.toISOString(),
+    id:             job.id,
+    title:          job.title,
+    company:        job.company,
+    location:       job.location ?? "Location not specified",
+    seniority:      job.seniority ?? "Not specified",
+    workModel:      job.workModel ?? "Not specified",
+    employmentType: job.employmentType ?? "Not specified",
+    languages:      arrayFromJson(job.languages),
+    skills:         arrayFromJson(job.skills),
+    summary:        job.summary ?? "",
+    score:          job.match?.score ?? 0,
+    verdict:        VERDICT_FROM_DB[job.match?.verdict ?? ""] ?? "Aderência parcial",
+    status:         STATUS_FROM_DB[job.status] ?? "Nova",
+    intakeMode:     job.intakeMode === "MANUAL" ? "Input manual" : `${job.company} crawler`,
+    sourceUrl:      job.sourceUrl ?? undefined,
+    externalId:     job.externalId ?? undefined,
+    family:         undefined,
+    createdAt:      job.createdAt instanceof Date ? job.createdAt.toISOString() : job.createdAt,
+    updatedAt:      job.updatedAt instanceof Date ? job.updatedAt.toISOString() : job.updatedAt,
     history:
-      job.statusEvents.length > 0
-        ? job.statusEvents.map((entry) => ({
-            status: statusFromDb[entry.status],
-            changedAt: entry.createdAt.toISOString(),
-            note: entry.note ?? undefined,
+      job.statusEvents?.length > 0
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? job.statusEvents.map((entry: any) => ({
+            status:    STATUS_FROM_DB[entry.status] ?? "Nova",
+            changedAt: entry.createdAt instanceof Date ? entry.createdAt.toISOString() : entry.createdAt,
+            note:      entry.note ?? undefined,
           }))
-        : [createHistoryEntry(statusFromDb[job.status], job.updatedAt.toISOString())],
-    // Match detail restaurado do DB
-    strengths: arrayFromJson(job.match?.strengths),
-    risks: arrayFromJson(job.match?.risks),
-    recruiterMessage: job.match?.recruiterMessage ?? undefined,
+        : [createHistoryEntry(STATUS_FROM_DB[job.status] ?? "Nova",
+            job.updatedAt instanceof Date ? job.updatedAt.toISOString() : job.updatedAt)],
+    strengths:       arrayFromJson(job.match?.strengths),
+    risks:           arrayFromJson(job.match?.risks),
+    recruiterMessage:job.match?.recruiterMessage ?? undefined,
   };
 }
+
+// ─── Source sync ──────────────────────────────────────────────────────────────
 
 async function ensureSources() {
   await Promise.all(
     trackedSources.map((source) =>
       db.jobSource.upsert({
-        where: { slug: slugify(source.company) },
+        where:  { slug: slugify(source.company) },
         update: {
-          company: source.company,
-          baseUrl: source.url,
+          company:      source.company,
+          baseUrl:      source.url,
           discoveryUrl: source.url,
-          strategy: source.strategy,
-          status: normalizeSourceStatus(source.status),
+          strategy:     source.strategy,
+          status:       normalizeSourceStatus(source.status),
         },
         create: {
-          company: source.company,
-          slug: slugify(source.company),
-          baseUrl: source.url,
+          company:      source.company,
+          slug:         slugify(source.company),
+          baseUrl:      source.url,
           discoveryUrl: source.url,
-          strategy: source.strategy,
-          status: normalizeSourceStatus(source.status),
+          strategy:     source.strategy,
+          status:       normalizeSourceStatus(source.status),
         },
       }),
     ),
@@ -154,193 +137,137 @@ async function ensureSources() {
 }
 
 async function getSourceIdForJob(job: TrackedJob) {
-  if (/manual/i.test(job.intakeMode)) {
-    return null;
-  }
-
-  const slug = slugify(job.company);
+  if (/manual/i.test(job.intakeMode)) return null;
   const source = await db.jobSource.findUnique({
-    where: { slug },
+    where:  { slug: slugify(job.company) },
     select: { id: true },
   });
-
   return source?.id ?? null;
 }
 
-async function createStatusEventIfNeeded(jobId: string, status: JobStatus, note?: string) {
+async function createStatusEventIfNeeded(jobId: string, dbStatus: string, note?: string) {
   const latestEvent = await db.jobStatusEvent.findFirst({
-    where: { jobId },
+    where:   { jobId },
     orderBy: { createdAt: "desc" },
   });
-
-  if (latestEvent?.status === status) {
-    return;
-  }
-
-  await db.jobStatusEvent.create({
-    data: {
-      jobId,
-      status,
-      note,
-    },
-  });
+  if (latestEvent?.status === dbStatus) return;
+  await db.jobStatusEvent.create({ data: { jobId, status: dbStatus, note } });
 }
 
-function buildPostingData(job: TrackedJob, rawDescription?: string) {
-  return {
-    intakeMode: /manual/i.test(job.intakeMode)
-      ? SourceKind.MANUAL
-      : SourceKind.CAREER_SITE,
-    sourceUrl: job.sourceUrl,
-    title: job.title,
-    company: job.company,
-    location: job.location,
-    seniority: job.seniority,
-    workModel: job.workModel,
-    employmentType: job.employmentType,
-    languages: job.languages,
-    skills: job.skills,
-    summary: job.summary,
-    descriptionRaw: rawDescription ?? job.summary,
-    descriptionNormalized: rawDescription ?? job.summary,
-    status: statusToDb[job.status],
-  } satisfies Omit<
-    Prisma.JobPostingUncheckedCreateInput,
-    "id" | "sourceId" | "externalId"
-  >;
-}
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function fetchRadarJobs() {
   if (!isDatabaseConfigured()) {
+    return { available: false, reason: "Database not configured", jobs: [] as TrackedJob[] };
+  }
+
+  try {
+    await ensureSources();
+    await ensureCandidateProfileRecord();
+
+    const jobs = await db.jobPosting.findMany({
+      include: {
+        match: true,
+        statusEvents: { orderBy: { createdAt: "desc" } },
+      },
+      orderBy: { updatedAt: "desc" },
+      take:    50,
+    });
+
+    return { available: true, reason: null, jobs: jobs.map(mapTrackedJob) };
+  } catch (err) {
     return {
       available: false,
-      reason: "Banco ainda não configurado",
+      reason: err instanceof Error ? err.message : "DB error",
       jobs: [] as TrackedJob[],
     };
   }
-
-  await ensureSources();
-  await ensureCandidateProfileRecord();
-
-  const jobs = await db.jobPosting.findMany({
-    include: {
-      match: true,
-      statusEvents: {
-        orderBy: { createdAt: "desc" },
-      },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 50,
-  });
-
-  return {
-    available: true,
-    reason: null,
-    jobs: jobs.map(mapTrackedJob),
-  };
 }
 
 export async function persistRadarJob(job: TrackedJob, rawDescription?: string) {
-  if (!isDatabaseConfigured()) {
-    throw new Error("Banco ainda não configurado");
-  }
+  if (!isDatabaseConfigured()) throw new Error("Database not configured");
 
   await ensureSources();
-  const profile = await ensureCandidateProfileRecord();
+  const profile  = await ensureCandidateProfileRecord();
   const sourceId = await getSourceIdForJob(job);
-  const postingData = buildPostingData(job, rawDescription);
+  const dbStatus = STATUS_TO_DB[job.status] ?? "NEW";
+
+  const postingData = {
+    intakeMode:           normalizeIntakeMode(job.intakeMode),
+    sourceUrl:            job.sourceUrl,
+    title:                job.title,
+    company:              job.company,
+    location:             job.location,
+    seniority:            job.seniority,
+    workModel:            job.workModel,
+    employmentType:       job.employmentType,
+    languages:            job.languages,
+    skills:               job.skills,
+    summary:              job.summary,
+    descriptionRaw:       rawDescription ?? job.summary,
+    descriptionNormalized:rawDescription ?? job.summary,
+    status:               dbStatus,
+  };
 
   let posting;
-
   if (sourceId && job.externalId) {
     posting = await db.jobPosting.upsert({
-      where: {
-        sourceId_externalId: {
-          sourceId,
-          externalId: job.externalId,
-        },
-      },
+      where:  { sourceId_externalId: { sourceId, externalId: job.externalId } },
       update: postingData,
-      create: {
-        ...postingData,
-        sourceId,
-        externalId: job.externalId,
-      },
+      create: { ...postingData, sourceId, externalId: job.externalId },
     });
   } else {
     posting = await db.jobPosting.create({
-      data: {
-        ...postingData,
-        sourceId,
-        externalId: job.externalId,
-      },
+      data: { ...postingData, sourceId, externalId: job.externalId },
     });
   }
 
   await db.jobMatch.upsert({
-    where: { jobId: posting.id },
+    where:  { jobId: posting.id },
     update: {
       candidateProfileId: profile.id,
-      score: job.score,
-      verdict: verdictToDb[job.verdict],
-      strengths: job.strengths ?? [],
-      risks: job.risks ?? [],
-      recruiterMessage: job.recruiterMessage ?? null,
+      score:              job.score,
+      verdict:            VERDICT_TO_DB[job.verdict] ?? "PARTIAL_FIT",
+      strengths:          job.strengths ?? [],
+      risks:              job.risks ?? [],
+      recruiterMessage:   job.recruiterMessage ?? null,
     },
     create: {
       candidateProfileId: profile.id,
-      jobId: posting.id,
-      score: job.score,
-      verdict: verdictToDb[job.verdict],
-      strengths: job.strengths ?? [],
-      risks: job.risks ?? [],
-      recruiterMessage: job.recruiterMessage ?? null,
+      jobId:              posting.id,
+      score:              job.score,
+      verdict:            VERDICT_TO_DB[job.verdict] ?? "PARTIAL_FIT",
+      strengths:          job.strengths ?? [],
+      risks:              job.risks ?? [],
+      recruiterMessage:   job.recruiterMessage ?? null,
     },
   });
 
-  await createStatusEventIfNeeded(posting.id, statusToDb[job.status]);
+  await createStatusEventIfNeeded(posting.id, dbStatus);
 
   const persisted = await db.jobPosting.findUniqueOrThrow({
-    where: { id: posting.id },
-    include: {
-      match: true,
-      statusEvents: {
-        orderBy: { createdAt: "desc" },
-      },
-    },
+    where:   { id: posting.id },
+    include: { match: true, statusEvents: { orderBy: { createdAt: "desc" } } },
   });
 
   return mapTrackedJob(persisted);
 }
 
 export async function updateRadarJobStatus(jobId: string, status: UiJobStatus) {
-  if (!isDatabaseConfigured()) {
-    throw new Error("Banco ainda não configurado");
-  }
+  if (!isDatabaseConfigured()) throw new Error("Database not configured");
+
+  const dbStatus = STATUS_TO_DB[status] ?? "NEW";
 
   await db.jobPosting.update({
     where: { id: jobId },
-    data: {
-      status: statusToDb[status],
-    },
-    include: {
-      match: true,
-      statusEvents: {
-        orderBy: { createdAt: "desc" },
-      },
-    },
+    data:  { status: dbStatus },
   });
 
-  await createStatusEventIfNeeded(jobId, statusToDb[status]);
+  await createStatusEventIfNeeded(jobId, dbStatus);
 
   const refreshed = await db.jobPosting.findUniqueOrThrow({
-    where: { id: jobId },
-    include: {
-      match: true,
-      statusEvents: {
-        orderBy: { createdAt: "desc" },
-      },
-    },
+    where:   { id: jobId },
+    include: { match: true, statusEvents: { orderBy: { createdAt: "desc" } } },
   });
 
   return mapTrackedJob(refreshed);
