@@ -146,29 +146,17 @@ function trackedJobToParsedJob(job: TrackedJob): ParsedJob {
   };
 }
 
-function badgeTone(score: number) {
-  if (score >= 78) {
-    return "bg-emerald-50 text-emerald-700 ring-emerald-200";
-  }
-
-  if (score >= 60) {
-    return "bg-amber-50 text-amber-700 ring-amber-200";
-  }
-
-  return "bg-rose-50 text-rose-700 ring-rose-200";
+function badgeStyle(score: number): React.CSSProperties {
+  if (score >= 78) return { background: "#ecfdf5", color: "#047857", outline: "1px solid #a7f3d0" };
+  if (score >= 60) return { background: "#fffbeb", color: "#b45309", outline: "1px solid #fde68a" };
+  return { background: "#fff1f2", color: "#be123c", outline: "1px solid #fecdd3" };
 }
 
 
-function statusTone(status: string) {
-  if (status === "Aplicada" || status === "Entrevista") {
-    return "bg-emerald-50 text-emerald-700 ring-emerald-200";
-  }
-
-  if (status === "Aplicar" || status === "Pronta para revisar") {
-    return "bg-sky-50 text-sky-700 ring-sky-200";
-  }
-
-  return "bg-slate-100 text-slate-800 ring-slate-300";
+function statusStyle(status: string): React.CSSProperties {
+  if (status === "Aplicada" || status === "Entrevista") return { background: "#ecfdf5", color: "#047857", outline: "1px solid #a7f3d0" };
+  if (status === "Aplicar" || status === "Pronta para revisar") return { background: "#eff6ff", color: "#1d4ed8", outline: "1px solid #bfdbfe" };
+  return { background: "#f1f5f9", color: "#334155", outline: "1px solid #cbd5e1" };
 }
 
 function laneTone(status: string) {
@@ -1325,7 +1313,7 @@ export function ArgusWorkbench({
                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
                       #{i + 1}
                     </span>
-                    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ${badgeTone(job.score)}`}>
+                    <span style={badgeStyle(job.score)} className="rounded-full px-2.5 py-0.5 text-[11px] font-bold">
                       {job.score}%
                     </span>
                   </div>
@@ -1410,7 +1398,7 @@ export function ArgusWorkbench({
                     ].join(" ")}
                   >
                     {/* Score pill */}
-                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ${badgeTone(job.score)}`}>
+                    <span style={badgeStyle(job.score)} className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
                       {job.score}%
                     </span>
                     {/* Content */}
@@ -1420,7 +1408,7 @@ export function ArgusWorkbench({
                     </div>
                     {/* Status + action */}
                     <div className="shrink-0 text-right">
-                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ring-1 ${statusTone(job.status)}`}>
+                      <span style={statusStyle(job.status)} className="rounded-full px-2.5 py-0.5 text-[10px] font-bold">
                         {job.status}
                       </span>
                       <p className="mt-1 text-[10px] text-slate-400">{trackedJobLastTouch(job)}</p>
@@ -1448,7 +1436,7 @@ export function ArgusWorkbench({
                       {jobsPreviewJob.company} · {jobsPreviewJob.location}
                     </p>
                   </div>
-                  <span className={`shrink-0 rounded-full px-3 py-1 text-[12px] font-bold ring-1 ${badgeTone(jobsPreviewJob.score)}`}>
+                  <span style={badgeStyle(jobsPreviewJob.score)} className="shrink-0 rounded-full px-3 py-1 text-[12px] font-bold">
                     {jobsPreviewJob.score}%
                   </span>
                 </div>
@@ -1659,7 +1647,7 @@ export function ArgusWorkbench({
                         />
                       </div>
                       <div className="mt-2 flex items-center justify-between gap-1">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${badgeTone(job.score)}`}>
+                        <span style={badgeStyle(job.score)} className="rounded-full px-2 py-0.5 text-[10px] font-bold">
                           {job.score}%
                         </span>
                         <div className="flex gap-1">
@@ -1711,7 +1699,7 @@ export function ArgusWorkbench({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">#{i + 1}</span>
-                    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ${badgeTone(job.score)}`}>
+                    <span style={badgeStyle(job.score)} className="rounded-full px-2.5 py-0.5 text-[11px] font-bold">
                       {job.score}%
                     </span>
                   </div>
@@ -1884,7 +1872,7 @@ export function ArgusWorkbench({
                               activeDiscoveryId === job.listing.externalId ? "bg-sky-50" : "hover:bg-slate-50",
                             ].join(" ")}
                           >
-                            <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ${badgeTone(job.analysis.score)}`}>
+                            <span style={badgeStyle(job.analysis.score)} className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
                               {job.analysis.score}%
                             </span>
                             <div className="min-w-0 flex-1">
@@ -2005,11 +1993,11 @@ export function ArgusWorkbench({
               {/* Score + next action */}
               <div className="flex shrink-0 flex-col items-end gap-2">
                 <div className="flex items-center gap-2">
-                  <span className={`rounded-full px-3 py-1.5 text-[13px] font-bold ring-1 ${badgeTone(analysis.score)}`}>
+                  <span style={badgeStyle(analysis.score)} className="rounded-full px-3 py-1.5 text-[13px] font-bold">
                     {analysis.score}%
                   </span>
                   {activeTrackedJob && (
-                    <span className={`rounded-full px-3 py-1.5 text-[11px] font-bold ring-1 ${statusTone(activeTrackedJob.status)}`}>
+                    <span style={statusStyle(activeTrackedJob.status)} className="rounded-full px-3 py-1.5 text-[11px] font-bold">
                       {activeTrackedJob.status}
                     </span>
                   )}
@@ -2227,7 +2215,7 @@ export function ArgusWorkbench({
                       key={`${entry.status}-${entry.changedAt}-${i}`}
                       className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
                     >
-                      <span className={`h-2 w-2 shrink-0 rounded-full ${statusTone(entry.status).includes("emerald") ? "bg-emerald-500" : statusTone(entry.status).includes("sky") ? "bg-sky-500" : "bg-slate-400"}`} />
+                      <span style={{ width:8, height:8, borderRadius:"50%", flexShrink:0, background: statusStyle(entry.status).color ?? "#94a3b8" }} />
                       <p className="flex-1 text-[13px] font-medium text-slate-800">{entry.status}</p>
                       <p className="text-[11px] text-slate-400">{formatActivityLabel(entry.changedAt)}</p>
                     </div>
@@ -2308,7 +2296,7 @@ export function ArgusWorkbench({
                             : "hover:bg-slate-50",
                         ].join(" ")}
                       >
-                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ring-1 ${badgeTone(job.analysis.score)}`}>
+                        <span style={badgeStyle(job.analysis.score)} className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
                           {job.analysis.score}%
                         </span>
                         <div className="min-w-0 flex-1">
@@ -2400,14 +2388,14 @@ export function ArgusWorkbench({
                       : "hover:bg-slate-50",
                   ].join(" ")}
                 >
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${badgeTone(job.score)}`}>
+                  <span style={badgeStyle(job.score)} className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">
                     {job.score}%
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[12px] font-semibold text-slate-950">{job.title}</p>
                     <p className="text-[11px] text-slate-400">{job.company}</p>
                   </div>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${statusTone(job.status)}`}>
+                  <span style={statusStyle(job.status)} className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold">
                     {job.status.split(" ")[0]}
                   </span>
                 </button>

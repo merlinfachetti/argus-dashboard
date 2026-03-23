@@ -2,20 +2,20 @@ import Link from "next/link";
 import { PageHero } from "@/components/page-hero";
 import { getOperationalReadiness } from "@/lib/ops-readiness";
 
-function statusBadge(status: "ready" | "warning" | "blocked") {
+function statusBadgeStyle(status: "ready" | "warning" | "blocked"): React.CSSProperties {
   const map = {
-    ready: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    warning: "border-amber-200 bg-amber-50 text-amber-700",
-    blocked: "border-rose-200 bg-rose-50 text-rose-700",
+    ready:   { background: "#ecfdf5", color: "#047857", border: "1px solid #a7f3d0" },
+    warning: { background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a" },
+    blocked: { background: "#fff1f2", color: "#be123c", border: "1px solid #fecdd3" },
   };
   return map[status];
 }
 
-function cardTone(status: "ready" | "warning" | "blocked") {
+function cardToneStyle(status: "ready" | "warning" | "blocked"): React.CSSProperties {
   const map = {
-    ready: "border-emerald-200/60 bg-gradient-to-b from-emerald-50/50 to-white",
-    warning: "border-amber-200/60 bg-gradient-to-b from-amber-50/50 to-white",
-    blocked: "border-rose-200/60 bg-gradient-to-b from-rose-50/50 to-white",
+    ready:   { background: "linear-gradient(180deg,#f0fdf4,#fff)", border: "1px solid #bbf7d0" },
+    warning: { background: "linear-gradient(180deg,#fffbeb,#fff)", border: "1px solid #fde68a" },
+    blocked: { background: "linear-gradient(180deg,#fff1f2,#fff)", border: "1px solid #fecdd3" },
   };
   return map[status];
 }
@@ -57,7 +57,7 @@ export default async function OpsPage() {
         {readiness.checks.map((check) => (
           <article
             key={check.id}
-            className={`rounded-[24px] border p-5 shadow-[0_12px_40px_rgba(15,23,42,0.04)] ${cardTone(check.status)}`}
+            style={cardToneStyle(check.status)} className="rounded-[24px] p-5 shadow-[0_12px_40px_rgba(15,23,42,0.04)]"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -69,7 +69,7 @@ export default async function OpsPage() {
                 </h2>
               </div>
               <span
-                className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${statusBadge(check.status)}`}
+                style={statusBadgeStyle(check.status)} className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em]"
               >
                 {check.status}
               </span>

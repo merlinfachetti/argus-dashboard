@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 type HeroMetric = {
   label: string;
@@ -18,14 +18,14 @@ type PageHeroProps = {
   variant?: PageHeroVariant;
 };
 
-function metricToneClass(tone: HeroMetric["tone"] = "light") {
-  const map: Record<NonNullable<HeroMetric["tone"]>, string> = {
-    dark: "border-slate-800 bg-slate-950 text-white",
-    accent: "border-sky-200/80 bg-gradient-to-b from-sky-50 to-white text-slate-950",
-    emerald: "border-emerald-200/80 bg-gradient-to-b from-emerald-50 to-white text-slate-950",
-    amber: "border-amber-200/80 bg-gradient-to-b from-amber-50 to-white text-slate-950",
-    rose: "border-rose-200/80 bg-gradient-to-b from-rose-50 to-white text-slate-950",
-    light: "border-slate-200/80 bg-white/90 text-slate-950",
+function metricToneStyle(tone: HeroMetric["tone"] = "light"): CSSProperties {
+  const map: Record<NonNullable<HeroMetric["tone"]>, CSSProperties> = {
+    dark:    { background: "#0f172a", color: "#f8fafc", border: "1px solid #1e293b" },
+    accent:  { background: "#f0f9ff", color: "#0f172a", border: "1px solid #bae6fd" },
+    emerald: { background: "#f0fdf4", color: "#0f172a", border: "1px solid #bbf7d0" },
+    amber:   { background: "#fffbeb", color: "#0f172a", border: "1px solid #fde68a" },
+    rose:    { background: "#fff1f2", color: "#0f172a", border: "1px solid #fecdd3" },
+    light:   { background: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" },
   };
   return map[tone];
 }
@@ -63,7 +63,8 @@ function DefaultHero({ eyebrow, title, description, metrics, actions, aside }: P
               {metrics.map((metric) => (
                 <div
                   key={`${metric.label}-${metric.value}`}
-                  className={`rounded-2xl border p-4 ${metricToneClass(metric.tone)}`}
+                  style={metricToneStyle(metric.tone)}
+                  className="rounded-2xl p-4"
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-50">
                     {metric.label}
@@ -116,7 +117,8 @@ function MinimalHero({ eyebrow, title, description, metrics, actions }: PageHero
           {metrics.map((metric) => (
             <div
               key={`${metric.label}-${metric.value}`}
-              className={`rounded-xl border px-4 py-2.5 ${metricToneClass(metric.tone)}`}
+              style={metricToneStyle(metric.tone)}
+              className="rounded-xl px-4 py-2.5"
             >
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-40">
                 {metric.label}
@@ -148,7 +150,8 @@ function CompactHero({ eyebrow, title, actions, metrics }: PageHeroProps) {
         {metrics?.map((metric) => (
           <div
             key={`${metric.label}-${metric.value}`}
-            className={`rounded-xl border px-3 py-2 ${metricToneClass(metric.tone)}`}
+            style={metricToneStyle(metric.tone)}
+            className="rounded-xl px-3 py-2"
           >
             <p className="text-[9px] font-bold uppercase tracking-[0.18em] opacity-40">
               {metric.label}

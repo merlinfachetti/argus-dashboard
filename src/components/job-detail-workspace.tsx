@@ -30,18 +30,19 @@ type RadarPayload = {
   jobs: TrackedJob[];
 };
 
-function badgeTone(score: number) {
-  if (score >= 78) return "bg-emerald-50 text-emerald-700 ring-emerald-200";
-  if (score >= 60) return "bg-amber-50 text-amber-700 ring-amber-200";
-  return "bg-rose-50 text-rose-700 ring-rose-200";
+function badgeStyle(score: number): React.CSSProperties {
+  if (score >= 78) return { background: "#ecfdf5", color: "#047857", outline: "1px solid #a7f3d0" };
+  if (score >= 60) return { background: "#fffbeb", color: "#b45309", outline: "1px solid #fde68a" };
+  return { background: "#fff1f2", color: "#be123c", outline: "1px solid #fecdd3" };
 }
 
-function statusTone(status: string) {
-  if (status === "Entrevista") return "bg-emerald-50 text-emerald-700 ring-emerald-200";
-  if (status === "Aplicada" || status === "Aplicar") return "bg-sky-50 text-sky-700 ring-sky-200";
-  if (status === "Pronta para revisar") return "bg-violet-50 text-violet-700 ring-violet-200";
-  return "bg-slate-100 text-slate-600 ring-slate-200";
+function statusStyle(status: string): React.CSSProperties {
+  if (status === "Entrevista") return { background: "#ecfdf5", color: "#047857", outline: "1px solid #a7f3d0" };
+  if (status === "Aplicada" || status === "Aplicar") return { background: "#eff6ff", color: "#1d4ed8", outline: "1px solid #bfdbfe" };
+  if (status === "Pronta para revisar") return { background: "#f5f3ff", color: "#6d28d9", outline: "1px solid #ddd6fe" };
+  return { background: "#f1f5f9", color: "#334155", outline: "1px solid #cbd5e1" };
 }
+
 
 function readStoredJobs(): TrackedJob[] {
   if (typeof window === "undefined") return [];
@@ -278,10 +279,10 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <span className={`rounded-full px-3 py-1.5 text-[13px] font-bold ring-1 ${badgeTone(analysis.score)}`}>
+              <span style={badgeStyle(analysis.score)} className="rounded-full px-3 py-1.5 text-[13px] font-bold">
                 {analysis.score}%
               </span>
-              <span className={`rounded-full px-3 py-1.5 text-[11px] font-bold ring-1 ${statusTone(job.status)}`}>
+              <span style={statusStyle(job.status)} className="rounded-full px-3 py-1.5 text-[11px] font-bold">
                 {job.status}
               </span>
             </div>
@@ -477,7 +478,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
                   key={`${entry.status}-${entry.changedAt}-${i}`}
                   className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
                 >
-                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ring-1 ${statusTone(entry.status)}`}>
+                  <span style={statusStyle(entry.status)} className="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold">
                     {entry.status}
                   </span>
                   <span className="flex-1 text-[12px] text-slate-500">{entry.note ?? ""}</span>
