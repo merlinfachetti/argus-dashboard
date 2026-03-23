@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { DiscoveredJobListing } from "@/lib/connectors/types";
 import {
+  analyzeGaps,
   analyzeJobMatch,
   buildRecruiterMessage,
   parseJobDescription,
@@ -43,7 +44,7 @@ type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "message" | "history";
 type JobsSort = "updated" | "score" | "company";
-type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi";
+type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt";
 type ProfileSyncState = "checking" | "syncing" | "synced" | "offline" | "error";
 
 const STORAGE_KEY = "argus-workbench-state";
@@ -58,25 +59,32 @@ const DISCOVERY_SOURCES: Record<
   }
 > = {
   siemens: {
-    label: "Siemens Germany",
+    label: "Siemens",
     company: "Siemens",
-    description: "Busca publica + enriquecimento do detalhe real da vaga.",
+    description: "Listagem pública alemã + enriquecimento por vaga.",
     buttonLabel: "Buscar vagas Siemens",
     endpoint: "/api/sources/siemens/discover?limit=6&enrich=1",
   },
   rheinmetall: {
-    label: "Rheinmetall Germany",
+    label: "Rheinmetall",
     company: "Rheinmetall",
-    description: "Listagem publica com detalhe enriquecido direto da vaga.",
+    description: "Listagem pública com detalhe enriquecido por vaga.",
     buttonLabel: "Buscar vagas Rheinmetall",
     endpoint: "/api/sources/rheinmetall/discover?limit=6&enrich=1",
   },
   bwi: {
-    label: "BWI Germany",
+    label: "BWI",
     company: "BWI",
-    description: "Listagem publica de Stellenangebote com detalhe enriquecido por vaga.",
+    description: "Stellenangebote portal com enriquecimento por item.",
     buttonLabel: "Buscar vagas BWI",
     endpoint: "/api/sources/bwi/discover?limit=6&enrich=1",
+  },
+  hensoldt: {
+    label: "Hensoldt",
+    company: "Hensoldt",
+    description: "Portal de carreiras da Hensoldt Germany — defense & security.",
+    buttonLabel: "Buscar vagas Hensoldt",
+    endpoint: "/api/sources/hensoldt/discover?limit=6&enrich=1",
   },
 };
 
@@ -2126,40 +2134,94 @@ export function ArgusWorkbench({
             </div>
           )}
 
-          {activePanel === "match" && (
-            <div className="grid gap-3 xl:grid-cols-2">
-              <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Strengths</p>
-                <div className="mt-3 space-y-2">
-                  {analysis.strengths.length === 0 ? (
-                    <p className="text-[13px] text-slate-400">Sem pontos identificados.</p>
-                  ) : (
-                    analysis.strengths.map((s) => (
-                      <div key={s} className="flex items-start gap-2.5">
-                        <span className="mt-0.5 shrink-0 text-[14px] text-emerald-500">✓</span>
-                        <p className="text-[13px] leading-5 text-slate-700">{s}</p>
-                      </div>
-                    ))
-                  )}
+          {activePanel === "match" && (() => {
+            const gaps = analyzeGaps(parsedJob, activeProfile);
+            return (
+              <div className="space-y-3">
+                {/* Overall note */}
+                <div className="rounded-2xl border border-slate-200/60 bg-slate-50 px-4 py-3">
+                  <p className="text-[12px] text-slate-600">{gaps.overallNote}</p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {/* Strengths */}
+                  <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      Strengths
+                      {gaps.coveredSkills.length > 0 && (
+                        <span className="ml-2 normal-case font-normal text-slate-400">({gaps.coveredSkills.length} skills cobertas)</span>
+                      )}
+                    </p>
+                    <div className="mt-3 space-y-2">
+                      {analysis.strengths.length === 0 ? (
+                        <p className="text-[13px] text-slate-400">Sem pontos identificados.</p>
+                      ) : (
+                        analysis.strengths.map((s) => (
+                          <div key={s} className="flex items-start gap-2.5">
+                            <span className="mt-0.5 shrink-0 text-[14px] text-emerald-500">✓</span>
+                            <p className="text-[13px] leading-5 text-slate-700">{s}</p>
+                          </div>
+                        ))
+                      )}
+                      {gaps.coveredSkills.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {gaps.coveredSkills.map((s) => (
+                            <span key={s} className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: "#ecfdf5", color: "#047857" }}>{s}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Gaps com posicionamento */}
+                  <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      Gaps & posicionamento
+                      {gaps.gaps.length > 0 && (
+                        <span className="ml-2 normal-case font-normal text-slate-400">({gaps.gaps.length} itens)</span>
+                      )}
+                    </p>
+                    <div className="mt-3 space-y-3">
+                      {gaps.gaps.length === 0 && !gaps.languageGap && !gaps.seniorityNote ? (
+                        <p className="text-[13px] text-slate-400">Sem gaps críticos identificados.</p>
+                      ) : (
+                        <>
+                          {gaps.gaps.map((g) => (
+                            <div key={g.skill} className="rounded-xl border border-slate-100 p-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-bold" style={{
+                                  color: g.severity === "critical" ? "#be123c" : g.severity === "moderate" ? "#b45309" : "#64748b"
+                                }}>
+                                  {g.severity === "critical" ? "●" : g.severity === "moderate" ? "◐" : "○"}
+                                </span>
+                                <span className="text-[12px] font-semibold text-slate-800">{g.skill}</span>
+                                <span className="ml-auto text-[10px] font-semibold uppercase" style={{
+                                  color: g.severity === "critical" ? "#be123c" : g.severity === "moderate" ? "#b45309" : "#64748b"
+                                }}>{g.severity}</span>
+                              </div>
+                              <p className="mt-1.5 text-[11px] leading-5 text-slate-500">{g.positioning}</p>
+                            </div>
+                          ))}
+                          {gaps.languageGap && (
+                            <div className="rounded-xl border px-3 py-2.5" style={{ borderColor: "#fde68a", background: "#fffbeb" }}>
+                              <p className="text-[11px] font-semibold text-amber-700">Idioma</p>
+                              <p className="mt-1 text-[11px] leading-5 text-amber-600">{gaps.languageGap}</p>
+                            </div>
+                          )}
+                          {gaps.seniorityNote && (
+                            <div className="rounded-xl border px-3 py-2.5" style={{ borderColor: "#bfdbfe", background: "#eff6ff" }}>
+                              <p className="text-[11px] font-semibold text-blue-700">Senioridade</p>
+                              <p className="mt-1 text-[11px] leading-5 text-blue-600">{gaps.seniorityNote}</p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Risks & gaps</p>
-                <div className="mt-3 space-y-2">
-                  {analysis.risks.length === 0 ? (
-                    <p className="text-[13px] text-slate-400">Sem riscos identificados.</p>
-                  ) : (
-                    analysis.risks.map((r) => (
-                      <div key={r} className="flex items-start gap-2.5">
-                        <span className="mt-0.5 shrink-0 text-[14px] text-amber-500">⚠</span>
-                        <p className="text-[13px] leading-5 text-slate-600">{r}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {activePanel === "message" && (
             <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">

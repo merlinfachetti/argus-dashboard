@@ -5,7 +5,7 @@ import { getPersistedCandidateProfile } from "@/lib/profile-store";
 export default async function ControlCenterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ job?: string; source?: "siemens" | "rheinmetall" | "bwi" }>;
+  searchParams: Promise<{ job?: string; source?: "siemens" | "rheinmetall" | "bwi" | "hensoldt" }>;
 }) {
   const params = await searchParams;
   const { profile } = await getPersistedCandidateProfile();

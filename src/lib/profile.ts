@@ -96,8 +96,8 @@ export const trackedSources: PortalSource[] = [
   {
     company: "Hensoldt",
     url: "https://jobs.hensoldt.net/search/?optionsFacetsDD_country=DE&optionsFacetsDD_customfield1=Professionals&locale=en_US",
-    strategy: "Crawler baseado em listagem e captura de detalhe da vaga.",
-    status: "Pronto para discovery",
+    strategy: "Crawler de listagem pública com enriquecimento por vaga.",
+    status: "Discovery live",
   },
   {
     company: "BWI",
