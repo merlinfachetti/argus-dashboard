@@ -532,3 +532,29 @@ My recent work has focused on internal platforms, workflow automation and reliab
 
 ${coverFocus.length > 0 ? `${coverFocus}\n\n` : ""}If the team is looking for someone who can contribute quickly with a focus on delivery quality and operational clarity, I would be glad to connect.`;
 }
+
+// ─── Custom cover letter paragraph ────────────────────────────────────────────
+
+export type CoverLang = "en" | "de" | "pt";
+
+export function buildCustomCoverParagraph(
+  job: ParsedJob,
+  profile: CandidateProfile,
+  analysis: MatchAnalysis,
+  lang: CoverLang = "en",
+): string {
+  const topSkills = analysis.strengths[0] ?? "";
+  const topMatch  = job.skills.slice(0, 3).join(", ");
+  const hasGerman = profile.languages.some((l) => /german/i.test(l));
+
+  if (lang === "de") {
+    return `Ihre Stelle als ${job.title} bei ${job.company} passt sehr gut zu meinen Erfahrungsschwerpunkten in ${topMatch || "der Fullstack-Entwicklung"}. ${topSkills} Ich bin in ${profile.location} ansässig${hasGerman ? " und kommuniziere täglich auf Deutsch" : ""} und bin an dieser Position besonders interessiert, weil sie die Kombination aus technischer Tiefe und operativer Wirkung verkörpert, die ich in meiner nächsten Rolle anstrebe.`;
+  }
+
+  if (lang === "pt") {
+    return `A vaga de ${job.title} na ${job.company} é um match direto com minha experiência em ${topMatch || "desenvolvimento fullstack"}. ${topSkills} Estou baseado em ${profile.location} e busco exatamente o tipo de papel que combina profundidade técnica com impacto operacional real — o que essa vaga representa.`;
+  }
+
+  // EN default
+  return `The ${job.title} role at ${job.company} aligns directly with my experience in ${topMatch || "fullstack engineering"}. ${topSkills} Based in ${profile.location}, I am looking for exactly the kind of role that combines technical depth with real operational impact — which is what this position represents.`;
+}

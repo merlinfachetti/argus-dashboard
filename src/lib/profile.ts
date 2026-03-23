@@ -177,6 +177,12 @@ export const trackedSources: PortalSource[] = [
     strategy: "Stellenangebote com listagem pública e filtro por área de engenharia.",
     status: "Discovery live",
   },
+  {
+    company: "Airbus",
+    url: "https://www.airbus.com/en/careers/search-and-apply?country=Germany",
+    strategy: "Careers hub com filtro por Germany — parsing de artigos/cards de vaga.",
+    status: "Discovery live",
+  },
 ];
 
 const profileSkillMatchers: Record<string, RegExp> = {

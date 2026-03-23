@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useT } from "@/lib/i18n/context";
+import { buildInterviewPrep, type InterviewPrep } from "@/lib/interview-prep";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { DiscoveredJobListing } from "@/lib/connectors/types";
 import {
   analyzeGaps,
   analyzeJobMatch,
+  buildCustomCoverParagraph,
   buildRecruiterMessage,
   parseJobDescription,
   type MatchAnalysis,
@@ -43,9 +45,9 @@ type DiscoveryPreview = {
 
 type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
-type ActivePanel = "summary" | "match" | "message" | "history";
+type ActivePanel = "summary" | "match" | "gap" | "message" | "history" | "interview";
 type JobsSort = "updated" | "score" | "company";
-type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz";
+type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz" | "airbus";
 type ProfileSyncState = "checking" | "syncing" | "synced" | "offline" | "error";
 
 const STORAGE_KEY = "argus-workbench-state";
@@ -98,8 +100,15 @@ const DISCOVERY_SOURCES: Record<
     label: "Rohde & Schwarz",
     company: "Rohde & Schwarz",
     description: "Stellenangebote em software, embedded, R&D e telecomunicações.",
-    buttonLabel: "Buscar vagas R&S",
+    buttonLabel: "Search R&S jobs",
     endpoint: "/api/sources/rohde-schwarz/discover?limit=6",
+  },
+  airbus: {
+    label: "Airbus",
+    company: "Airbus",
+    description: "Careers portal with Germany filter — software, digital and engineering roles.",
+    buttonLabel: "Search Airbus jobs",
+    endpoint: "/api/sources/airbus/discover?limit=6",
   },
 };
 
@@ -218,6 +227,22 @@ function nextActionLabel(score: number, status?: string | null) {
   return "Triagem e contexto";
 }
 
+function daysSince(isoDate?: string | null): number | null {
+  if (!isoDate) return null;
+  const d = new Date(isoDate);
+  if (isNaN(d.getTime())) return null;
+  return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function followUpUrgency(job: TrackedJob): "overdue" | "due-soon" | "ok" | null {
+  if (job.status !== "Aplicada") return null;
+  const days = daysSince(job.updatedAt ?? job.history[0]?.changedAt);
+  if (days === null) return null;
+  if (days >= 14) return "overdue";
+  if (days >= 7) return "due-soon";
+  return "ok";
+}
+
 function formatActivityLabel(value?: string | null) {
   if (!value) {
     return "Ainda sem sync";
@@ -261,7 +286,7 @@ export function ArgusWorkbench({
   const [recruiterMessage, setRecruiterMessage] = useState(
     initialState.recruiterMessage,
   );
-  const [_gapAnalysis, setGapAnalysis] = useState<GapAnalysis | null>(() =>
+  const [gapAnalysis, setGapAnalysis] = useState<GapAnalysis | null>(() =>
     analyzeGap(initialState.parsedJob, profile, initialState.analysis)
   );
   const [trackedJobs, setTrackedJobs] = useState(initialState.trackedJobs);
@@ -274,6 +299,12 @@ export function ArgusWorkbench({
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
   const [copiedState, setCopiedState] = useState<"idle" | "copied">("idle");
   const [messageLang, setMessageLang] = useState<"en" | "de" | "pt">("en");
+  const [coverLang, setCoverLang] = useState<"en" | "de" | "pt">("en");
+  const [customCover, setCustomCover] = useState(() =>
+    buildCustomCoverParagraph(initialState.parsedJob, profile, initialState.analysis, "en")
+  );
+  const [coverCopied, setCoverCopied] = useState(false);
+  const [interviewPrep, setInterviewPrep] = useState<InterviewPrep | null>(null);
   const [radarFilter, setRadarFilter] = useState<RadarFilter>("all");
   const [radarQuery, setRadarQuery] = useState(initialRadarQuery);
   const [discoveryQuery, setDiscoveryQuery] = useState("");
@@ -968,6 +999,20 @@ export function ArgusWorkbench({
   useEffect(() => {
     setRecruiterMessage(buildRecruiterMessage(parsedJob, activeProfile, analysis, messageLang));
   }, [messageLang, parsedJob, activeProfile, analysis, t]);
+
+  // Recalcular customCover quando idioma muda
+  useEffect(() => {
+    setCustomCover(buildCustomCoverParagraph(parsedJob, activeProfile, analysis, coverLang));
+  }, [coverLang, parsedJob, activeProfile, analysis]);
+
+  // Calcular interview prep quando vaga está em Entrevista
+  useEffect(() => {
+    if (activeTrackedJob?.status === "Entrevista") {
+      setInterviewPrep(buildInterviewPrep(parsedJob, activeProfile));
+    } else {
+      setInterviewPrep(null);
+    }
+  }, [activeTrackedJob?.status, parsedJob, activeProfile]);
 
   function handleProcessDescription() {
     startTransition(() => {
@@ -2031,6 +2076,16 @@ export function ArgusWorkbench({
                   )}
                 </div>
                 <p className="text-[12px] font-semibold text-sky-400">{activeNextAction}</p>
+                {followUpUrgency(activeTrackedJob) === "overdue" && (
+                  <span style={{ background: "#fff1f2", color: "#be123c", outline: "1px solid #fecdd3" }} className="rounded-full px-2.5 py-1 text-[11px] font-bold">
+                    {daysSince(activeTrackedJob.updatedAt)}d without response — follow up now
+                  </span>
+                )}
+                {followUpUrgency(activeTrackedJob) === "due-soon" && (
+                  <span style={{ background: "#fffbeb", color: "#b45309", outline: "1px solid #fde68a" }} className="rounded-full px-2.5 py-1 text-[11px] font-bold">
+                    {daysSince(activeTrackedJob.updatedAt)}d applied — consider following up
+                  </span>
+                )}
               </div>
             </div>
 
@@ -2089,9 +2144,11 @@ export function ArgusWorkbench({
         <div className="flex gap-1 rounded-2xl border border-slate-200 bg-slate-100/60 p-1">
           {([
             { id: "summary", label: t("cc.tabSummary"), hint: parsedJob.title ? "✓" : "" },
-            { id: "match", label: "Match", hint: `${analysis.score}%` },
-            { id: "message", label: "Mensagem", hint: recruiterMessage ? "✓" : "" },
+            { id: "match",   label: t("cc.tabMatch"),   hint: `${analysis.score}%` },
+            { id: "gap",     label: t("cc.tabGap"),     hint: gapAnalysis ? (gapAnalysis.missingSkills.filter(s=>s.severity==="critical").length > 0 ? `${gapAnalysis.missingSkills.filter(s=>s.severity==="critical").length}⚠` : "✓") : "" },
+            { id: "message", label: t("cc.tabMessage"), hint: recruiterMessage ? "✓" : "" },
             { id: "history", label: t("cc.tabHistory"), hint: activeTrackedJob?.history.length ? `${activeTrackedJob.history.length}` : "" },
+            ...(activeTrackedJob?.status === "Entrevista" ? [{ id: "interview" as ActivePanel, label: "Interview", hint: "★" }] : []),
           ] as { id: ActivePanel; label: string; hint: string }[]).map((panel) => (
             <button
               key={panel.id}
@@ -2243,6 +2300,60 @@ export function ArgusWorkbench({
             );
           })()}
 
+          {activePanel === "gap" && gapAnalysis && (
+            <div className="space-y-3">
+              {/* Next step */}
+              <div className="rounded-2xl border border-sky-200/60 bg-gradient-to-b from-sky-50 to-white p-4">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-600">{t("gap.nextStep")}</p>
+                <p className="mt-1.5 text-[14px] font-semibold text-slate-950">{gapAnalysis.nextStep}</p>
+              </div>
+
+              {/* Missing skills */}
+              {gapAnalysis.missingSkills.length > 0 ? (
+                <div className="rounded-2xl border border-slate-200/60 bg-white p-4">
+                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{t("gap.missingSkills")}</p>
+                  <div className="space-y-2.5">
+                    {gapAnalysis.missingSkills.map((g) => (
+                      <div key={g.skill} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-[13px] text-slate-950">{g.skill}</span>
+                          <span style={g.severity === "critical"
+                            ? { background: "#fff1f2", color: "#be123c", outline: "1px solid #fecdd3" }
+                            : { background: "#fffbeb", color: "#b45309", outline: "1px solid #fde68a" }}
+                            className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                          >
+                            {g.severity === "critical" ? t("gap.critical") : t("gap.minor")}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-[12px] leading-5 text-slate-500">{g.suggestion}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-emerald-200/60 bg-gradient-to-b from-emerald-50 to-white p-4">
+                  <p className="text-[13px] font-semibold text-emerald-800">{t("gap.noGaps")}</p>
+                </div>
+              )}
+
+              {/* Language gap */}
+              {gapAnalysis.languageGap && (
+                <div className="rounded-2xl border border-amber-200/60 bg-gradient-to-b from-amber-50 to-white p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-600">{t("gap.languageGap")}</p>
+                  <p className="mt-1.5 text-[13px] leading-5 text-slate-700">{gapAnalysis.languageGap.note}</p>
+                </div>
+              )}
+
+              {/* Seniority gap */}
+              {gapAnalysis.seniorityGap && (
+                <div className="rounded-2xl border border-violet-200/60 bg-gradient-to-b from-violet-50 to-white p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-600">{t("gap.seniorityGap")}</p>
+                  <p className="mt-1.5 text-[13px] leading-5 text-slate-700">{gapAnalysis.seniorityGap.note}</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {activePanel === "message" && (
             <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -2280,6 +2391,44 @@ export function ArgusWorkbench({
               <pre className="whitespace-pre-wrap rounded-2xl border border-slate-100 bg-slate-50 p-4 text-[13px] leading-6 text-slate-700 font-sans">
                 {recruiterMessage}
               </pre>
+
+              {/* Custom cover paragraph */}
+              <div className="mt-4 border-t border-slate-100 pt-4">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Cover paragraph
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-0.5 rounded-full border border-slate-200 bg-slate-50 p-0.5">
+                      {(["en", "de", "pt"] as const).map((lang) => (
+                        <button
+                          key={lang}
+                          type="button"
+                          onClick={() => setCoverLang(lang)}
+                          style={coverLang === lang ? { background: "#0f172a", color: "#fff" } : { color: "#94a3b8" }}
+                          className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase transition"
+                        >
+                          {lang.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(customCover);
+                        setCoverCopied(true);
+                        setTimeout(() => setCoverCopied(false), 1800);
+                      }}
+                      className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-200"
+                    >
+                      {coverCopied ? "✓ Copied" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+                <p className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-[13px] leading-6 text-slate-700">
+                  {customCover}
+                </p>
+              </div>
             </div>
           )}
 
@@ -2307,6 +2456,69 @@ export function ArgusWorkbench({
             </div>
           )}
         </div>
+
+          {activePanel === "interview" && interviewPrep && (
+            <div className="space-y-3">
+              {/* Talking points */}
+              <div className="rounded-2xl border border-sky-200/60 bg-gradient-to-b from-sky-50 to-white p-4">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-600">Key talking points</p>
+                <div className="space-y-1.5">
+                  {interviewPrep.talkingPoints.map((pt, i) => (
+                    <div key={i} className="flex gap-2 text-[13px] text-slate-700">
+                      <span className="mt-0.5 shrink-0 text-sky-500">→</span>
+                      <span>{pt}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Questions */}
+              <div className="rounded-2xl border border-slate-200/60 bg-white p-4">
+                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Likely questions</p>
+                <div className="space-y-3">
+                  {interviewPrep.questions.slice(0, 6).map((q, i) => (
+                    <div key={i} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <div className="flex items-start gap-2">
+                        <span style={{ background: q.category === "technical" ? "#eff6ff" : q.category === "behavioral" ? "#f0fdf4" : "#f5f3ff", color: q.category === "technical" ? "#1d4ed8" : q.category === "behavioral" ? "#047857" : "#6d28d9" }} className="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase">
+                          {q.category}
+                        </span>
+                        <p className="text-[13px] font-semibold text-slate-950">{q.question}</p>
+                      </div>
+                      <p className="mt-1.5 text-[12px] leading-5 text-slate-500">{q.hint}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Research checklist */}
+              <div className="rounded-2xl border border-slate-200/60 bg-white p-4">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Research checklist</p>
+                <div className="space-y-1.5">
+                  {interviewPrep.researchChecklist.map((item, i) => (
+                    <div key={i} className="flex gap-2 text-[12px] text-slate-600">
+                      <span className="mt-0.5 shrink-0 text-slate-300">☐</span>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Red flags */}
+              {interviewPrep.redFlags.length > 0 && (
+                <div className="rounded-2xl border border-amber-200/60 bg-gradient-to-b from-amber-50 to-white p-4">
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-600">Ask the interviewer</p>
+                  <div className="space-y-1.5">
+                    {interviewPrep.redFlags.map((flag, i) => (
+                      <div key={i} className="flex gap-2 text-[12px] text-slate-700">
+                        <span className="mt-0.5 shrink-0 text-amber-500">?</span>
+                        <span>{flag}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
         {/* Intake area */}
         <div className="overflow-hidden rounded-[24px] border border-slate-200/60 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
