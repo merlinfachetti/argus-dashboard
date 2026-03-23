@@ -11,7 +11,7 @@ export default async function DashboardPage() {
       <PageHero
         variant="compact"
         eyebrow="Dashboard"
-        title="Pipeline — funil, gargalos e prioridade do radar."
+        title="Pipeline — funnel, gaps and priority."
         metrics={[
           { label: "Portais", value: `${trackedSources.length}`, tone: "accent" },
           { label: "Stack", value: `${profile.coreStack.length}`, tone: "light" },

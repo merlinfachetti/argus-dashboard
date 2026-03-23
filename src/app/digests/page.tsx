@@ -11,7 +11,7 @@ export default async function DigestsPage() {
       <PageHero
         variant="minimal"
         eyebrow="Digests"
-        title="Morning digest — o radar transformado em rotina diária."
+        title="Morning digest — radar as daily operating routine."
         description="Preview do que será consolidado amanhã cedo, status do envio por email e controle do cron."
         metrics={[
           { label: "Itens", value: `${digest.items.length}`, tone: "accent" },

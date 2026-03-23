@@ -5,10 +5,12 @@ import { useState } from "react";
 import { trackedSources } from "@/lib/profile";
 
 const liveDiscoveryLinks: Record<string, string> = {
-  Siemens:     "/control-center?source=siemens",
-  Rheinmetall: "/control-center?source=rheinmetall",
-  BWI:         "/control-center?source=bwi",
-  Hensoldt:    "/control-center?source=hensoldt",
+  Siemens:          "/control-center?source=siemens",
+  Rheinmetall:      "/control-center?source=rheinmetall",
+  BWI:              "/control-center?source=bwi",
+  Hensoldt:         "/control-center?source=hensoldt",
+  secunet:          "/control-center?source=secunet",
+  "Rohde & Schwarz": "/control-center?source=rohde-schwarz",
 };
 
 export default function SourcesPage() {

@@ -28,7 +28,7 @@ export default async function OpsPage() {
       <PageHero
         variant="minimal"
         eyebrow="Ops"
-        title="Readiness — o que está pronto e o que ainda bloqueia produção."
+        title="Readiness — what's live and what's blocking full production."
         metrics={[
           { label: "Ready", value: `${readiness.readyCount}`, tone: "emerald" },
           { label: "Warning", value: `${readiness.warningCount}`, tone: "amber" },

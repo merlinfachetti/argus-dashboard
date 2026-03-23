@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useT } from "@/lib/i18n/context";
 import { useEffect, useMemo, useState } from "react";
 import {
   analyzeJobMatch,
@@ -101,9 +102,10 @@ function formatDate(val?: string | null) {
 }
 
 export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) {
+  const t = useT();
   const [job, setJob] = useState<TrackedJob | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [syncMessage, setSyncMessage] = useState("Carregando...");
+  const [syncMessage, setSyncMessage] = useState(t("global.loading"));
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "match" | "message" | "history">("overview");
 
@@ -321,7 +323,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
               onClick={() => void handleCopy()}
               className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-200 transition hover:bg-white/[0.12]"
             >
-              {copied ? "✓ Copiado" : "Copiar mensagem"}
+              {copied ? t("global.copied") : t("cc.copyMessage")}
             </button>
             {job.sourceUrl && (
               <a
@@ -360,7 +362,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
                 : "text-slate-500 hover:text-slate-700",
             ].join(" ")}
           >
-            {tab === "overview" ? "Resumo" : tab === "match" ? "Match" : tab === "message" ? "Mensagem" : "Histórico"}
+            {tab === "overview" ? t("cc.tabSummary") : tab === "match" ? "Match" : tab === "message" ? "Mensagem" : t("cc.tabHistory")}
           </button>
         ))}
       </div>
@@ -390,11 +392,11 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
           {/* Metadata */}
           <div className="space-y-3">
             {[
-              { label: "Senioridade", value: job.seniority },
-              { label: "Modelo de trabalho", value: job.workModel },
-              { label: "Tipo de contrato", value: job.employmentType },
-              { label: "Idiomas requeridos", value: job.languages.join(", ") || "Não detectados" },
-              { label: "Origem", value: job.intakeMode },
+              { label: t("job.seniority"), value: job.seniority },
+              { label: t("job.workModel"), value: job.workModel },
+              { label: t("job.contract"), value: job.employmentType },
+              { label: t("job.languages"), value: job.languages.join(", ") || "Não detectados" },
+              { label: t("job.origin"), value: job.intakeMode },
             ].map((item) => (
               <div key={item.label} className="rounded-2xl border border-slate-200/60 bg-white px-4 py-3.5">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
@@ -455,7 +457,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
               onClick={() => void handleCopy()}
               className="rounded-full bg-slate-950 px-4 py-1.5 text-[12px] font-semibold text-white transition hover:bg-slate-800"
             >
-              {copied ? "✓ Copiado" : "Copiar"}
+              {copied ? t("global.copied") : t("global.copy")}
             </button>
           </div>
           <pre className="whitespace-pre-wrap rounded-2xl border border-slate-100 bg-slate-50 p-5 text-[13px] leading-6 text-slate-700 font-sans">

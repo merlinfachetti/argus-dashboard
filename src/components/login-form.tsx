@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n/context";
 
 type LoginFormProps = {
   authConfigured: boolean;
@@ -8,6 +9,7 @@ type LoginFormProps = {
 };
 
 export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
+  const t = useT();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,7 +111,7 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
           disabled={isSubmitting || isSuccessAnimating}
           className="h-11 w-full rounded-2xl bg-slate-950 text-[13px] font-semibold text-white shadow-[0_8px_20px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSubmitting || isSuccessAnimating ? "Autenticando..." : "Entrar"}
+          {isSubmitting || isSuccessAnimating ? t("login.authenticating") : t("login.submit")}
         </button>
       </form>
     </>

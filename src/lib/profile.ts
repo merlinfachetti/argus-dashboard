@@ -165,6 +165,18 @@ export const trackedSources: PortalSource[] = [
     strategy: "Mapear listagem pública, paginação e filtro por engineering roles.",
     status: "Discovery live",
   },
+  {
+    company: "secunet",
+    url: "https://www.secunet.com/en/company/career/job-openings",
+    strategy: "Listagem pública com parsing de artigos/linhas da tabela de vagas.",
+    status: "Discovery live",
+  },
+  {
+    company: "Rohde & Schwarz",
+    url: "https://www.rohde-schwarz.com/de/karriere/stellenangebote_229087.html",
+    strategy: "Stellenangebote com listagem pública e filtro por área de engenharia.",
+    status: "Discovery live",
+  },
 ];
 
 const profileSkillMatchers: Record<string, RegExp> = {

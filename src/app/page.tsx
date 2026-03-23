@@ -11,13 +11,13 @@ const NAV_CARDS = [
   {
     href: "/jobs",
     label: "Jobs Explorer",
-    desc: "Buscar, filtrar e inspecionar vagas do radar.",
+    desc: "Search, filter and inspect jobs in the radar.",
     dark: false,
   },
   {
     href: "/dashboard",
     label: "Dashboard",
-    desc: "Funil, lanes por status e prioridade do pipeline.",
+    desc: "Funnel, status lanes and pipeline priority.",
     dark: false,
   },
 ] as const;

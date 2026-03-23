@@ -393,6 +393,103 @@ export function analyzeGaps(job: ParsedJob, profile: CandidateProfile): GapAnaly
   return { coveredSkills, gaps, languageGap, seniorityNote, overallNote };
 }
 
+
+// ─── Gap analysis ─────────────────────────────────────────────────────────────
+
+export type GapAnalysis = {
+  missingSkills: { skill: string; severity: "critical" | "minor"; suggestion: string }[];
+  languageGap: { language: string; note: string } | null;
+  seniorityGap: { expected: string; note: string } | null;
+  nextStep: string;
+};
+
+export function analyzeGap(job: ParsedJob, profile: CandidateProfile, analysis: MatchAnalysis): GapAnalysis {
+  const profileSkillSet = new Set(profile.coreStack.map((s) => s.toLowerCase()));
+  const missingSkills: GapAnalysis["missingSkills"] = [];
+
+  for (const skill of job.skills) {
+    if (profileSkillSet.has(skill.toLowerCase())) continue;
+
+    // Verificar se há skill equivalente/próxima no perfil
+    const equivalents: Record<string, string[]> = {
+      "Kubernetes": ["Docker"],
+      "Go":         ["TypeScript", "Node.js"],
+      "Rust":       ["C#", "TypeScript"],
+      "Azure":      ["AWS"],
+      "GCP":        ["AWS"],
+      "Vue.js":     ["React"],
+      "Angular":    ["React"],
+      "GraphQL":    ["REST APIs"],
+      "gRPC":       ["REST APIs"],
+      "MySQL":      ["PostgreSQL", "SQL"],
+      "MongoDB":    ["PostgreSQL", "SQL"],
+      "GitLab CI":  ["GitHub Actions", "CI/CD"],
+      "Ansible":    ["Docker", "CI/CD"],
+      "Terraform":  ["AWS", "Docker"],
+    };
+
+    const equivalentInProfile = equivalents[skill]?.find((eq) =>
+      profileSkillSet.has(eq.toLowerCase())
+    );
+
+    const isCritical = job.skills.indexOf(skill) < 3; // primeiros 3 skills costumam ser core
+
+    let suggestion = "";
+    if (equivalentInProfile) {
+      suggestion = `Você tem ${equivalentInProfile} — posicione como base para ${skill}`;
+    } else {
+      suggestion = `Não há equivalente direto — mencionar disposição de aprender pode ajudar`;
+    }
+
+    missingSkills.push({
+      skill,
+      severity: isCritical ? "critical" : "minor",
+      suggestion,
+    });
+  }
+
+  // Language gap
+  let languageGap: GapAnalysis["languageGap"] = null;
+  const requiresGerman = job.languages.includes("German");
+  const hasGerman = profile.languages.some((l) => /german/i.test(l));
+  if (requiresGerman && !hasGerman) {
+    languageGap = {
+      language: "German",
+      note: "Alemão listado como requisito — não declarado no perfil. Se tiver nível B1+, vale mencionar explicitamente.",
+    };
+  }
+
+  // Seniority gap
+  let seniorityGap: GapAnalysis["seniorityGap"] = null;
+  if (/staff|principal/i.test(job.seniority)) {
+    seniorityGap = {
+      expected: job.seniority,
+      note: "Escopo Staff/Principal costuma exigir influência em múltiplas equipes — vale calibrar a abordagem para esse nível.",
+    };
+  } else if (/junior/i.test(job.seniority)) {
+    seniorityGap = {
+      expected: "Junior",
+      note: "Vaga Junior com perfil Senior — overqualified pode ser um obstáculo. Considere mencionar foco em entrega e não em hierarquia.",
+    };
+  }
+
+  // Next step recommendation
+  let nextStep = "";
+  if (analysis.score >= 78) {
+    nextStep = "Score forte — preparar recruiter message e aplicar esta semana.";
+  } else if (analysis.score >= 62) {
+    if (missingSkills.some((s) => s.severity === "critical")) {
+      nextStep = `Gap em ${missingSkills.find((s) => s.severity === "critical")?.skill} — endereçar na mensagem ou preparar para discutir na entrevista.`;
+    } else {
+      nextStep = "Boa aderência — personalizar a abordagem destacando os pontos de match mais fortes.";
+    }
+  } else {
+    nextStep = "Aderência parcial — revisar se vale o esforço ou manter no radar para monitorar evolução.";
+  }
+
+  return { missingSkills, languageGap, seniorityGap, nextStep };
+}
+
 // ─── Recruiter message ───────────────────────────────────────────────────────
 
 type MessageLang = "en" | "de" | "pt";

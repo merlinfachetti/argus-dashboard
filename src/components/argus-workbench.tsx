@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useT } from "@/lib/i18n/context";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { DiscoveredJobListing } from "@/lib/connectors/types";
 import {
@@ -44,7 +45,7 @@ type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "message" | "history";
 type JobsSort = "updated" | "score" | "company";
-type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt";
+type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz";
 type ProfileSyncState = "checking" | "syncing" | "synced" | "offline" | "error";
 
 const STORAGE_KEY = "argus-workbench-state";
@@ -84,7 +85,21 @@ const DISCOVERY_SOURCES: Record<
     company: "Hensoldt",
     description: "Portal de carreiras da Hensoldt Germany — defense & security.",
     buttonLabel: "Buscar vagas Hensoldt",
-    endpoint: "/api/sources/hensoldt/discover?limit=6&enrich=1",
+    endpoint: "/api/sources/hensoldt/discover?limit=6",
+  },
+  secunet: {
+    label: "secunet",
+    company: "secunet",
+    description: "Portal público de segurança de TI — cybersecurity & software engineering.",
+    buttonLabel: "Buscar vagas secunet",
+    endpoint: "/api/sources/secunet/discover?limit=6",
+  },
+  "rohde-schwarz": {
+    label: "Rohde & Schwarz",
+    company: "Rohde & Schwarz",
+    description: "Stellenangebote em software, embedded, R&D e telecomunicações.",
+    buttonLabel: "Buscar vagas R&S",
+    endpoint: "/api/sources/rohde-schwarz/discover?limit=6",
   },
 };
 
@@ -237,6 +252,7 @@ export function ArgusWorkbench({
   initialActiveJobId,
   initialDiscoverySource,
 }: ArgusWorkbenchProps) {
+  const t = useT();
   const initialState = buildInitialState(profile, initialJobDescription);
 
   const [jobDescription, setJobDescription] = useState(initialJobDescription);
@@ -244,6 +260,9 @@ export function ArgusWorkbench({
   const [analysis, setAnalysis] = useState(initialState.analysis);
   const [recruiterMessage, setRecruiterMessage] = useState(
     initialState.recruiterMessage,
+  );
+  const [_gapAnalysis, setGapAnalysis] = useState<GapAnalysis | null>(() =>
+    analyzeGap(initialState.parsedJob, profile, initialState.analysis)
   );
   const [trackedJobs, setTrackedJobs] = useState(initialState.trackedJobs);
   const [discoveredJobs, setDiscoveredJobs] = useState<DiscoveryPreview[]>([]);
@@ -270,7 +289,7 @@ export function ArgusWorkbench({
     "checking" | "connected" | "offline" | "error"
   >("checking");
   const [syncMessage, setSyncMessage] = useState(
-    "Conectando radar persistente...",
+    t("sync.checking"),
   );
   // true após o primeiro fetch do radar terminar (independente do resultado)
   const [radarLoaded, setRadarLoaded] = useState(false);
@@ -311,6 +330,7 @@ export function ArgusWorkbench({
       setRecruiterMessage(
         buildRecruiterMessage(nextParsedJob, activeProfile, nextAnalysis),
       );
+      setGapAnalysis(analyzeGap(nextParsedJob, activeProfile, nextAnalysis));
     },
     [activeProfile],
   );
@@ -542,12 +562,12 @@ export function ArgusWorkbench({
 
         if (!response.ok || !payload.available) {
           setSyncState("offline");
-          setSyncMessage(payload.reason ?? "Banco ainda nao configurado");
+          setSyncMessage(payload.reason ?? t("sync.offline"));
           return;
         }
 
         setSyncState("connected");
-        setSyncMessage("Radar conectado — pronto para uso");
+        setSyncMessage(t("sync.connected"));
 
         if (payload.jobs.length > 0) {
           setHasRealJobs(true);
@@ -583,7 +603,7 @@ export function ArgusWorkbench({
         }
 
         setSyncState("error");
-        setSyncMessage("Falha ao carregar estado persistido do radar");
+        setSyncMessage(t("sync.error"));
       } finally {
         if (isMounted) {
           setRadarLoaded(true);
@@ -947,7 +967,7 @@ export function ArgusWorkbench({
   // Recalcular recruiterMessage quando idioma muda
   useEffect(() => {
     setRecruiterMessage(buildRecruiterMessage(parsedJob, activeProfile, analysis, messageLang));
-  }, [messageLang, parsedJob, activeProfile, analysis]);
+  }, [messageLang, parsedJob, activeProfile, analysis, t]);
 
   function handleProcessDescription() {
     startTransition(() => {
@@ -1260,7 +1280,7 @@ export function ArgusWorkbench({
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
               ].join(" ")}
             >
-              {f === "all" ? "Todos" : f === "crawler" ? "Crawler" : f === "manual" ? "Manual" : "≥ 70%"}
+              {f === "all" ? t("jobs.all") : f === "crawler" ? t("jobs.filterCrawler") : f === "manual" ? t("jobs.filterManual") : "≥ 70%"}
             </button>
           ))}
 
@@ -1528,8 +1548,8 @@ export function ArgusWorkbench({
             <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/60 p-7 text-center">
               <p className="text-[13px] font-medium text-slate-500">
                 {jobsFilteredTrackedJobs.length === 0
-                  ? "Nenhuma vaga no radar"
-                  : "Selecione uma vaga para ver o preview"}
+                  ? t("sync.noJobs")
+                  : t("jobs.selectJob")}
               </p>
               {jobsFilteredTrackedJobs.length === 0 && (
                 <div className="mt-4 flex justify-center gap-2">
@@ -1589,10 +1609,10 @@ export function ArgusWorkbench({
         {/* KPIs row */}
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {[
-            { label: "Total radar", value: trackedJobs.length, accent: false },
-            { label: "Alta prioridade", value: priorityJobs, accent: true },
-            { label: "Em entrevista", value: dashboardInterviewCount, emerald: true },
-            { label: "Fila execução", value: dashboardExecutionCount, amber: true },
+            { label: t("dashboard.totalRadar"), value: trackedJobs.length, accent: false },
+            { label: t("dashboard.highPriority"), value: priorityJobs, accent: true },
+            { label: t("dashboard.inInterview"), value: dashboardInterviewCount, emerald: true },
+            { label: t("dashboard.execQueue"), value: dashboardExecutionCount, amber: true },
           ].map((kpi) => (
             <div
               key={kpi.label}
@@ -1734,7 +1754,7 @@ export function ArgusWorkbench({
           {/* Status bar */}
           <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium ${syncPill}`}>
             <span className={`h-1.5 w-1.5 rounded-full ${syncDot}`} />
-            {!radarLoaded ? "Conectando ao radar..." : syncMessage}
+            {!radarLoaded ? t("sync.checking") : syncMessage}
           </div>
 
           {!radarLoaded ? (
@@ -1827,7 +1847,7 @@ export function ArgusWorkbench({
                         : "text-slate-500 hover:text-slate-700",
                     ].join(" ")}
                   >
-                    {mode === "discovery" ? "Discovery real" : "Intake manual"}
+                    {mode === "discovery" ? t("cc.discoveryReal") : t("cc.manualIntake")}
                   </button>
                 ))}
               </div>
@@ -1861,7 +1881,7 @@ export function ArgusWorkbench({
                       disabled={isDiscovering}
                       className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
                     >
-                      {isDiscovering ? "Buscando..." : activeDiscoverySourceConfig.buttonLabel}
+                      {isDiscovering ? t("cc.searching") : activeDiscoverySourceConfig.buttonLabel}
                     </button>
                     {discoveryError && (
                       <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-[12px] text-rose-700">
@@ -1909,7 +1929,7 @@ export function ArgusWorkbench({
                       disabled={isPending}
                       className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
                     >
-                      {isPending ? "Processando..." : "Estruturar vaga"}
+                      {isPending ? t("cc.processing") : t("cc.structureJob")}
                     </button>
                   </div>
                 )}
@@ -2040,7 +2060,7 @@ export function ArgusWorkbench({
                 onClick={handleCopyRecruiterMessage}
                 className="rounded-full bg-sky-500 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-sky-400"
               >
-                {copiedState === "copied" ? "✓ Mensagem copiada" : "Copiar abordagem"}
+                {copiedState === "copied" ? t("cc.messageCopied") : t("cc.copyMessage")}
               </button>
               {activeDiscovery?.listing.sourceUrl && (
                 <a
@@ -2068,10 +2088,10 @@ export function ArgusWorkbench({
         {/* Panel tabs */}
         <div className="flex gap-1 rounded-2xl border border-slate-200 bg-slate-100/60 p-1">
           {([
-            { id: "summary", label: "Resumo", hint: parsedJob.title ? "✓" : "" },
+            { id: "summary", label: t("cc.tabSummary"), hint: parsedJob.title ? "✓" : "" },
             { id: "match", label: "Match", hint: `${analysis.score}%` },
             { id: "message", label: "Mensagem", hint: recruiterMessage ? "✓" : "" },
-            { id: "history", label: "Histórico", hint: activeTrackedJob?.history.length ? `${activeTrackedJob.history.length}` : "" },
+            { id: "history", label: t("cc.tabHistory"), hint: activeTrackedJob?.history.length ? `${activeTrackedJob.history.length}` : "" },
           ] as { id: ActivePanel; label: string; hint: string }[]).map((panel) => (
             <button
               key={panel.id}
@@ -2303,7 +2323,7 @@ export function ArgusWorkbench({
                     : "text-slate-500 hover:text-slate-700",
                 ].join(" ")}
               >
-                {mode === "discovery" ? "Discovery real" : "Intake manual"}
+                {mode === "discovery" ? t("cc.discoveryReal") : t("cc.manualIntake")}
               </button>
             ))}
           </div>
@@ -2337,7 +2357,7 @@ export function ArgusWorkbench({
                   disabled={isDiscovering}
                   className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
                 >
-                  {isDiscovering ? "Buscando..." : activeDiscoverySourceConfig.buttonLabel}
+                  {isDiscovering ? t("cc.searching") : activeDiscoverySourceConfig.buttonLabel}
                 </button>
                 {discoveryError && (
                   <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-[12px] text-rose-700">
@@ -2387,7 +2407,7 @@ export function ArgusWorkbench({
                   disabled={isPending}
                   className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
                 >
-                  {isPending ? "Processando..." : "Estruturar vaga"}
+                  {isPending ? t("cc.processing") : t("cc.structureJob")}
                 </button>
               </div>
             )}

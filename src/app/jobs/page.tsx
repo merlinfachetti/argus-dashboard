@@ -16,8 +16,8 @@ export default async function JobsPage({
     <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
       <PageHero
         variant="minimal"
-        eyebrow="Jobs Explorer"
-        title="Radar de vagas — buscar, filtrar, priorizar e agir."
+        eyebrow="Jobs"
+        title="Jobs radar — search, filter, prioritise."
         description="Spotlight automático nas melhores oportunidades, filtros inline e acesso direto ao detalhe ou ao control center."
         metrics={[
           { label: "Busca ativa", value: initialRadarQuery.trim() ? "Sim" : "—", tone: initialRadarQuery.trim() ? "accent" : "light" },

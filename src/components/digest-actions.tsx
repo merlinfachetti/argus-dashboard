@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useT } from "@/lib/i18n/context";
 
 type ActionState = {
   tone: "idle" | "success" | "error";
@@ -13,6 +14,7 @@ const idleState: ActionState = {
 };
 
 export function DigestActions() {
+  const t = useT();
   const [status, setStatus] = useState<ActionState>(idleState);
   const [isPending, startTransition] = useTransition();
 
