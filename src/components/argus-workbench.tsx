@@ -1304,10 +1304,6 @@ export function ArgusWorkbench({
       },
   ];
 
-  const controlSourceFocus =
-    workspaceMode === "discovery"
-      ? activeDiscoverySourceConfig.company
-      : "Manual intake";
   const comparisonJobs = [...filteredTrackedJobs]
     .sort((left, right) => right.score - left.score)
     .slice(0, 3);
@@ -1491,37 +1487,77 @@ export function ArgusWorkbench({
                 </div>
               ) : (
                 jobsFilteredTrackedJobs.map((job) => (
-                  <Link
+                  <div
                     key={job.id}
-                    href={`/jobs/${job.id}`}
-                    onClick={() => {
-                      setActiveTrackedJobId(job.id);
-                      handleInspectTrackedJob(job);
-                    }}
                     className={[
-                      "flex w-full items-center gap-4 px-4 py-3.5 text-left transition",
-                      activeTrackedJobId === job.id
-                        ? "bg-sky-50"
-                        : "hover:bg-slate-50",
+                      "border-b border-slate-100 px-4 py-4 last:border-0 transition",
+                      activeTrackedJobId === job.id ? "bg-sky-50" : "hover:bg-slate-50/60",
                     ].join(" ")}
                   >
-                    {/* Score pill */}
-                    <span style={badgeStyle(job.score)} className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
-                      {job.score}%
-                    </span>
-                    {/* Content */}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-semibold text-slate-950">{job.title}</p>
-                      <p className="mt-0.5 text-[12px] text-slate-500">{job.company} · {job.location}</p>
-                    </div>
-                    {/* Status + chevron */}
-                    <div className="shrink-0 text-right">
-                      <span style={statusStyle(job.status)} className="rounded-full px-2.5 py-0.5 text-[10px] font-bold">
+                    {/* Linha 1 — identidade + score */}
+                    <div className="flex items-start gap-3">
+                      <span style={badgeStyle(job.score)} className="mt-0.5 shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
+                        {job.score}%
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={`/jobs/${job.id}`}
+                          onClick={() => { setActiveTrackedJobId(job.id); handleInspectTrackedJob(job); }}
+                          className="block truncate text-[13px] font-semibold text-slate-950 hover:text-sky-700"
+                        >
+                          {job.title}
+                        </Link>
+                        <p className="mt-0.5 truncate text-[12px] text-slate-500">
+                          {job.company} · {job.location}
+                          {job.workModel && job.workModel !== "Not specified" ? ` · ${job.workModel}` : ""}
+                        </p>
+                      </div>
+                      <span style={statusStyle(job.status)} className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">
                         {job.status}
                       </span>
-                      <p className="mt-1 text-[10px] text-slate-400">{trackedJobLastTouch(job)}</p>
                     </div>
-                  </Link>
+
+                    {/* Linha 2 — strengths + ação */}
+                    <div className="mt-2.5 flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        {job.strengths && job.strengths.length > 0 ? (
+                          <p className="truncate text-[11px] text-emerald-700">
+                            ✓ {job.strengths[0]}
+                            {job.strengths[1] ? ` · ${job.strengths[1]}` : ""}
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-slate-400">{trackedJobLastTouch(job)}</p>
+                        )}
+                        {job.risks && job.risks.length > 0 && (
+                          <p className="truncate text-[11px] text-amber-700">⚠ {job.risks[0]}</p>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {job.sourceUrl ? (
+                          <a
+                            href={job.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                          >
+                            Aplicar ↗
+                          </a>
+                        ) : (
+                          <span className="rounded-full border border-slate-100 px-2.5 py-0.5 text-[10px] text-slate-400">
+                            sem link
+                          </span>
+                        )}
+                        <Link
+                          href={`/jobs/${job.id}`}
+                          onClick={() => { setActiveTrackedJobId(job.id); handleInspectTrackedJob(job); }}
+                          className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                        >
+                          Ver →
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
                 ))
               )}
             </div>
@@ -2125,15 +2161,12 @@ export function ArgusWorkbench({
         {/* Active job hero */}
         <div className="rounded-[28px] border border-slate-900/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
           {/* Top bar */}
-          <div className="flex items-center justify-between gap-3 border-b border-white/[0.07] px-6 py-3">
-            <div className="flex items-center gap-2.5">
-              <span className={`h-2 w-2 rounded-full ${syncDot}`} />
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.07] px-4 py-3 sm:px-6">
+            <div className="flex items-center gap-2">
+              <span className={`h-2 w-2 shrink-0 rounded-full ${syncDot}`} />
               <p className="text-[11px] font-medium text-slate-400">{syncMessage}</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                {controlSourceFocus}
-              </span>
               {activeTrackedJob && (
                 <select
                   value={activeTrackedJob.status}
@@ -2170,7 +2203,7 @@ export function ArgusWorkbench({
                 </p>
               </div>
 
-              {/* Score + next action */}
+              {/* Score + status */}
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center gap-2">
                   <span style={badgeStyle(analysis.score)} className="rounded-full px-3 py-1.5 text-[13px] font-bold">
@@ -2215,25 +2248,32 @@ export function ArgusWorkbench({
               ))}
             </div>
 
-            {/* Action buttons */}
+            {/* Action buttons — CTA principal sempre visível */}
             <div className="mt-5 flex flex-wrap gap-2">
+              {/* P0: Link de aplicação */}
+              {(activeTrackedJob?.sourceUrl ?? activeDiscovery?.listing.sourceUrl) ? (
+                <a
+                  href={activeTrackedJob?.sourceUrl ?? activeDiscovery?.listing.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-5 py-2 text-[13px] font-bold text-white shadow-[0_2px_12px_rgba(56,189,248,0.35)] transition hover:bg-sky-400"
+                >
+                  Aplicar na vaga ↗
+                </a>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-4 py-2 text-[12px] text-slate-500">
+                  ⚠ Vaga sem link de origem
+                </span>
+              )}
+              {/* Copiar mensagem */}
               <button
                 type="button"
                 onClick={handleCopyRecruiterMessage}
-                className="rounded-full bg-sky-500 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-sky-400"
+                className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-300 transition hover:bg-white/[0.12]"
               >
                 {copiedState === "copied" ? t("cc.messageCopied") : t("cc.copyMessage")}
               </button>
-              {activeDiscovery?.listing.sourceUrl && (
-                <a
-                  href={activeDiscovery.listing.sourceUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-300 transition hover:bg-white/[0.12]"
-                >
-                  Vaga original ↗
-                </a>
-              )}
+              {/* Avançar stage */}
               {activeTrackedJob && (
                 <button
                   type="button"

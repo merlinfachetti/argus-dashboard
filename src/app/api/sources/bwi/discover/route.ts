@@ -1,5 +1,6 @@
 import { withRetry } from "@/lib/connectors/retry";
 import { NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/connectors/rate-limit";
 import { discoverBwiListings } from "@/lib/connectors/bwi";
 
 export const runtime = "nodejs";
@@ -12,6 +13,14 @@ export async function GET(request: Request) {
   const limit = Number.isFinite(limitParam)
     ? Math.max(1, Math.min(limitParam, 12))
     : 6;
+
+  const rateCheck = checkRateLimit("bwi");
+  if (!rateCheck.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded", retryAfterMs: rateCheck.retryAfterMs },
+      { status: 429 }
+    );
+  }
 
   try {
     const result = await withRetry("bwi", () => discoverBwiListings(limit, enrich));

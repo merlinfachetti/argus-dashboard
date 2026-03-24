@@ -259,7 +259,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
       {/* Hero */}
       <div className="overflow-hidden rounded-[28px] border border-slate-900/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
         {/* Top bar */}
-        <div className="flex items-center justify-between border-b border-white/[0.07] px-6 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.07] px-4 py-3 sm:px-6">
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
             <span className="text-[11px] text-slate-400">{syncMessage}</span>
@@ -267,8 +267,8 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
           <span className="text-[11px] font-medium text-slate-500">{job.intakeMode}</span>
         </div>
 
-        <div className="px-6 py-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="px-4 py-5 sm:px-6 sm:py-6">
+          <div className="flex flex-col gap-4">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-400">
                 Vaga em foco
@@ -280,7 +280,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
                 {job.company} · {job.location} · {job.seniority}
               </p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span style={badgeStyle(analysis.score)} className="rounded-full px-3 py-1.5 text-[13px] font-bold">
                 {analysis.score}%
               </span>
@@ -310,13 +310,27 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
             ))}
           </div>
 
-          {/* Actions */}
+          {/* Actions — P0: aplicar sempre primeiro */}
           <div className="mt-5 flex flex-wrap gap-2">
+            {job.sourceUrl ? (
+              <a
+                href={job.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-5 py-2.5 text-[13px] font-bold text-white shadow-[0_2px_12px_rgba(56,189,248,0.4)] transition hover:bg-sky-400"
+              >
+                Aplicar na vaga ↗
+              </a>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-4 py-2 text-[12px] text-slate-500">
+                ⚠ Sem link de aplicação
+              </span>
+            )}
             <Link
               href={`/control-center?job=${encodeURIComponent(job.id)}`}
-              className="rounded-full bg-sky-500 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-sky-400"
+              className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-300 transition hover:bg-white/[0.12]"
             >
-              Operar no CC
+              Analisar no CC
             </Link>
             <button
               type="button"
@@ -325,16 +339,6 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
             >
               {copied ? t("global.copied") : t("cc.copyMessage")}
             </button>
-            {job.sourceUrl && (
-              <a
-                href={job.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-300 transition hover:bg-white/[0.12]"
-              >
-                Vaga original ↗
-              </a>
-            )}
             <select
               value={job.status}
               onChange={(e) => void handleStatusChange(e.target.value)}
@@ -349,7 +353,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-0.5 rounded-full border border-slate-200 bg-slate-50 p-1">
+      <div className="flex gap-0.5 overflow-x-auto rounded-full border border-slate-200 bg-slate-50 p-1" style={{scrollbarWidth:"none"}}>
         {(["overview", "match", "message", "history"] as const).map((tab) => (
           <button
             key={tab}
@@ -369,7 +373,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
 
       {/* Tab content */}
       {activeTab === "overview" && (
-        <div className="grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="flex flex-col gap-3 xl:grid xl:grid-cols-[1.1fr_0.9fr]">
           {/* Summary + skills */}
           <div className="rounded-[24px] border border-slate-200/60 bg-white p-6 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -408,40 +412,92 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
       )}
 
       {activeTab === "match" && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-[24px] border border-emerald-200/60 bg-gradient-to-b from-emerald-50/60 to-white p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-600">
-              O que favorece
-            </p>
-            <div className="mt-3 space-y-2">
-              {analysis.strengths.length === 0 ? (
-                <p className="text-[13px] text-slate-400">Nenhum ponto de força identificado.</p>
-              ) : (
-                analysis.strengths.map((s) => (
-                  <div key={s} className="flex items-start gap-2.5 rounded-xl border border-emerald-100 bg-white px-3.5 py-3">
-                    <span className="mt-0.5 shrink-0 text-emerald-500">✓</span>
-                    <p className="text-[13px] leading-5 text-slate-700">{s}</p>
-                  </div>
-                ))
-              )}
+        <div className="space-y-3">
+          {/* Decisão — primeira coisa a ver */}
+          <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Veredito</p>
+                <p className="mt-1 text-[15px] font-semibold text-slate-950">{analysis.verdict}</p>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <span style={badgeStyle(analysis.score)} className="rounded-full px-3 py-1 text-[14px] font-bold">
+                  {analysis.score}%
+                </span>
+                {job.sourceUrl && (
+                  <a
+                    href={job.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] font-semibold text-sky-600 hover:text-sky-500"
+                  >
+                    Aplicar ↗
+                  </a>
+                )}
+              </div>
             </div>
           </div>
-          <div className="rounded-[24px] border border-amber-200/60 bg-gradient-to-b from-amber-50/60 to-white p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-600">
-              Pontos de atenção
-            </p>
-            <div className="mt-3 space-y-2">
-              {analysis.risks.length === 0 ? (
-                <p className="text-[13px] text-slate-400">Nenhum risco identificado.</p>
-              ) : (
-                analysis.risks.map((r) => (
-                  <div key={r} className="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-white px-3.5 py-3">
-                    <span className="mt-0.5 shrink-0 text-amber-500">⚠</span>
-                    <p className="text-[13px] leading-5 text-slate-600">{r}</p>
-                  </div>
-                ))
-              )}
+
+          {/* Forças e riscos */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[24px] border border-emerald-200/60 bg-gradient-to-b from-emerald-50/60 to-white p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-600">
+                Por que combina
+              </p>
+              <div className="mt-3 space-y-2">
+                {analysis.strengths.length === 0 ? (
+                  <p className="text-[13px] text-slate-400">Nenhum ponto de força identificado.</p>
+                ) : (
+                  analysis.strengths.map((s) => (
+                    <div key={s} className="flex items-start gap-2.5 rounded-xl border border-emerald-100 bg-white px-3.5 py-2.5">
+                      <span className="mt-0.5 shrink-0 text-emerald-500">✓</span>
+                      <p className="text-[13px] leading-5 text-slate-700">{s}</p>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
+            <div className="rounded-[24px] border border-amber-200/60 bg-gradient-to-b from-amber-50/60 to-white p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-600">
+                Gaps a endereçar
+              </p>
+              <div className="mt-3 space-y-2">
+                {analysis.risks.length === 0 ? (
+                  <p className="text-[13px] text-slate-400">Nenhum gap crítico identificado.</p>
+                ) : (
+                  analysis.risks.map((r) => (
+                    <div key={r} className="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-white px-3.5 py-2.5">
+                      <span className="mt-0.5 shrink-0 text-amber-500">⚠</span>
+                      <p className="text-[13px] leading-5 text-slate-600">{r}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Próximo passo */}
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/60 bg-white px-5 py-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Próximo passo</p>
+              <p className="mt-1 text-[13px] font-medium text-slate-700">
+                {analysis.score >= 80
+                  ? "Alta prioridade — enviar mensagem e aplicar hoje."
+                  : analysis.score >= 65
+                  ? "Boa oportunidade — revisar gaps e customizar mensagem."
+                  : "Compatibilidade parcial — avaliar se vale o esforço."}
+              </p>
+            </div>
+            {job.sourceUrl && (
+              <a
+                href={job.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="shrink-0 rounded-full bg-sky-500 px-4 py-2 text-[12px] font-bold text-white transition hover:bg-sky-400"
+              >
+                Aplicar ↗
+              </a>
+            )}
           </div>
         </div>
       )}
