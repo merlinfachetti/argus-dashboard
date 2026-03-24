@@ -8,6 +8,7 @@ import { computePipelineAnalytics } from "@/lib/pipeline-analytics";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import type { DiscoveredJobListing } from "@/lib/connectors/types";
 import {
+  adjustScoreForTiming,
   analyzeGap,
   analyzeJobMatch,
   buildCustomCoverParagraph,
@@ -51,7 +52,7 @@ type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "gap" | "message" | "history" | "interview";
 type JobsSort = "updated" | "score" | "company";
-type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz" | "airbus" | "bayer" | "sap";
+type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz" | "airbus" | "bayer" | "sap" | "eviden";
 type ProfileSyncState = "checking" | "syncing" | "synced" | "offline" | "error";
 
 const STORAGE_KEY = "argus-workbench-state";
@@ -127,6 +128,13 @@ const DISCOVERY_SOURCES: Record<
     description: "Greenhouse API — software engineering, cloud, security and data roles in Germany.",
     buttonLabel: "Search SAP jobs",
     endpoint: "/api/sources/sap/discover?limit=6",
+  },
+  eviden: {
+    label: "Eviden",
+    company: "Eviden",
+    description: "SmartRecruiters — cybersecurity, cloud and digital transformation roles.",
+    buttonLabel: "Search Eviden jobs",
+    endpoint: "/api/sources/eviden/discover?limit=6",
   },
 };
 
@@ -350,6 +358,8 @@ export function ArgusWorkbench({
   // true se o radar foi carregado E tem vagas reais (não o estado inicial)
   const [hasRealJobs, setHasRealJobs] = useState(false);
   const [cvText, setCvText] = useState(profile.cvText);
+  const [cvUploadState, setCvUploadState] = useState<"idle" | "uploading" | "done" | "error">("idle");
+  const [cvUploadMsg, setCvUploadMsg] = useState("");
   const [coverLetterText, setCoverLetterText] = useState(profile.coverLetterText);
   const [profileSyncState, setProfileSyncState] =
     useState<ProfileSyncState>("checking");
@@ -919,9 +929,6 @@ export function ArgusWorkbench({
           activeProfile,
         )
       : null;
-  const activeSourceLabel =
-    activeTrackedJob?.intakeMode ??
-    (activeDiscovery ? `${activeDiscovery.listing.source} crawler` : "Input manual");
   const matchMeterWidth = `${Math.max(10, Math.min(analysis.score, 100))}%`;
 
   function mergePersistedJob(nextJob: TrackedJob) {
@@ -1089,7 +1096,12 @@ export function ArgusWorkbench({
           location: listing.location,
           summary: listing.descriptionText.replace(/\s+/g, " ").trim().slice(0, 280),
         };
-        const analysis = analyzeJobMatch(parsedJob, activeProfile);
+        const baseAnalysis = analyzeJobMatch(parsedJob, activeProfile);
+        // Aplicar bônus/penalidade de timing se a vaga tem data de publicação
+        const timedScore = adjustScoreForTiming(baseAnalysis.score, listing.postedSince ?? null);
+        const analysis = timedScore !== baseAnalysis.score
+          ? { ...baseAnalysis, score: timedScore }
+          : baseAnalysis;
 
         return {
           listing,
@@ -1267,42 +1279,6 @@ export function ArgusWorkbench({
       : activeTrackedJob
         ? [createHistoryEntry(activeTrackedJob.status)]
         : [];
-  const activeLastTouch =
-    activeTrackedJob?.updatedAt ??
-    activeTimeline[activeTimeline.length - 1]?.changedAt ??
-    activeTrackedJob?.createdAt ??
-    null;
-  const activeNextAction = nextActionLabel(
-    analysis.score,
-    activeTrackedJob?.status ?? null,
-  );
-  const activeWorkspaceCards = [
-    {
-      label: "Signal",
-      value: `${analysis.score}%`,
-      detail: analysis.verdict,
-    },
-    {
-      label: "Stage",
-      value: activeTrackedJob?.status ?? "Nova leitura",
-      detail: activeSourceLabel,
-    },
-    {
-      label: "Next move",
-      value: activeNextAction,
-      detail:
-        analysis.score >= 70
-          ? "Ja ha contexto para agir."
-          : "Vale triagem antes de executar.",
-    },
-    {
-      label: "Last touch",
-      value: formatActivityLabel(activeLastTouch),
-      detail:
-        activeTrackedJob?.intakeMode ??
-        (activeDiscovery ? "Discovery live" : "Input manual"),
-      },
-  ];
 
   const comparisonJobs = [...filteredTrackedJobs]
     .sort((left, right) => right.score - left.score)
@@ -2165,9 +2141,9 @@ export function ArgusWorkbench({
       {/* ── Main column ─────────────────────────────────────────────────────── */}
       <div className="space-y-4">
         {/* Active job hero */}
-        <div className="rounded-[28px] border border-slate-900/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
+        <div className="w-full overflow-hidden rounded-[28px] border border-slate-900/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
           {/* Top bar */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.07] px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-white/[0.07] px-4 py-3 sm:px-6">
             <div className="flex items-center gap-2">
               <span className={`h-2 w-2 shrink-0 rounded-full ${syncDot}`} />
               <p className="text-[11px] font-medium text-slate-400">{syncMessage}</p>
@@ -2188,71 +2164,79 @@ export function ArgusWorkbench({
           </div>
 
           {/* Hero content */}
-          <div className="px-4 py-5 sm:px-6 sm:py-6">
-            <div className="flex flex-col gap-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-400">
-                    Vaga ativa
-                  </p>
-                  {parsedJob.company && (
-                    <span className="rounded-full border border-white/10 bg-white/[0.08] px-2.5 py-0.5 text-[10px] font-semibold text-slate-300">
-                      {parsedJob.company}
-                    </span>
-                  )}
-                </div>
-                <h1 className="mt-2 text-2xl font-semibold leading-snug tracking-tight">
-                  {parsedJob.title}
-                </h1>
-                <p className="mt-1 text-[13px] text-slate-400">
-                  {parsedJob.location}{parsedJob.seniority ? ` · ${parsedJob.seniority}` : ""}
-                </p>
-              </div>
+          <div className="px-4 py-5 sm:px-6">
+            {/* Título + empresa */}
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sky-400">Vaga ativa</p>
+              <h1 className="mt-1.5 break-words text-xl font-bold leading-snug tracking-tight">
+                {parsedJob.title}
+              </h1>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-slate-400">
+                {parsedJob.company && <span className="font-medium text-slate-300">{parsedJob.company}</span>}
+                {parsedJob.company && <span>·</span>}
+                <span>{parsedJob.location}</span>
+                {parsedJob.seniority && parsedJob.seniority !== "Not specified" && (
+                  <><span>·</span><span>{parsedJob.seniority}</span></>
+                )}
+                {parsedJob.workModel && parsedJob.workModel !== "Not specified" && (
+                  <><span>·</span><span>{parsedJob.workModel}</span></>
+                )}
+              </p>
+            </div>
 
-              {/* Score + status */}
-              <div className="flex flex-wrap items-center gap-2">
+            {/* Score + match bar — visual primário */}
+            <div className="mt-4">
+              <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span style={badgeStyle(analysis.score)} className="rounded-full px-3 py-1.5 text-[13px] font-bold">
+                  <span style={badgeStyle(analysis.score)} className="rounded-full px-3 py-1 text-[14px] font-bold">
                     {analysis.score}%
                   </span>
-                  {activeTrackedJob && (
-                    <span style={statusStyle(activeTrackedJob.status)} className="rounded-full px-3 py-1.5 text-[11px] font-bold">
-                      {activeTrackedJob.status}
-                    </span>
-                  )}
+                  <span className="text-[12px] font-medium text-slate-400">{analysis.verdict}</span>
                 </div>
-                <p className="text-[12px] font-semibold text-sky-400">{activeNextAction}</p>
-                {followUpUrgency(activeTrackedJob) === "overdue" && (
-                  <span style={{ background: "#fff1f2", color: "#be123c", outline: "1px solid #fecdd3" }} className="rounded-full px-2.5 py-1 text-[11px] font-bold">
-                    {daysSince(activeTrackedJob.updatedAt)}d without response — follow up now
-                  </span>
-                )}
-                {followUpUrgency(activeTrackedJob) === "due-soon" && (
-                  <span style={{ background: "#fffbeb", color: "#b45309", outline: "1px solid #fde68a" }} className="rounded-full px-2.5 py-1 text-[11px] font-bold">
-                    {daysSince(activeTrackedJob.updatedAt)}d applied — consider following up
+                {activeTrackedJob && (
+                  <span style={statusStyle(activeTrackedJob.status)} className="rounded-full px-2.5 py-0.5 text-[10px] font-bold">
+                    {activeTrackedJob.status}
                   </span>
                 )}
               </div>
+              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-sky-400 transition-all" style={{ width: matchMeterWidth }} />
+              </div>
             </div>
 
-            {/* Score bar */}
-            <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-sky-400 transition-all"
-                style={{ width: matchMeterWidth }}
-              />
-            </div>
+            {/* Strengths + gaps — inline, compacto */}
+            {(analysis.strengths.length > 0 || analysis.risks.length > 0) && (
+              <div className="mt-4 space-y-1.5">
+                {analysis.strengths.slice(0, 2).map((s) => (
+                  <p key={s} className="flex items-start gap-1.5 text-[12px] text-emerald-400">
+                    <span className="mt-0.5 shrink-0">✓</span>
+                    <span>{s}</span>
+                  </p>
+                ))}
+                {analysis.risks.slice(0, 1).map((r) => (
+                  <p key={r} className="flex items-start gap-1.5 text-[12px] text-amber-400">
+                    <span className="mt-0.5 shrink-0">⚠</span>
+                    <span>{r}</span>
+                  </p>
+                ))}
+              </div>
+            )}
 
-            {/* Stats row */}
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              {activeWorkspaceCards.map((card) => (
-                <div key={card.label} className="rounded-2xl border border-white/[0.07] bg-white/[0.05] px-4 py-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{card.label}</p>
-                  <p className="mt-1.5 text-[13px] font-semibold text-slate-100">{card.value}</p>
-                  <p className="mt-0.5 text-[11px] text-slate-400">{card.detail}</p>
-                </div>
-              ))}
-            </div>
+            {/* Follow-up alert */}
+            {followUpUrgency(activeTrackedJob) === "overdue" && (
+              <div className="mt-3 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2">
+                <p className="text-[11px] font-semibold text-rose-400">
+                  {daysSince(activeTrackedJob.updatedAt)}d sem resposta — fazer follow up
+                </p>
+              </div>
+            )}
+            {followUpUrgency(activeTrackedJob) === "due-soon" && (
+              <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
+                <p className="text-[11px] font-semibold text-amber-400">
+                  {daysSince(activeTrackedJob.updatedAt)}d aplicado — considerar follow up
+                </p>
+              </div>
+            )}
 
             {/* Action buttons — CTA principal sempre visível */}
             <div className="mt-5 flex flex-wrap gap-2">
@@ -2289,7 +2273,6 @@ export function ArgusWorkbench({
                   Avançar stage →
                 </button>
               )}
-            </div>
               {activeTrackedJob && (
                 <button
                   type="button"
@@ -2305,6 +2288,7 @@ export function ArgusWorkbench({
                   {exportState === "done" ? "✓ Package ready" : "Export package ↓"}
                 </button>
               )}
+            </div>
           </div>
         </div>
 
@@ -2761,15 +2745,58 @@ export function ArgusWorkbench({
           </p>
 
           <div className="space-y-2.5">
-            <label className="block">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">CV</span>
+            <div className="block">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">CV</span>
+                <label className="cursor-pointer">
+                  <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:bg-slate-50">
+                    {cvUploadState === "uploading" ? "Lendo..." : "Subir arquivo ↑"}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,.txt,.docx"
+                    className="hidden"
+                    disabled={cvUploadState === "uploading"}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setCvUploadState("uploading");
+                      setCvUploadMsg("Extraindo texto...");
+                      try {
+                        const fd = new FormData();
+                        fd.append("cv", file);
+                        const res = await fetch("/api/profile/upload-cv", { method: "POST", body: fd });
+                        const payload = await res.json() as { text?: string; error?: string; charCount?: number };
+                        if (!res.ok || !payload.text) {
+                          setCvUploadState("error");
+                          setCvUploadMsg(payload.error ?? "Falha ao extrair texto");
+                        } else {
+                          setCvText(payload.text);
+                          setCvUploadState("done");
+                          setCvUploadMsg(`✓ ${payload.charCount?.toLocaleString()} chars extraídos — revisando...`);
+                          setTimeout(() => setCvUploadState("idle"), 4000);
+                        }
+                      } catch {
+                        setCvUploadState("error");
+                        setCvUploadMsg("Falha no upload");
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+              {cvUploadMsg && (
+                <p className={["mb-1 text-[10px]", cvUploadState === "error" ? "text-rose-500" : "text-emerald-600"].join(" ")}>
+                  {cvUploadMsg}
+                </p>
+              )}
               <textarea
                 value={cvText}
                 onChange={(e) => setCvText(e.target.value)}
-                className="mt-1 min-h-[110px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
-                placeholder="Cole o texto completo do seu CV..."
+                className="min-h-[110px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
+                placeholder="Cole o texto completo do seu CV ou use 'Subir arquivo' acima..."
               />
-            </label>
+            </div>
             <label className="block">
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Cover letter</span>
               <textarea

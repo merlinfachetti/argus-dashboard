@@ -41,25 +41,30 @@ export function AppHeader() {
         style={{ backgroundColor: "#0a0f1e", borderBottom: "1px solid #1e293b" }}
         className="sticky top-0 z-40"
       >
-        <div className="mx-auto flex w-full max-w-[92rem] items-center gap-3 px-4 sm:px-6 lg:px-10">
+        <div className="mx-auto flex h-[64px] w-full max-w-[92rem] items-center gap-3 px-4 sm:px-6 lg:px-10">
 
           {/* Logo */}
           <Link
             href="/"
             style={{ borderRight: "1px solid #1e293b" }}
-            className="flex h-[48px] shrink-0 items-center gap-2 pr-3 sm:pr-4"
+            className="flex h-[64px] shrink-0 items-center gap-3 pr-4 sm:pr-5"
           >
             <Image
               src="/logo-argus.png"
               alt="Argus"
-              width={32}
-              height={32}
-              className="h-8 w-8 object-contain"
+              width={56}
+              height={56}
+              className="h-14 w-14 object-contain drop-shadow-[0_0_12px_rgba(56,189,248,0.4)]"
               priority
             />
-            <span style={{ color: "#f8fafc" }} className="hidden text-[13px] font-semibold sm:block">
-              Argus
-            </span>
+            <div className="hidden flex-col sm:flex">
+              <span style={{ color: "#f8fafc" }} className="text-[15px] font-bold leading-none tracking-tight">
+                Argus
+              </span>
+              <span style={{ color: "#475569" }} className="text-[10px] font-semibold uppercase tracking-[0.2em]">
+                Job Radar
+              </span>
+            </div>
           </Link>
 
           {/* Desktop nav */}

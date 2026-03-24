@@ -107,9 +107,9 @@ export const trackedSources: PortalSource[] = [
   },
   {
     company: "Eviden",
-    url: "https://eviden.com/careers/",
-    strategy: "Analisar careers hub e identificar entrada útil para vagas filtráveis.",
-    status: "Catalogado para crawler",
+    url: "https://api.smartrecruiters.com/v1/companies/eviden/postings",
+    strategy: "SmartRecruiters API — filtro Germany + IT roles.",
+    status: "Discovery live",
   },
   {
     company: "Utimaco",
