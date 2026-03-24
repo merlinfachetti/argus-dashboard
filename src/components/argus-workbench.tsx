@@ -1353,7 +1353,7 @@ export function ArgusWorkbench({
                 "rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
                 radarFilter === f
                   ? "border-slate-800 bg-slate-950 text-white"
-                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300",
               ].join(" ")}
             >
               {f === "all" ? t("jobs.all") : f === "crawler" ? t("jobs.filterCrawler") : f === "manual" ? t("jobs.filterManual") : "≥ 70%"}
@@ -2053,7 +2053,7 @@ export function ArgusWorkbench({
                             "rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
                             selectedDiscoverySource === id
                               ? "border-slate-800 bg-slate-950 text-white"
-                              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300",
                           ].join(" ")}
                         >
                           {src.label}
@@ -2093,8 +2093,14 @@ export function ArgusWorkbench({
                             </span>
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-[13px] font-semibold text-slate-950">{job.listing.title}</p>
-                              <p className="text-[11px] text-slate-500">{job.listing.location}</p>
+                              <p className="truncate text-[11px] text-slate-500">
+                                {job.listing.company} · {job.listing.location}
+                              </p>
+                              {job.analysis.strengths[0] && (
+                                <p className="truncate text-[10px] text-emerald-700">✓ {job.analysis.strengths[0]}</p>
+                              )}
                             </div>
+                            <span className="shrink-0 text-[10px] text-sky-500">→</span>
                           </button>
                         ))}
                       </div>
@@ -2350,9 +2356,14 @@ export function ArgusWorkbench({
                 <p className="mt-4 text-[13px] leading-6 text-slate-200">{parsedJob.summary}</p>
                 <div className="mt-4 flex flex-wrap gap-1.5">
                   {parsedJob.skills.slice(0, 6).map((skill) => (
-                    <span key={skill} className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-[11px] font-medium text-slate-300">
+                    <a
+                      key={skill}
+                      href={`/jobs?q=${encodeURIComponent(skill)}`}
+                      className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-[11px] font-medium text-slate-300 transition hover:border-sky-400/40 hover:bg-sky-500/10 hover:text-sky-300"
+                      title={`Buscar vagas com ${skill}`}
+                    >
                       {skill}
-                    </span>
+                    </a>
                   ))}
                 </div>
               </div>
@@ -2574,7 +2585,7 @@ export function ArgusWorkbench({
                         "rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
                         selectedDiscoverySource === id
                           ? "border-slate-800 bg-slate-950 text-white"
-                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300",
                       ].join(" ")}
                     >
                       {src.label}
@@ -2653,9 +2664,15 @@ export function ArgusWorkbench({
         {/* Radar list */}
         <div className="overflow-hidden rounded-[24px] border border-slate-200/60 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.05)]">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <p className="text-[12px] font-semibold text-slate-700">
-              Radar ({trackedJobs.length})
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[12px] font-semibold text-slate-700">Radar</p>
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">{trackedJobs.length}</span>
+              {trackedJobs.filter(j => j.status === "Nova").length > 0 && (
+                <span className="rounded-full bg-sky-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  {trackedJobs.filter(j => j.status === "Nova").length} new
+                </span>
+              )}
+            </div>
             <div className="flex gap-1">
               {(["all", "priority"] as ("all" | "priority")[]).map((f) => (
                 <button

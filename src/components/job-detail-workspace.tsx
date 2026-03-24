@@ -385,9 +385,14 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Skills</p>
                 <div className="flex flex-wrap gap-1.5">
                   {job.skills.map((skill) => (
-                    <span key={skill} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] text-slate-700">
+                    <a
+                      key={skill}
+                      href={`/jobs?q=${encodeURIComponent(skill)}`}
+                      className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
+                      title={`Filtrar vagas com ${skill}`}
+                    >
                       {skill}
-                    </span>
+                    </a>
                   ))}
                 </div>
               </div>
