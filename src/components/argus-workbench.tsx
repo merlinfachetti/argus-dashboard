@@ -1491,9 +1491,9 @@ export function ArgusWorkbench({
                 </div>
               ) : (
                 jobsFilteredTrackedJobs.map((job) => (
-                  <button
+                  <Link
                     key={job.id}
-                    type="button"
+                    href={`/jobs/${job.id}`}
                     onClick={() => {
                       setActiveTrackedJobId(job.id);
                       handleInspectTrackedJob(job);
@@ -1514,14 +1514,14 @@ export function ArgusWorkbench({
                       <p className="truncate text-[13px] font-semibold text-slate-950">{job.title}</p>
                       <p className="mt-0.5 text-[12px] text-slate-500">{job.company} · {job.location}</p>
                     </div>
-                    {/* Status + action */}
+                    {/* Status + chevron */}
                     <div className="shrink-0 text-right">
                       <span style={statusStyle(job.status)} className="rounded-full px-2.5 py-0.5 text-[10px] font-bold">
                         {job.status}
                       </span>
                       <p className="mt-1 text-[10px] text-slate-400">{trackedJobLastTouch(job)}</p>
                     </div>
-                  </button>
+                  </Link>
                 ))
               )}
             </div>
@@ -2149,8 +2149,8 @@ export function ArgusWorkbench({
           </div>
 
           {/* Hero content */}
-          <div className="px-6 py-6">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="px-4 py-5 sm:px-6 sm:py-6">
+            <div className="flex flex-col gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-400">
@@ -2171,7 +2171,7 @@ export function ArgusWorkbench({
               </div>
 
               {/* Score + next action */}
-              <div className="flex shrink-0 flex-col items-end gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center gap-2">
                   <span style={badgeStyle(analysis.score)} className="rounded-full px-3 py-1.5 text-[13px] font-bold">
                     {analysis.score}%
@@ -2263,7 +2263,7 @@ export function ArgusWorkbench({
         </div>
 
         {/* Panel tabs */}
-        <div className="flex gap-1 rounded-2xl border border-slate-200 bg-slate-100/60 p-1">
+        <div className="flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-slate-100/60 p-1 sm:overflow-visible" style={{scrollbarWidth:"none"}}>
           {([
             { id: "summary", label: t("cc.tabSummary"), hint: parsedJob.title ? "✓" : "" },
             { id: "match",   label: t("cc.tabMatch"),   hint: `${analysis.score}%` },
@@ -2652,9 +2652,9 @@ export function ArgusWorkbench({
               </div>
             ) : (
               filteredTrackedJobs.map((job) => (
-                <button
+                <Link
                   key={job.id}
-                  type="button"
+                  href={`/jobs/${job.id}`}
                   onClick={() => handleInspectTrackedJob(job)}
                   className={[
                     "flex w-full items-center gap-3 px-4 py-3 text-left transition",
@@ -2673,7 +2673,7 @@ export function ArgusWorkbench({
                   <span style={statusStyle(job.status)} className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold">
                     {job.status.split(" ")[0]}
                   </span>
-                </button>
+                </Link>
               ))
             )}
           </div>
