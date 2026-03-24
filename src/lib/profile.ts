@@ -84,8 +84,8 @@ export const trackedSources: PortalSource[] = [
   {
     company: "Bayer",
     url: "https://talent.bayer.com/careers?pid=562949956234521&job%20type=professional",
-    strategy: "Priorizar exploração da busca pública e fallback manual.",
-    status: "Mapear fluxo",
+    strategy: "Phenom People portal com fallback HTML parsing.",
+    status: "Discovery live",
   },
   {
     company: "SAP",

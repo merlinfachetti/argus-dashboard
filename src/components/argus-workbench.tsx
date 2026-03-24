@@ -22,6 +22,7 @@ import {
   type CandidateProfile,
   type PortalSource,
 } from "@/lib/profile";
+import { deduplicateJobs } from "@/lib/connectors/dedup";
 import {
   createHistoryEntry,
   DASHBOARD_STATUS_LANES,
@@ -50,7 +51,7 @@ type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "gap" | "message" | "history" | "interview";
 type JobsSort = "updated" | "score" | "company";
-type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz" | "airbus";
+type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz" | "airbus" | "bayer";
 type ProfileSyncState = "checking" | "syncing" | "synced" | "offline" | "error";
 
 const STORAGE_KEY = "argus-workbench-state";
@@ -112,6 +113,13 @@ const DISCOVERY_SOURCES: Record<
     description: "Careers portal with Germany filter — software, digital and engineering roles.",
     buttonLabel: "Search Airbus jobs",
     endpoint: "/api/sources/airbus/discover?limit=6",
+  },
+  bayer: {
+    label: "Bayer",
+    company: "Bayer",
+    description: "Phenom People portal — life sciences, digital health and R&D engineering.",
+    buttonLabel: "Search Bayer jobs",
+    endpoint: "/api/sources/bayer/discover?limit=6",
   },
 };
 
@@ -1098,24 +1106,24 @@ export function ArgusWorkbench({
       setHasRealJobs(true);
       const jobsToPersist: TrackedJob[] = [];
       setTrackedJobs((currentJobs) => {
-        const seenIds = new Set(currentJobs.map((job) => job.id));
-        const additions = nextDiscoveries
-          .filter((job) => !seenIds.has(job.listing.externalId))
-          .map((job) => {
-              const msg = buildRecruiterMessage(job.parsedJob, activeProfile, job.analysis);
-              return toTrackedJob(job.parsedJob, job.analysis, {
-                intakeMode: `${job.listing.source} crawler`,
-                sourceUrl: job.listing.sourceUrl,
-                externalId: job.listing.externalId,
-                family: job.listing.family,
-                strengths: job.analysis.strengths,
-                risks: job.analysis.risks,
-                recruiterMessage: msg,
-              });
-            });
+        const candidates = nextDiscoveries.map((job) => {
+          const msg = buildRecruiterMessage(job.parsedJob, activeProfile, job.analysis);
+          return toTrackedJob(job.parsedJob, job.analysis, {
+            intakeMode: `${job.listing.source} crawler`,
+            sourceUrl: job.listing.sourceUrl,
+            externalId: job.listing.externalId,
+            family: job.listing.family,
+            strengths: job.analysis.strengths,
+            risks: job.analysis.risks,
+            recruiterMessage: msg,
+          });
+        });
+
+        // Deduplicação robusta: externalId + fingerprint título+empresa
+        const { additions } = deduplicateJobs(candidates, currentJobs);
 
         jobsToPersist.push(...additions);
-        return [...additions, ...currentJobs].slice(0, 12);
+        return [...additions, ...currentJobs].slice(0, 50);
       });
       // Alerta proativo para vagas com score ≥80
       const alertJobs = jobsToPersist
@@ -2709,10 +2717,37 @@ export function ArgusWorkbench({
             </label>
           </div>
 
-          {/* Feedback de último sync */}
-          {profileSyncState !== "checking" && (
-            <p className="mt-2.5 text-[10px] text-slate-400">{profileSyncMessage}</p>
-          )}
+          {/* Save manual + feedback */}
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setProfileSyncState("syncing");
+                void fetch("/api/profile", {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ cvText, coverLetterText }),
+                }).then(async (r) => {
+                  if (r.ok) {
+                    setProfileSyncState("synced");
+                    setProfileSyncMessage("Perfil salvo manualmente.");
+                  } else {
+                    setProfileSyncState("error");
+                    setProfileSyncMessage("Erro ao salvar.");
+                  }
+                }).catch(() => {
+                  setProfileSyncState("error");
+                  setProfileSyncMessage("Falha na conexão.");
+                });
+              }}
+              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Salvar agora
+            </button>
+            {profileSyncState !== "checking" && (
+              <p className="text-[10px] text-slate-400">{profileSyncMessage}</p>
+            )}
+          </div>
         </div>
       </aside>
     </div>
