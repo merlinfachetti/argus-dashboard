@@ -82,11 +82,14 @@ async function getSchemaCheck(): Promise<ReadinessCheck> {
   }
 
   try {
-    const [migrationTable] = await db.$queryRaw<Array<{ migrationTable: string | null }>>`
-      SELECT to_regclass('public._prisma_migrations') AS "migrationTable"
+    const [tableCheck] = await db.$queryRaw<Array<{ exists: boolean }>>`
+      SELECT EXISTS(
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = '_prisma_migrations'
+      ) AS "exists"
     `;
 
-    if (!migrationTable?.migrationTable) {
+    if (!tableCheck?.exists) {
       return {
         id: "schema",
         label: "Schema migrations",
@@ -97,17 +100,17 @@ async function getSchemaCheck(): Promise<ReadinessCheck> {
       };
     }
 
-    const [countResult] = await db.$queryRaw<Array<{ migrationCount: number }>>`
-      SELECT COUNT(*)::int AS "migrationCount" FROM "_prisma_migrations"
+    const [countResult] = await db.$queryRaw<Array<{ migrationCount: bigint }>>`
+      SELECT COUNT(*) AS "migrationCount" FROM "_prisma_migrations"
     `;
 
     return {
       id: "schema",
       label: "Schema migrations",
-      status: countResult?.migrationCount > 0 ? "ready" : "warning",
+      status: (countResult?.migrationCount ?? BigInt(0)) > BigInt(0) ? "ready" : "warning",
       summary:
         countResult?.migrationCount > 0
-          ? `${countResult.migrationCount} migration(s) aplicadas`
+          ? `${countResult.migrationCount.toString()} migration(s) aplicadas`
           : "Tabela de migrations existe, mas sem historico aplicado",
       detail:
         countResult?.migrationCount > 0
