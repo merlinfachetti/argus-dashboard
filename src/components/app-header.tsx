@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -48,12 +49,14 @@ export function AppHeader() {
             style={{ borderRight: "1px solid #1e293b" }}
             className="flex h-[48px] shrink-0 items-center gap-2 pr-3 sm:pr-4"
           >
-            <span
-              style={{ background: "linear-gradient(135deg,#e2e8f0,#bae6fd,#7dd3fc)" }}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-bold text-slate-900"
-            >
-              A
-            </span>
+            <Image
+              src="/logo-argus.png"
+              alt="Argus"
+              width={32}
+              height={32}
+              className="h-8 w-8 object-contain"
+              priority
+            />
             <span style={{ color: "#f8fafc" }} className="hidden text-[13px] font-semibold sm:block">
               Argus
             </span>

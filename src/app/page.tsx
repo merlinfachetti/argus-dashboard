@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { candidateProfile, trackedSources } from "@/lib/profile";
 
@@ -36,7 +37,14 @@ export default function Home() {
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-xl">
             <div className="mb-3 flex items-center gap-2">
-              <span className="text-xl">👁</span>
+              <Image
+                src="/logo-argus.png"
+                alt="Argus"
+                width={28}
+                height={28}
+                className="h-7 w-7 object-contain"
+                priority
+              />
               <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-400">
                 Argus — vigilância total, decisão precisa
               </span>
@@ -114,7 +122,7 @@ export default function Home() {
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex items-center gap-2">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600">
-                👁 {liveSources.length} fontes ativas
+                {liveSources.length} fontes ativas
               </span>
             </div>
             <div className="flex flex-wrap gap-1.5">

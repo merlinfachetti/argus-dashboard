@@ -6,9 +6,13 @@ import { I18nProvider } from "@/lib/i18n/context";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Argus | Job Radar",
+  title: "Argus — Private Job Radar",
   description:
-    "Private radar to collect, structure, score and track job opportunities aligned with your profile.",
+    "Vigilância total, decisão precisa. Sistema privado de discovery, match e operação de vagas para Merlin Fachetti.",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/logo-argus.png",
+  },
 };
 
 export default function RootLayout({

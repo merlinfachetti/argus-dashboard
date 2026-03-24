@@ -1,21 +1,58 @@
+import Image from "next/image";
+import Link from "next/link";
+
 export function AppFooter() {
   return (
-    <footer className="mt-20 border-t border-slate-950/[0.06]">
-      <div className="mx-auto flex w-full max-w-[92rem] items-center justify-between gap-4 px-6 py-5 lg:px-10">
+    <footer style={{ borderTop: "1px solid #1e293b", backgroundColor: "#0a0f1e" }}>
+      <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between lg:px-10">
+
+        {/* Logo + nome */}
         <div className="flex items-center gap-3">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md border border-white/10 bg-gradient-to-br from-slate-200 via-sky-100 to-sky-200 text-[10px] font-bold text-slate-900">
-            A
-          </span>
-          <span className="text-[12px] font-medium text-slate-500">
-            Argus Intelligence — Private job radar
-          </span>
+          <Image
+            src="/logo-argus.png"
+            alt="Argus"
+            width={28}
+            height={28}
+            className="h-7 w-7 object-contain"
+          />
+          <div>
+            <p style={{ color: "#f8fafc" }} className="text-[13px] font-semibold">
+              Argus
+            </p>
+            <p style={{ color: "#475569" }} className="text-[11px]">
+              Private job radar — vigilância total, decisão precisa
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-4 text-[11px] text-slate-500">
-          <span>Next.js · Prisma · Vercel</span>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-            v2
-          </span>
+
+        {/* Crédito + stack */}
+        <div className="flex flex-col items-start gap-1 sm:items-end">
+          <div className="flex items-center gap-2">
+            {/* Avatar Alden Merlin — initials */}
+            <span
+              style={{
+                background: "linear-gradient(135deg,#b45309,#d97706,#f59e0b)",
+                color: "#fff",
+              }}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold"
+            >
+              AM
+            </span>
+            <Link
+              href="https://aldenmerlin.com"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: "#64748b" }}
+              className="text-[11px] transition hover:text-slate-300"
+            >
+              Criado por <span style={{ color: "#94a3b8" }} className="font-semibold">Alden Merlin</span> · 2026
+            </Link>
+          </div>
+          <p style={{ color: "#334155" }} className="text-[10px]">
+            Next.js · Prisma · Vercel · Neon
+          </p>
         </div>
+
       </div>
     </footer>
   );
