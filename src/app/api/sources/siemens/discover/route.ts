@@ -1,3 +1,4 @@
+import { withRetry } from "@/lib/connectors/retry";
 import { NextResponse } from "next/server";
 import { discoverSiemensListings } from "@/lib/connectors/siemens";
 
@@ -13,7 +14,11 @@ export async function GET(request: Request) {
     : 6;
 
   try {
-    const jobs = await discoverSiemensListings(limit, enrich);
+    const result = await withRetry("siemens", () => discoverSiemensListings(limit, enrich));
+    const jobs = result.data ?? [];
+    if (result.error) {
+      console.error(`[Argus] siemens failed: ${result.error}`);
+    }
 
     return NextResponse.json({
       source: "Siemens",

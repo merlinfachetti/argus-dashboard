@@ -1,3 +1,4 @@
+import { withRetry } from "@/lib/connectors/retry";
 import { NextResponse } from "next/server";
 import { discoverBwiListings } from "@/lib/connectors/bwi";
 
@@ -13,7 +14,11 @@ export async function GET(request: Request) {
     : 6;
 
   try {
-    const jobs = await discoverBwiListings(limit, enrich);
+    const result = await withRetry("bwi", () => discoverBwiListings(limit, enrich));
+    const jobs = result.data ?? [];
+    if (result.error) {
+      console.error(`[Argus] bwi failed: ${result.error}`);
+    }
 
     return NextResponse.json({
       source: "BWI",

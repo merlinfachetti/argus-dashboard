@@ -1117,6 +1117,18 @@ export function ArgusWorkbench({
         jobsToPersist.push(...additions);
         return [...additions, ...currentJobs].slice(0, 12);
       });
+      // Alerta proativo para vagas com score ≥80
+      const alertJobs = jobsToPersist
+        .filter((j) => j.score >= 80)
+        .map((j) => ({ id: j.id, title: j.title, company: j.company, score: j.score, sourceUrl: j.sourceUrl }));
+      if (alertJobs.length > 0) {
+        void fetch("/api/radar/alerts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobs: alertJobs }),
+        }).catch(() => { /* alert failure is non-critical */ });
+      }
+
       jobsToPersist.forEach((job) => {
         const matchingDiscovery = nextDiscoveries.find(
           (discovery) => discovery.listing.externalId === job.externalId,

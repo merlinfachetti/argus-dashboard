@@ -241,6 +241,10 @@ export function analyzeJobMatch(job: ParsedJob, profile: CandidateProfile): Matc
 
   score = Math.max(32, Math.min(score, 97));
 
+  // ── Timing bonus (até +5) — vagas recentes têm leve prioridade ──────────────
+  // O caller pode passar postedAt para aplicar o bônus
+  // Aplicado externamente via adjustScoreForTiming()
+
   // ── Strengths (dinâmico) ─────────────────────────────────────────────────
   const strengths: string[] = [];
 
@@ -301,6 +305,27 @@ export function analyzeJobMatch(job: ParsedJob, profile: CandidateProfile): Matc
   return { score, verdict, strengths, risks };
 }
 
+
+// ─── Timing score adjustment ─────────────────────────────────────────────────
+
+export function adjustScoreForTiming(
+  baseScore: number,
+  postedAt?: string | null,
+): number {
+  if (!postedAt) return baseScore;
+
+  const days = Math.floor(
+    (Date.now() - new Date(postedAt).getTime()) / 86400000,
+  );
+
+  // Bonus: vagas novas (≤3d) +5, recentes (≤7d) +3, normais (≤21d) +0
+  // Penalty: vagas velhas (>45d) -5 (podem estar preenchidas)
+  if (days <= 3)  return Math.min(baseScore + 5, 97);
+  if (days <= 7)  return Math.min(baseScore + 3, 97);
+  if (days <= 21) return baseScore;
+  if (days > 45)  return Math.max(baseScore - 5, 32);
+  return baseScore;
+}
 
 // ─── Gap analysis ─────────────────────────────────────────────────────────────
 

@@ -1,3 +1,4 @@
+import { withRetry } from "@/lib/connectors/retry";
 import { NextResponse } from "next/server";
 import { discoverHensoldtJobs } from "@/lib/connectors/hensoldt";
 
@@ -9,7 +10,8 @@ export async function GET(request: Request) {
   const enrich = searchParams.get("enrich") === "1";
 
   try {
-    const jobs = await discoverHensoldtJobs(limit, enrich);
+    const result = await withRetry("hensoldt", () => discoverHensoldtJobs(limit, enrich));
+    const jobs = result.data ?? [];
     return NextResponse.json({ jobs });
   } catch (error) {
     return NextResponse.json(

@@ -1,3 +1,4 @@
+import { withRetry } from "@/lib/connectors/retry";
 import { NextResponse } from "next/server";
 import { discoverRheinmetallListings } from "@/lib/connectors/rheinmetall";
 
@@ -13,7 +14,11 @@ export async function GET(request: Request) {
     : 6;
 
   try {
-    const jobs = await discoverRheinmetallListings(limit, enrich);
+    const result = await withRetry("rheinmetall", () => discoverRheinmetallListings(limit, enrich));
+    const jobs = result.data ?? [];
+    if (result.error) {
+      console.error(`[Argus] rheinmetall failed: ${result.error}`);
+    }
 
     return NextResponse.json({
       source: "Rheinmetall",
