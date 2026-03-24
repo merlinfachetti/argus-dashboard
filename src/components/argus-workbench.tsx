@@ -51,7 +51,7 @@ type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "gap" | "message" | "history" | "interview";
 type JobsSort = "updated" | "score" | "company";
-type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz" | "airbus" | "bayer";
+type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz" | "airbus" | "bayer" | "sap";
 type ProfileSyncState = "checking" | "syncing" | "synced" | "offline" | "error";
 
 const STORAGE_KEY = "argus-workbench-state";
@@ -120,6 +120,13 @@ const DISCOVERY_SOURCES: Record<
     description: "Phenom People portal — life sciences, digital health and R&D engineering.",
     buttonLabel: "Search Bayer jobs",
     endpoint: "/api/sources/bayer/discover?limit=6",
+  },
+  sap: {
+    label: "SAP",
+    company: "SAP",
+    description: "Greenhouse API — software engineering, cloud, security and data roles in Germany.",
+    buttonLabel: "Search SAP jobs",
+    endpoint: "/api/sources/sap/discover?limit=6",
   },
 };
 

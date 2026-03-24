@@ -89,9 +89,9 @@ export const trackedSources: PortalSource[] = [
   },
   {
     company: "SAP",
-    url: "https://jobs.sap.com/search/",
-    strategy: "Usar pesquisa com filtros por locale e detectar endpoints úteis.",
-    status: "Mapear filtros",
+    url: "https://jobs.sap.com/api/v1/boards/sap/jobs",
+    strategy: "Greenhouse API pública — filtra Germany + roles técnicos.",
+    status: "Discovery live",
   },
   {
     company: "Hensoldt",
