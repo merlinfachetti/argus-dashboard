@@ -73,7 +73,7 @@ export function DigestActions() {
           type="button"
           disabled={isPending}
           onClick={() => runAction("/api/digests/send")}
-          className="flex-1 rounded-full bg-slate-950 py-2 text-[12px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+          className="flex-1 rounded-full border border-slate-900 bg-white py-2 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:opacity-50"
         >
           {t("digests.sendTest")}
         </button>

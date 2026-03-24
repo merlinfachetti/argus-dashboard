@@ -44,7 +44,7 @@ export default function SourcesPage() {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
+      <div className="flex flex-col gap-5 xl:grid xl:grid-cols-[1fr_380px]">
         {/* Coluna esquerda — portais */}
         <div className="space-y-5">
 

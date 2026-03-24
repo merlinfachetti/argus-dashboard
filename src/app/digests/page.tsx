@@ -26,7 +26,7 @@ export default async function DigestsPage() {
           <>
             <Link
               href="/ops"
-              className="rounded-full bg-slate-950 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-slate-800"
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50"
             >
               Ver ops
             </Link>
@@ -40,7 +40,7 @@ export default async function DigestsPage() {
         }
       />
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
+      <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[1fr_300px]">
         {/* Preview do digest */}
         <article className="rounded-[28px] border border-slate-200/60 bg-white/90 p-6 shadow-[0_16px_50px_rgba(15,23,42,0.05)]">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">

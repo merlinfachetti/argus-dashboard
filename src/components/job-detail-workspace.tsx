@@ -237,7 +237,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
         <div className="mt-5 flex gap-2.5">
           <Link
             href="/jobs"
-            className="rounded-full bg-slate-950 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-slate-800"
+            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50"
           >
             Voltar para jobs
           </Link>
@@ -455,7 +455,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
             <button
               type="button"
               onClick={() => void handleCopy()}
-              className="rounded-full bg-slate-950 px-4 py-1.5 text-[12px] font-semibold text-white transition hover:bg-slate-800"
+              className="rounded-full border border-slate-900 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50"
             >
               {copied ? t("global.copied") : t("global.copy")}
             </button>

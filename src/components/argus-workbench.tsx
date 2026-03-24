@@ -1389,14 +1389,14 @@ export function ArgusWorkbench({
             <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
               Spotlight
             </p>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible" style={{WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
               {jobsSpotlight.map((job, i) => (
                 <button
                   key={`spot-${job.id}`}
                   type="button"
                   onClick={() => handleInspectTrackedJob(job)}
                   className={[
-                    "rounded-2xl border p-4 text-left transition hover:-translate-y-0.5",
+                    "min-w-[72vw] max-w-[280px] flex-shrink-0 rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 sm:min-w-0 sm:max-w-none",
                     activeTrackedJobId === job.id
                       ? "border-sky-300 bg-gradient-to-b from-sky-50 to-white shadow-[0_12px_32px_rgba(14,165,233,0.14)]"
                       : "border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)] hover:border-slate-300",
@@ -1422,9 +1422,9 @@ export function ArgusWorkbench({
         )}
 
         {/* Main grid — list + preview */}
-        <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
+        <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[1fr_360px]">
           {/* List */}
-          <div className="overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
+          <div className="rounded-[24px] border border-slate-200/80 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)] overflow-x-visible">
             {/* List header */}
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
               <p className="text-[12px] font-semibold text-slate-600">
@@ -1468,7 +1468,7 @@ export function ArgusWorkbench({
                   ) : (
                     <Link
                       href="/control-center"
-                      className="rounded-full bg-slate-950 px-4 py-1.5 text-[12px] font-semibold text-white transition hover:bg-slate-800"
+                      className="rounded-full border border-slate-900 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50"
                     >
                       Ir para Control Center
                     </Link>
@@ -1568,7 +1568,7 @@ export function ArgusWorkbench({
                 <div className="mt-4 flex gap-2">
                   <Link
                     href={`/control-center?job=${jobsPreviewJob.id}`}
-                    className="flex-1 rounded-full bg-slate-950 py-2 text-center text-[12px] font-semibold text-white transition hover:bg-slate-800"
+                    className="flex-1 rounded-full border border-slate-900 bg-white py-2 text-center text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50"
                   >
                     Operar no CC
                   </Link>
@@ -1620,7 +1620,7 @@ export function ArgusWorkbench({
                 <div className="mt-4 flex justify-center gap-2">
                   <Link
                     href="/control-center"
-                    className="rounded-full bg-slate-950 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-slate-800"
+                    className="rounded-full border border-slate-900 bg-white px-4 py-2 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50"
                   >
                     Adicionar vaga
                   </Link>
@@ -1653,7 +1653,7 @@ export function ArgusWorkbench({
                 Adicione vagas pelo Control Center para ver o funil, gargalos e prioridades aqui.
               </p>
               <div className="mt-5 flex justify-center gap-2.5">
-                <Link href="/control-center" className="rounded-full bg-slate-950 px-4 py-2 text-[12px] font-semibold text-white transition hover:bg-slate-800">
+                <Link href="/control-center" className="rounded-full border border-slate-900 bg-white px-4 py-2 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50">
                   Ir para Control Center
                 </Link>
               </div>
@@ -1696,11 +1696,11 @@ export function ArgusWorkbench({
         </div>
 
         {/* Kanban board */}
-        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 xl:grid-cols-4">
+        <div className="flex gap-3 overflow-x-auto pb-3 sm:grid sm:grid-cols-2 sm:overflow-visible xl:grid-cols-4" style={{WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
           {dashboardLanes.map((lane) => (
             <section
               key={lane.status}
-              className={`min-w-[240px] flex-shrink-0 rounded-2xl border p-4 sm:min-w-0 ${laneTone(lane.status)}`}
+              className={`min-w-[76vw] max-w-[300px] flex-shrink-0 rounded-2xl border p-4 sm:min-w-0 sm:max-w-none ${laneTone(lane.status)}`}
             >
               {/* Lane header */}
               <div className="mb-3 flex items-center justify-between">
@@ -1756,7 +1756,7 @@ export function ArgusWorkbench({
                               type="button"
                               onClick={() => handleAdvanceTrackedJob(job.id)}
                               title="Avançar stage"
-                              className="rounded-full bg-slate-950 px-2 py-0.5 text-[10px] font-semibold text-white transition hover:bg-slate-800"
+                              className="rounded-full border border-slate-900 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-900 transition hover:bg-slate-50"
                             >
                               →
                             </button>
@@ -1849,7 +1849,7 @@ export function ArgusWorkbench({
             <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
               Top oportunidades
             </p>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible" style={{WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
               {comparisonJobs.map((job, i) => (
                 <button
                   key={`cmp-${job.id}`}
@@ -1885,7 +1885,7 @@ export function ArgusWorkbench({
   // Welcome screen — radar ainda carregando ou sem vagas reais
   if (!radarLoaded || !hasRealJobs) {
     return (
-      <div className="grid items-start gap-4 xl:grid-cols-[1fr_360px]">
+      <div className="flex flex-col gap-4 xl:grid xl:items-start xl:grid-cols-[1fr_360px]">
         {/* Welcome / onboarding */}
         <div className="space-y-4">
           {/* Status bar */}
@@ -1907,7 +1907,7 @@ export function ArgusWorkbench({
             </div>
           ) : (
             /* Empty state — radar carregado mas sem vagas */
-            <div className="overflow-hidden rounded-[28px] border border-slate-200/60 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
+            <div className="rounded-[28px] border border-slate-200/60 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
               {/* Header */}
               <div className="border-b border-slate-100 px-7 py-6">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -1992,7 +1992,7 @@ export function ArgusWorkbench({
               <div className="p-5">
                 {workspaceMode === "discovery" ? (
                   <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible" style={{WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
                       {(Object.entries(DISCOVERY_SOURCES) as [DiscoverySourceId, (typeof DISCOVERY_SOURCES)[DiscoverySourceId]][]).map(([id, src]) => (
                         <button
                           key={id}
@@ -2016,7 +2016,7 @@ export function ArgusWorkbench({
                       type="button"
                       onClick={() => void handleRunSourceDiscovery()}
                       disabled={isDiscovering}
-                      className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                      className="rounded-full border border-slate-900 bg-white px-5 py-2.5 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:opacity-50"
                     >
                       {isDiscovering ? t("cc.searching") : activeDiscoverySourceConfig.buttonLabel}
                     </button>
@@ -2064,7 +2064,7 @@ export function ArgusWorkbench({
                       type="button"
                       onClick={handleProcessDescription}
                       disabled={isPending}
-                      className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                      className="rounded-full border border-slate-900 bg-white px-5 py-2.5 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:opacity-50"
                     >
                       {isPending ? t("cc.processing") : t("cc.structureJob")}
                     </button>
@@ -2104,11 +2104,11 @@ export function ArgusWorkbench({
   }
 
   return (
-    <div className="grid items-start gap-4 xl:grid-cols-[1fr_360px]">
+    <div className="flex flex-col gap-4 xl:grid xl:items-start xl:grid-cols-[1fr_360px]">
       {/* ── Main column ─────────────────────────────────────────────────────── */}
       <div className="space-y-4">
         {/* Active job hero */}
-        <div className="overflow-hidden rounded-[28px] border border-slate-900/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
+        <div className="rounded-[28px] border border-slate-900/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
           {/* Top bar */}
           <div className="flex items-center justify-between gap-3 border-b border-white/[0.07] px-6 py-3">
             <div className="flex items-center gap-2.5">
@@ -2190,7 +2190,7 @@ export function ArgusWorkbench({
             </div>
 
             {/* Stats row */}
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="mt-4 grid grid-cols-2 gap-2">
               {activeWorkspaceCards.map((card) => (
                 <div key={card.label} className="rounded-2xl border border-white/[0.07] bg-white/[0.05] px-4 py-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{card.label}</p>
@@ -2348,7 +2348,7 @@ export function ArgusWorkbench({
                   <button
                     type="button"
                     onClick={handleCopyRecruiterMessage}
-                    className="rounded-full bg-slate-950 px-4 py-1.5 text-[12px] font-semibold text-white transition hover:bg-slate-800"
+                    className="rounded-full border border-slate-900 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50"
                   >
                     {copiedState === "copied" ? "✓ Copiado" : "Copiar"}
                   </button>
@@ -2509,7 +2509,7 @@ export function ArgusWorkbench({
           <div className="p-5">
             {workspaceMode === "discovery" ? (
               <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
+                <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible" style={{WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
                   {(Object.entries(DISCOVERY_SOURCES) as [DiscoverySourceId, (typeof DISCOVERY_SOURCES)[DiscoverySourceId]][]).map(([id, src]) => (
                     <button
                       key={id}
@@ -2533,7 +2533,7 @@ export function ArgusWorkbench({
                   type="button"
                   onClick={() => void handleRunSourceDiscovery()}
                   disabled={isDiscovering}
-                  className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                  className="rounded-full border border-slate-900 bg-white px-5 py-2.5 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:opacity-50"
                 >
                   {isDiscovering ? t("cc.searching") : activeDiscoverySourceConfig.buttonLabel}
                 </button>
@@ -2583,7 +2583,7 @@ export function ArgusWorkbench({
                   type="button"
                   onClick={handleProcessDescription}
                   disabled={isPending}
-                  className="rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                  className="rounded-full border border-slate-900 bg-white px-5 py-2.5 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:opacity-50"
                 >
                   {isPending ? t("cc.processing") : t("cc.structureJob")}
                 </button>
@@ -2594,7 +2594,7 @@ export function ArgusWorkbench({
       </div>
 
       {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
-      <aside className="space-y-4 xl:sticky xl:top-[68px]">
+      <aside className="space-y-4 xl:sticky xl:top-[68px]" style={{order: 2}}>
         {/* Radar list */}
         <div className="overflow-hidden rounded-[24px] border border-slate-200/60 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.05)]">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">

@@ -42,7 +42,7 @@ export default async function OpsPage() {
           <>
             <Link
               href="/sources"
-              className="rounded-full bg-slate-950 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-slate-800"
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50"
             >
               Ver sources
             </Link>
