@@ -4,14 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "prisma generate || echo 'prisma generate failed \u2014 continuing build'",
+    "prebuild": "prisma generate || echo 'prisma generate failed — continuing build'",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
-    "prisma:migrate:deploy": "prisma migrate deploy"
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "migrate:deploy": "prisma migrate deploy",
+    "postbuild": "node -e \"if(process.env.DATABASE_URL){require('child_process').execSync('prisma migrate deploy',{stdio:'inherit'})}else{console.log('No DATABASE_URL — skipping migrate deploy')}\" || echo 'migrate deploy skipped'"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
