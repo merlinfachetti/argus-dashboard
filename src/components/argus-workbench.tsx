@@ -52,7 +52,7 @@ type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "gap" | "message" | "history" | "interview";
 type JobsSort = "updated" | "score" | "company";
-type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz" | "airbus" | "bayer" | "sap" | "eviden" | "diehl";
+type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz" | "airbus" | "bayer" | "sap" | "eviden" | "diehl" | "tkms";
 type ProfileSyncState = "checking" | "syncing" | "synced" | "offline" | "error";
 
 const STORAGE_KEY = "argus-workbench-state";
@@ -142,6 +142,13 @@ const DISCOVERY_SOURCES: Record<
     description: "Defense & engineering — embedded, software and systems roles in Germany.",
     buttonLabel: "Search Diehl jobs",
     endpoint: "/api/sources/diehl/discover?limit=6",
+  },
+  tkms: {
+    label: "TKMS",
+    company: "TKMS",
+    description: "thyssenkrupp Marine Systems — naval engineering, IT and systems roles.",
+    buttonLabel: "Search TKMS jobs",
+    endpoint: "/api/sources/tkms/discover?limit=6",
   },
 };
 

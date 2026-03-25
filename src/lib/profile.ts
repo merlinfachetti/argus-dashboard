@@ -149,9 +149,9 @@ export const trackedSources: PortalSource[] = [
   },
   {
     company: "TKMS",
-    url: "https://www.tkmsgroup.com/de/karriere",
-    strategy: "Mapear portal institucional e detectar origem real das vagas.",
-    status: "Catalogado para crawler",
+    url: "https://www.tkmsgroup.com/de/karriere/stellenangebote",
+    strategy: "HTML parsing em portal corporativo — defense & naval systems.",
+    status: "Discovery live",
   },
   {
     company: "Airbus",
