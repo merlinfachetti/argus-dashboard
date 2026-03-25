@@ -50,6 +50,8 @@ export const candidateProfile: CandidateProfile = {
     "Passagem por liderança técnica e gestão de engenharia",
     "Foco forte em confiabilidade, troubleshooting e root cause analysis",
     "Vivência atual na Alemanha e operação em ambiente high-throughput na Amazon",
+    "Interesse ativo em cybersecurity, defense tech e sistemas críticos",
+    "Experiência com sistemas de missão crítica e ambientes de alta disponibilidade",
   ],
   languages: ["Portuguese", "English", "German"],
   cvText: `Merlin Fachetti
