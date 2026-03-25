@@ -14,7 +14,12 @@ const liveDiscoveryLinks: Record<string, string> = {
   Hensoldt:         "/control-center?source=hensoldt",
   secunet:          "/control-center?source=secunet",
   "Rohde & Schwarz": "/control-center?source=rohde-schwarz",
-  Airbus: "/control-center?source=airbus",
+  Airbus:           "/control-center?source=airbus",
+  Bayer:            "/control-center?source=bayer",
+  SAP:              "/control-center?source=sap",
+  Eviden:           "/control-center?source=eviden",
+  Diehl:            "/control-center?source=diehl",
+  TKMS:             "/control-center?source=tkms",
 };
 
 export default function SourcesPage() {
