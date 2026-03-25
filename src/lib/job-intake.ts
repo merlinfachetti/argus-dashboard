@@ -221,6 +221,13 @@ export function analyzeJobMatch(job: ParsedJob, profile: CandidateProfile): Matc
     [/reliability|incident|observability/i,           /reliability|incident|observability/i, 6],
     [/leadership|mentoring|cross.functional|platform/i, /leadership|mentoring|platform/i,  4],
     [/research|engineering|information technology/i,  /engineering|production/i,          4],
+    // Defense & cybersec — empresas-alvo do perfil
+    [/defense|defence|naval|military|aerospace|embedded|firmware|ot |ot-security|critical infrastructure/i,
+      /defense|naval|security|embedded|aerospace|critical/i, 8],
+    [/cyber|cybersecurity|security operations|soc |pentest|penetration|siem|threat/i,
+      /security|cyber|protection|soc/i, 8],
+    [/iot|industrial|plc|scada|rtos|real.time|safety.critical|functional safety/i,
+      /industrial|embedded|systems|real.time/i, 6],
   ] as [RegExp, RegExp, number][];
 
   for (const [jobRe, profileRe, pts] of domainSignals) {
@@ -258,7 +265,11 @@ export function analyzeJobMatch(job: ParsedJob, profile: CandidateProfile): Matc
     strengths.push("Nível de senioridade alinhado com histórico de 10+ anos em produção.");
   }
 
-  if (/automation|workflow|internal/i.test(combinedJobText)) {
+  if (/defense|naval|military|aerospace|embedded|firmware/i.test(combinedJobText)) {
+    strengths.push("Perfil alinhado com setor de defesa — engenharia de sistemas críticos e segurança.");
+  } else if (/cyber|cybersecurity|soc |pentest|threat|siem/i.test(combinedJobText)) {
+    strengths.push("Background técnico em segurança e sistemas de produção — fit com o escopo de cyber.");
+  } else if (/automation|workflow|internal/i.test(combinedJobText)) {
     strengths.push("Histórico forte com automação e ferramentas internas — fit direto com a vaga.");
   } else if (/reliability|observability|incident/i.test(combinedJobText)) {
     strengths.push("Experiência com confiabilidade e incident response relevante para o escopo.");
