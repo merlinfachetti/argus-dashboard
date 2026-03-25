@@ -144,8 +144,8 @@ export const trackedSources: PortalSource[] = [
   {
     company: "Diehl",
     url: "https://www.diehl.com/career/en/jobs-application/job-offers/",
-    strategy: "Crawler em listagem pública com foco em vagas de engenharia na Alemanha.",
-    status: "Catalogado para crawler",
+    strategy: "HTML parsing com fallback de links — vagas de engineering Germany.",
+    status: "Discovery live",
   },
   {
     company: "TKMS",

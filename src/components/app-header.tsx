@@ -23,6 +23,7 @@ export function AppHeader() {
     { href: "/digests",        label: t("nav.digests") },
     { href: "/sources",        label: t("nav.sources") },
     { href: "/ops",            label: t("nav.ops") },
+    { href: "/profile",        label: "Profile" },
   ] as const;
 
   function isActive(href: string) {

@@ -52,7 +52,7 @@ type RadarFilter = "all" | "crawler" | "manual" | "priority";
 type WorkspaceMode = "discovery" | "manual";
 type ActivePanel = "summary" | "match" | "gap" | "message" | "history" | "interview";
 type JobsSort = "updated" | "score" | "company";
-type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz" | "airbus" | "bayer" | "sap" | "eviden";
+type DiscoverySourceId = "siemens" | "rheinmetall" | "bwi" | "hensoldt" | "secunet" | "rohde-schwarz" | "airbus" | "bayer" | "sap" | "eviden" | "diehl";
 type ProfileSyncState = "checking" | "syncing" | "synced" | "offline" | "error";
 
 const STORAGE_KEY = "argus-workbench-state";
@@ -135,6 +135,13 @@ const DISCOVERY_SOURCES: Record<
     description: "SmartRecruiters — cybersecurity, cloud and digital transformation roles.",
     buttonLabel: "Search Eviden jobs",
     endpoint: "/api/sources/eviden/discover?limit=6",
+  },
+  diehl: {
+    label: "Diehl",
+    company: "Diehl",
+    description: "Defense & engineering — embedded, software and systems roles in Germany.",
+    buttonLabel: "Search Diehl jobs",
+    endpoint: "/api/sources/diehl/discover?limit=6",
   },
 };
 

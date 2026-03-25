@@ -123,3 +123,29 @@ export async function updateCandidateDocuments(input: {
 
   return mapRecordToCandidateProfile(updated);
 }
+
+export async function updateCandidateProfile(input: Partial<CandidateProfile>) {
+  if (!isDatabaseConfigured()) {
+    throw new Error('Banco ainda nao configurado');
+  }
+
+  const record = await ensureCandidateProfileRecord();
+
+  const updated = await db.candidateProfile.update({
+    where: { id: record.id },
+    data: {
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.headline !== undefined && { headline: input.headline }),
+      ...(input.location !== undefined && { location: input.location }),
+      ...(input.availability !== undefined && { availability: input.availability }),
+      ...(input.summary !== undefined && { summary: input.summary }),
+      ...(input.languages !== undefined && { languages: input.languages }),
+      ...(input.coreStack !== undefined && { coreStack: input.coreStack }),
+      ...(input.targetRoles !== undefined && { targetRoles: input.targetRoles }),
+      ...(input.cvText !== undefined && { cvText: input.cvText }),
+      ...(input.coverLetterText !== undefined && { coverLetterText: input.coverLetterText }),
+    },
+  });
+
+  return mapRecordToCandidateProfile(updated);
+}
