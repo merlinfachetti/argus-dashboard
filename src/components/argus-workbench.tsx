@@ -2083,7 +2083,8 @@ export function ArgusWorkbench({
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          minHeight: "55vh",
+          width: "100%",
+          minHeight: "60vh",
           gap: "24px",
           color: "var(--text)",
         }}
