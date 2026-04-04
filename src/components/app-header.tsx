@@ -3,31 +3,26 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { LangSwitcher } from "@/components/lang-switcher";
-import { useT } from "@/lib/i18n/context";
+import { usePathname } from "next/navigation";
+import { useI18n } from "@/lib/i18n/context";
+
+const NAV_ITEMS = [
+  { href: "/jobs",           labelKey: "Jobs" },
+  { href: "/dashboard",      labelKey: "Dashboard" },
+  { href: "/control-center", labelKey: "Control Center" },
+  { href: "/sources",        labelKey: "Sources" },
+  { href: "/digests",        labelKey: "Digests" },
+  { href: "/ops",            labelKey: "Ops" },
+] as const;
 
 export function AppHeader() {
   const pathname      = usePathname();
-  const searchParams  = useSearchParams();
-  const currentQuery  = searchParams.get("q") ?? "";
   const isLoginRoute  = pathname === "/login";
-  const isJobsRoute   = pathname === "/jobs" || pathname.startsWith("/jobs/");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const t = useT();
-
-  const NAV_ITEMS = [
-    { href: "/control-center", label: t("nav.controlCenter") },
-    { href: "/dashboard",      label: t("nav.dashboard") },
-    { href: "/jobs",           label: t("nav.jobs") },
-    { href: "/digests",        label: t("nav.digests") },
-    { href: "/sources",        label: t("nav.sources") },
-    { href: "/ops",            label: t("nav.ops") },
-    { href: "/profile",        label: "Profile" },
-  ] as const;
+  const { lang, setLang } = useI18n();
 
   function isActive(href: string) {
-    if (href === "/jobs") return isJobsRoute;
+    if (href === "/jobs") return pathname === "/jobs" || pathname.startsWith("/jobs/");
     return pathname === href || (href !== "/" && pathname.startsWith(href));
   }
 
@@ -36,157 +31,251 @@ export function AppHeader() {
     window.location.href = "/login";
   }
 
+  if (isLoginRoute) return null;
+
   return (
     <>
+      {/* ── Desktop header ──────────────────────────────────────────────────── */}
       <header
-        style={{ backgroundColor: "#0a0f1e", borderBottom: "1px solid #1e293b" }}
-        className="sticky top-0 z-40"
+        style={{
+          backgroundColor: "var(--surf)",
+          borderBottom: "1px solid var(--border)",
+          height: "54px",
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
+          display: "flex",
+          alignItems: "center",
+          padding: "0 20px",
+          gap: 0,
+        }}
       >
-        <div className="mx-auto flex h-[64px] w-full max-w-[92rem] items-center gap-3 px-4 sm:px-6 lg:px-10">
-
-          {/* Logo */}
-          <Link
-            href="/"
-            style={{ borderRight: "1px solid #1e293b" }}
-            className="flex h-[64px] shrink-0 items-center gap-3 pr-4 sm:pr-5"
-          >
-            <Image
-              src="/logo-argus.png"
-              alt="Argus"
-              width={56}
-              height={56}
-              className="h-14 w-14 object-contain drop-shadow-[0_0_12px_rgba(56,189,248,0.4)]"
-              priority
-            />
-            <div className="hidden flex-col sm:flex">
-              <span style={{ color: "#f8fafc" }} className="text-[15px] font-bold leading-none tracking-tight">
-                Argus
-              </span>
-              <span style={{ color: "#475569" }} className="text-[10px] font-semibold uppercase tracking-[0.2em]">
-                Job Radar
-              </span>
+        {/* Logo — fixed left */}
+        <Link
+          href="/"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            width: "152px",
+            flexShrink: 0,
+            textDecoration: "none",
+          }}
+        >
+          <Image
+            src="/logo-argus.png"
+            alt="Argus"
+            width={32}
+            height={32}
+            style={{
+              width: "32px",
+              height: "32px",
+              objectFit: "contain",
+              filter: "drop-shadow(0 0 8px rgba(245,158,11,0.5))",
+              flexShrink: 0,
+            }}
+            priority
+          />
+          <div>
+            <div style={{ color: "var(--gold)", fontWeight: 700, fontSize: "13px", letterSpacing: "0.08em", lineHeight: 1 }}>
+              ARGUS
             </div>
+            <div style={{ color: "var(--dim)", fontSize: "10px", letterSpacing: "0.03em" }}>
+              Job Radar
+            </div>
+          </div>
+        </Link>
+
+        {/* Nav — centered, desktop only */}
+        <nav
+          style={{ flex: 1, display: "flex", justifyContent: "center" }}
+          className="hidden lg:flex"
+        >
+          {NAV_ITEMS.map(({ href, labelKey }) => {
+            const active = isActive(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                style={{
+                  padding: "0 13px",
+                  height: "54px",
+                  display: "flex",
+                  alignItems: "center",
+                  background: "transparent",
+                  borderBottom: active ? "2px solid var(--gold)" : "2px solid transparent",
+                  borderTop: "2px solid transparent",
+                  color: active ? "var(--gold)" : "var(--muted)",
+                  fontWeight: active ? 600 : 400,
+                  fontSize: "13px",
+                  whiteSpace: "nowrap",
+                  textDecoration: "none",
+                  transition: "color 0.15s",
+                }}
+                onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text)"; }}
+                onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
+              >
+                {labelKey}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Spacer on mobile */}
+        <div className="flex-1 lg:hidden" />
+
+        {/* Actions — fixed right */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "7px",
+            width: "152px",
+            justifyContent: "flex-end",
+            flexShrink: 0,
+          }}
+        >
+          {/* Search — only desktop */}
+          <Link
+            href="/jobs"
+            className="hidden lg:flex"
+            style={{
+              background: "transparent",
+              border: "1px solid var(--border)",
+              color: "var(--dim)",
+              borderRadius: "6px",
+              padding: "5px 9px",
+              fontSize: "13px",
+              alignItems: "center",
+              textDecoration: "none",
+            }}
+            title="Buscar vagas"
+          >
+            <svg style={{ width: "14px", height: "14px" }} fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2.5}>
+              <circle cx="7" cy="7" r="5" />
+              <path d="M11 11l3 3" strokeLinecap="round" />
+            </svg>
           </Link>
 
-          {/* Desktop nav */}
-          {!isLoginRoute && (
-            <nav className="hidden items-center lg:flex">
-              {NAV_ITEMS.map((item) => {
-                const active = isActive(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    style={{ color: active ? "#f8fafc" : "#94a3b8" }}
-                    className={[
-                      "relative flex h-[48px] items-center px-3 text-[13px] transition-colors hover:!text-white",
-                      active ? "font-semibold" : "font-medium",
-                    ].join(" ")}
-                  >
-                    {item.label}
-                    {active && (
-                      <span
-                        style={{ background: "#38bdf8" }}
-                        className="absolute inset-x-3 bottom-0 h-[2px] rounded-full"
-                      />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
+          {/* Language toggle */}
+          <button
+            type="button"
+            onClick={() => setLang(lang === "en" ? "pt" : "en")}
+            style={{
+              background: "transparent",
+              border: "1px solid var(--border)",
+              borderRadius: "6px",
+              padding: "4px 8px",
+              fontSize: "11px",
+              fontWeight: 700,
+              color: "var(--muted)",
+              cursor: "pointer",
+              letterSpacing: "0.05em",
+              lineHeight: 1,
+            }}
+            title={lang === "en" ? "Mudar para Português" : "Switch to English"}
+          >
+            {lang === "en" ? "PT" : "EN"}
+          </button>
 
-          {/* Search */}
-          {!isLoginRoute && (
-            <form
-              action="/jobs"
-              style={{ background: "#0f172a", border: "1px solid #334155" }}
-              className="ml-auto flex h-8 w-full max-w-[160px] items-center gap-2 rounded-full px-3 transition-all focus-within:border-sky-600 sm:max-w-[200px]"
-            >
-              <svg style={{ color: "#64748b" }} className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2.5}>
-                <circle cx="7" cy="7" r="5" /><path d="M11 11l3 3" strokeLinecap="round" />
+          {/* Avatar / logout — desktop */}
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            style={{
+              width: "28px",
+              height: "28px",
+              background: "linear-gradient(135deg, var(--gold), #b45309)",
+              borderRadius: "50%",
+              border: "none",
+              cursor: "pointer",
+              color: "#020810",
+              fontWeight: 700,
+              fontSize: "11px",
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            className="hidden lg:flex"
+            title="Sign out"
+          >
+            M
+          </button>
+
+          {/* Mobile hamburger */}
+          <button
+            type="button"
+            onClick={() => setMobileOpen((o) => !o)}
+            style={{ color: "var(--muted)", background: "transparent", border: "none", cursor: "pointer", padding: "4px" }}
+            className="flex lg:hidden"
+            aria-label="Menu"
+          >
+            {mobileOpen ? (
+              <svg style={{ width: "20px", height: "20px" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
-              <input
-                key={`${pathname}-${currentQuery}`}
-                name="q"
-                defaultValue={currentQuery}
-                placeholder={t("nav.search")}
-                style={{ color: "#f1f5f9", background: "transparent" }}
-                className="h-full w-full text-[12px] outline-none placeholder:text-slate-500"
-              />
-            </form>
-          )}
-
-          {/* Lang switcher */}
-          {!isLoginRoute && <LangSwitcher />}
-
-          {/* Desktop logout */}
-          {!isLoginRoute && (
-            <button
-              type="button"
-              onClick={() => void handleLogout()}
-              style={{ background: "#0f172a", border: "1px solid #334155", color: "#94a3b8" }}
-              className="hidden shrink-0 rounded-full px-3 py-1.5 text-[11px] font-medium transition hover:!bg-slate-700 hover:!text-white lg:block"
-            >
-              {t("nav.logout")}
-            </button>
-          )}
-
-          {/* Mobile menu button */}
-          {!isLoginRoute && (
-            <button
-              type="button"
-              onClick={() => setMobileOpen((o) => !o)}
-              style={{ color: "#94a3b8" }}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition hover:!text-white lg:hidden"
-              aria-label="Menu"
-            >
-              {mobileOpen ? (
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
-            </button>
-          )}
+            ) : (
+              <svg style={{ width: "20px", height: "20px" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
       </header>
 
-      {/* Mobile drawer */}
-      {!isLoginRoute && mobileOpen && (
+      {/* ── Mobile drawer ────────────────────────────────────────────────────── */}
+      {mobileOpen && (
         <div
-          style={{ backgroundColor: "#0a0f1e", borderBottom: "1px solid #1e293b" }}
-          className="sticky top-[48px] z-30 lg:hidden"
+          style={{
+            backgroundColor: "var(--surf)",
+            borderBottom: "1px solid var(--border)",
+            position: "sticky",
+            top: "54px",
+            zIndex: 30,
+          }}
+          className="lg:hidden"
         >
-          <nav className="mx-auto flex max-w-[92rem] flex-col px-4 py-2 sm:px-6">
-            {NAV_ITEMS.map((item) => {
-              const active = isActive(item.href);
+          <nav style={{ display: "flex", flexDirection: "column", padding: "8px 0" }}>
+            {NAV_ITEMS.map(({ href, labelKey }) => {
+              const active = isActive(href);
               return (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  key={href}
+                  href={href}
                   onClick={() => setMobileOpen(false)}
                   style={{
-                    color: active ? "#f8fafc" : "#94a3b8",
-                    borderLeft: active ? "2px solid #38bdf8" : "2px solid transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "11px 20px",
+                    fontSize: "14px",
+                    fontWeight: active ? 600 : 400,
+                    color: active ? "var(--gold)" : "var(--muted)",
+                    borderLeft: active ? "2px solid var(--gold)" : "2px solid transparent",
+                    textDecoration: "none",
                   }}
-                  className="flex items-center gap-3 px-3 py-3 text-[14px] font-medium transition hover:!text-white"
                 >
-                  {item.label}
+                  {labelKey}
                 </Link>
               );
             })}
-            <div style={{ borderTop: "1px solid #1e293b" }} className="mt-2 pt-2 pb-1">
+            <div style={{ borderTop: "1px solid var(--border)", margin: "6px 0 0" }}>
               <button
                 type="button"
                 onClick={() => void handleLogout()}
-                style={{ color: "#64748b" }}
-                className="flex w-full items-center gap-3 px-3 py-2.5 text-[13px] font-medium transition hover:!text-white"
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  padding: "10px 20px",
+                  fontSize: "13px",
+                  color: "var(--dim)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
               >
-                {t("nav.logout")}
+                Sign out
               </button>
             </div>
           </nav>
