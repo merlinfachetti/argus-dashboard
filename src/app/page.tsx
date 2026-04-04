@@ -6,23 +6,26 @@ const NAV_CARDS = [
   {
     href: "/control-center",
     label: "Control Center",
+    eyebrow: "Operate",
     desc: "Vaga ativa — match, gaps, mensagem e aplicação.",
     cta: "Operar agora",
-    dark: true,
+    accent: true,
   },
   {
     href: "/jobs",
     label: "Jobs Radar",
+    eyebrow: "Discover",
     desc: "Buscar, filtrar e priorizar vagas do mercado.",
     cta: "Explorar vagas",
-    dark: false,
+    accent: false,
   },
   {
     href: "/dashboard",
-    label: "Pipeline",
+    label: "Dashboard",
+    eyebrow: "Track",
     desc: "Funil, urgência e gargalos na sua candidatura.",
     cta: "Ver pipeline",
-    dark: false,
+    accent: false,
   },
 ] as const;
 
@@ -30,134 +33,221 @@ export default function Home() {
   const liveSources = trackedSources.filter((s) => /live/i.test(s.status));
 
   return (
-    <div className="mx-auto w-full max-w-[92rem] px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+    <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "24px 20px" }}>
 
-      {/* Hero — identidade Argus */}
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-xl">
-            <div className="mb-3 flex items-center gap-2">
-              <Image
-                src="/logo-argus.png"
-                alt="Argus"
-                width={28}
-                height={28}
-                className="h-7 w-7 object-contain"
-                priority
-              />
-              <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-400">
-                Argus — vigilância total, decisão precisa
-              </span>
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
-              Seu cockpit privado de job hunting.
-            </h1>
-            <p className="mt-2 text-[14px] leading-6 text-slate-500">
-              {liveSources.length} fontes monitoradas em tempo real. Match calculado contra o seu perfil.
-              Cada vaga com um caminho claro até a aplicação.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Link
-                href="/control-center"
-                style={{ background: "#0f172a", color: "#fff" }}
-                className="rounded-full px-5 py-2.5 text-[13px] font-bold transition hover:opacity-80"
-              >
-                Abrir Control Center
-              </Link>
-              <Link
-                href="/jobs"
-                style={{ border: "1px solid #e2e8f0", color: "#334155" }}
-                className="rounded-full px-4 py-2.5 text-[13px] font-semibold transition hover:bg-slate-50"
-              >
-                Ver vagas do radar
-              </Link>
-            </div>
+      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
+      <section
+        style={{
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
+          padding: "24px",
+          marginBottom: "14px",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "24px",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+        }}
+      >
+        <div style={{ maxWidth: "520px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+            <Image
+              src="/logo-argus.png"
+              alt="Argus"
+              width={28}
+              height={28}
+              style={{ width: "28px", height: "28px", objectFit: "contain", filter: "drop-shadow(0 0 8px rgba(245,158,11,0.5))" }}
+              priority
+            />
+            <span style={{ color: "var(--dim)", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em" }}>
+              Argus — vigilância total, decisão precisa
+            </span>
           </div>
+          <h1 style={{ color: "var(--text)", fontSize: "22px", fontWeight: 700, margin: "0 0 8px", lineHeight: 1.3 }}>
+            Seu cockpit privado de job hunting.
+          </h1>
+          <p style={{ color: "var(--muted)", fontSize: "14px", lineHeight: 1.7, margin: "0 0 20px" }}>
+            {liveSources.length} fontes monitoradas em tempo real. Match calculado contra o seu perfil.
+            Cada vaga com um caminho claro até a aplicação.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+            <Link
+              href="/control-center"
+              style={{
+                background: "var(--gold)",
+                color: "#020810",
+                borderRadius: "6px",
+                padding: "8px 18px",
+                fontSize: "13px",
+                fontWeight: 700,
+                textDecoration: "none",
+              }}
+            >
+              Abrir Control Center
+            </Link>
+            <Link
+              href="/jobs"
+              style={{
+                background: "transparent",
+                border: "1px solid var(--border-l)",
+                color: "var(--muted)",
+                borderRadius: "6px",
+                padding: "8px 16px",
+                fontSize: "13px",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Ver vagas do radar
+            </Link>
+          </div>
+        </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-2 lg:min-w-[200px]">
-            {[
-              { label: "Fontes live", value: `${liveSources.length}` },
-              { label: "Stack", value: `${candidateProfile.coreStack.length} techs` },
-              { label: "Idiomas", value: candidateProfile.languages.slice(0, 2).join(", ") },
-              { label: "Seniority", value: "Senior" },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{s.label}</p>
-                <p className="mt-0.5 truncate text-[13px] font-semibold text-slate-800">{s.value}</p>
+        {/* Stats grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", minWidth: "200px" }}>
+          {[
+            { label: "Fontes live", value: `${liveSources.length}` },
+            { label: "Stack", value: `${candidateProfile.coreStack.length} techs` },
+            { label: "Idiomas", value: candidateProfile.languages.slice(0, 2).join(", ") },
+            { label: "Seniority", value: "Senior" },
+          ].map((s) => (
+            <div
+              key={s.label}
+              style={{
+                background: "var(--surf)",
+                border: "1px solid var(--border)",
+                borderRadius: "8px",
+                padding: "10px 12px",
+              }}
+            >
+              <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", marginBottom: "4px" }}>
+                {s.label}
               </div>
-            ))}
-          </div>
+              <div style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {s.value}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Nav cards */}
-      <section className="mb-6 grid gap-3 sm:grid-cols-3">
+      {/* ── Nav cards ────────────────────────────────────────────────────────── */}
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "14px" }}>
         {NAV_CARDS.map((card) => (
           <Link
             key={card.href}
             href={card.href}
-            style={card.dark ? { background: "#0f172a", border: "1px solid #1e293b" } : { border: "1px solid #e2e8f0" }}
-            className="group flex flex-col gap-2 rounded-2xl bg-white p-5 transition hover:opacity-90"
+            style={{
+              background: card.accent ? `linear-gradient(135deg, var(--card-alt), var(--card))` : "var(--card)",
+              border: card.accent ? `1px solid var(--gold)` : "1px solid var(--border)",
+              borderRadius: "10px",
+              padding: "18px 20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+              textDecoration: "none",
+            }}
           >
-            <p style={{ color: card.dark ? "#94a3b8" : "#64748b" }} className="text-[11px] font-semibold uppercase tracking-[0.2em]">
-              {card.dark ? "Operate" : card.href === "/jobs" ? "Discover" : "Track"}
-            </p>
-            <p style={{ color: card.dark ? "#f8fafc" : "#0f172a" }} className="text-[16px] font-semibold">
+            <span style={{ color: card.accent ? "var(--gold)" : "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em" }}>
+              {card.eyebrow}
+            </span>
+            <span style={{ color: "var(--text)", fontSize: "15px", fontWeight: 700 }}>
               {card.label}
-            </p>
-            <p style={{ color: card.dark ? "#94a3b8" : "#64748b" }} className="text-[13px] leading-5">
+            </span>
+            <span style={{ color: "var(--muted)", fontSize: "13px", lineHeight: 1.5 }}>
               {card.desc}
-            </p>
-            <p style={{ color: card.dark ? "#38bdf8" : "#0ea5e9" }} className="mt-auto text-[12px] font-bold transition group-hover:translate-x-0.5">
+            </span>
+            <span style={{ color: card.accent ? "var(--gold)" : "var(--blue)", fontSize: "12px", fontWeight: 700, marginTop: "6px" }}>
               {card.cta} →
-            </p>
+            </span>
           </Link>
         ))}
       </section>
 
-      {/* Fontes live — strip informativo */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-8">
-          <div className="min-w-0 flex-1">
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-600">
-                {liveSources.length} fontes ativas
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {liveSources.map((s) => (
-                <Link
-                  key={s.company}
-                  href="/sources"
-                  className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-medium text-emerald-700 transition hover:bg-emerald-100"
-                >
-                  {s.company}
-                </Link>
-              ))}
-              {trackedSources.filter((s) => !/live/i.test(s.status)).slice(0, 3).map((s) => (
-                <span key={s.company} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] text-slate-400">
-                  {s.company}
-                </span>
-              ))}
-              <Link href="/sources" className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] text-slate-400 hover:text-slate-600">
-                +{trackedSources.length - liveSources.length - 3} catalogadas →
-              </Link>
-            </div>
+      {/* ── Sources strip ────────────────────────────────────────────────────── */}
+      <section
+        style={{
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderRadius: "10px",
+          padding: "16px 20px",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "20px",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: "200px" }}>
+          <div style={{ color: "var(--emerald)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "8px" }}>
+            {liveSources.length} fontes ativas
           </div>
-          <div className="shrink-0">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Stack do perfil</p>
-            <div className="flex flex-wrap gap-1">
-              {candidateProfile.coreStack.slice(0, 6).map((s) => (
-                <Link
-                  key={s}
-                  href={`/jobs?q=${encodeURIComponent(s)}`}
-                  className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
-                >
-                  {s}
-                </Link>
-              ))}
-            </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {liveSources.map((s) => (
+              <Link
+                key={s.company}
+                href="/sources"
+                style={{
+                  background: "rgba(16,185,129,.1)",
+                  color: "var(--emerald)",
+                  border: "1px solid rgba(16,185,129,.25)",
+                  borderRadius: "4px",
+                  padding: "3px 8px",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                }}
+              >
+                {s.company}
+              </Link>
+            ))}
+            {trackedSources.filter((s) => !/live/i.test(s.status)).slice(0, 3).map((s) => (
+              <span
+                key={s.company}
+                style={{
+                  background: "var(--surf)",
+                  color: "var(--dim)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "4px",
+                  padding: "3px 8px",
+                  fontSize: "12px",
+                }}
+              >
+                {s.company}
+              </span>
+            ))}
+            <Link
+              href="/sources"
+              style={{ color: "var(--dim)", fontSize: "12px", padding: "3px 8px", textDecoration: "none" }}
+            >
+              +{trackedSources.length - liveSources.length - 3} catalogadas →
+            </Link>
+          </div>
+        </div>
+
+        <div style={{ flexShrink: 0 }}>
+          <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "8px" }}>
+            Stack do perfil
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+            {candidateProfile.coreStack.slice(0, 6).map((s) => (
+              <Link
+                key={s}
+                href={`/jobs?q=${encodeURIComponent(s)}`}
+                style={{
+                  background: "var(--surf)",
+                  color: "var(--muted)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "4px",
+                  padding: "2px 7px",
+                  fontSize: "11px",
+                  textDecoration: "none",
+                }}
+              >
+                {s}
+              </Link>
+            ))}
           </div>
         </div>
       </section>

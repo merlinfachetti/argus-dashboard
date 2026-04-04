@@ -20,7 +20,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen">
+      <body
+        className="min-h-screen"
+        style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}
+      >
         <I18nProvider>
           <div className="relative flex min-h-screen flex-col overflow-x-hidden">
             <Suspense fallback={null}>
