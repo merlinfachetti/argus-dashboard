@@ -15,7 +15,7 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccessAnimating, setIsSuccessAnimating] = useState(false);
 
-  const passwordStrength = getPasswordStrength(password);
+  const passwordStrength = getPasswordStrength(password, t);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,7 +50,7 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
       };
 
       if (!response.ok) {
-        setError(payload.error ?? "Falha ao autenticar.");
+        setError(payload.error ?? t("login.authFailure"));
         setIsSubmitting(false);
         return;
       }
@@ -96,6 +96,7 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
                 style={{ width: passwordStrength.width, background: "var(--gold)" }}
               />
             </div>
+            <p className="mt-2 text-[11px]" style={{ color: "var(--dim)" }}>{passwordStrength.message}</p>
           </div>
         ) : null}
 
@@ -118,15 +119,12 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
   );
 }
 
-function getPasswordStrength(password: string) {
+function getPasswordStrength(password: string, t: (key: string) => string) {
   const trimmed = password.trim();
 
-  if (!trimmed) {
-    return null;
-  }
+  if (!trimmed) return null;
 
   let score = 0;
-
   if (trimmed.length >= 8) score += 1;
   if (trimmed.length >= 12) score += 1;
   if (/[A-Z]/.test(trimmed) && /[a-z]/.test(trimmed)) score += 1;
@@ -134,24 +132,10 @@ function getPasswordStrength(password: string) {
   if (/[^A-Za-z0-9]/.test(trimmed)) score += 1;
 
   if (score <= 2) {
-    return {
-      label: "Weak password",
-      width: "34%",
-      message: "Works as an initial hint, but could be more robust.",
-    };
+    return { label: t("login.weakPassword"), width: "34%", message: t("login.weakHint") };
   }
-
   if (score <= 4) {
-    return {
-      label: "Medium password",
-      width: "68%",
-      message: "Better structured. More variation and length would make it strong.",
-    };
+    return { label: t("login.mediumPassword"), width: "68%", message: t("login.mediumHint") };
   }
-
-  return {
-    label: "Strong password",
-    width: "100%",
-    message: "Good composition. Signal is consistent for the private portal.",
-  };
+  return { label: t("login.strongPassword"), width: "100%", message: t("login.strongHint") };
 }
