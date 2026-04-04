@@ -41,7 +41,7 @@ export function AppHeader() {
         style={{
           backgroundColor: "var(--surf)",
           borderBottom: "1px solid var(--border)",
-          height: "54px",
+          height: "72px",
           position: "sticky",
           top: 0,
           zIndex: 40,
@@ -57,8 +57,8 @@ export function AppHeader() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
-            width: "152px",
+            gap: "12px",
+            width: "200px",
             flexShrink: 0,
             textDecoration: "none",
           }}
@@ -66,22 +66,22 @@ export function AppHeader() {
           <Image
             src="/logo-argus.png"
             alt="Argus"
-            width={44}
-            height={44}
+            width={96}
+            height={96}
             style={{
-              width: "44px",
-              height: "44px",
+              width: "56px",
+              height: "56px",
               objectFit: "contain",
-              filter: "drop-shadow(0 0 10px rgba(245,158,11,0.55))",
+              filter: "drop-shadow(0 0 14px rgba(245,158,11,0.6))",
               flexShrink: 0,
             }}
             priority
           />
           <div>
-            <div style={{ color: "var(--gold)", fontWeight: 700, fontSize: "13px", letterSpacing: "0.08em", lineHeight: 1 }}>
+            <div style={{ color: "var(--gold)", fontWeight: 700, fontSize: "15px", letterSpacing: "0.08em", lineHeight: 1 }}>
               ARGUS
             </div>
-            <div style={{ color: "var(--dim)", fontSize: "10px", letterSpacing: "0.03em" }}>
+            <div style={{ color: "var(--dim)", fontSize: "11px", letterSpacing: "0.03em", marginTop: "2px" }}>
               Job Radar
             </div>
           </div>
@@ -100,7 +100,7 @@ export function AppHeader() {
                 href={href}
                 style={{
                   padding: "0 13px",
-                  height: "54px",
+                  height: "72px",
                   display: "flex",
                   alignItems: "center",
                   background: "transparent",
@@ -131,7 +131,7 @@ export function AppHeader() {
             display: "flex",
             alignItems: "center",
             gap: "7px",
-            width: "152px",
+            width: "200px",
             justifyContent: "flex-end",
             flexShrink: 0,
           }}
@@ -215,7 +215,7 @@ export function AppHeader() {
             backgroundColor: "var(--surf)",
             borderBottom: "1px solid var(--border)",
             position: "sticky",
-            top: "54px",
+            top: "72px",
             zIndex: 30,
           }}
           className="lg:hidden"

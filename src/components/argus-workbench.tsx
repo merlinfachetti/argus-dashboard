@@ -1730,7 +1730,7 @@ export function ArgusWorkbench({
           </div>
 
           {/* ── Sidebar (compact) ────────────────────────────────────────── */}
-          <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "10px", position: "sticky", top: "70px" }}>
+          <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "10px", position: "sticky", top: "84px" }}>
 
             {/* Pipeline counts — compact */}
             <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px 16px" }}>
@@ -1989,7 +1989,7 @@ export function ArgusWorkbench({
           </div>
 
           {/* ── Right sidebar: analytics ─────────────────────────────────────── */}
-          <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "12px", position: "sticky", top: "70px" }}>
+          <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "12px", position: "sticky", top: "84px" }}>
 
             {/* Pipeline analytics */}
             {analytics.totalJobs > 0 && (
@@ -2176,7 +2176,7 @@ export function ArgusWorkbench({
           </div>
 
           {/* Sidebar */}
-          <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "12px", position: "sticky", top: "70px" }}>
+          <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "12px", position: "sticky", top: "84px" }}>
             <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
               <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>{t("cc.activeProfile")}</p>
               <p style={{ color: "var(--text)", fontSize: "14px", fontWeight: 600 }}>{activeProfile.name}</p>

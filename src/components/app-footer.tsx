@@ -10,7 +10,7 @@ export function AppFooter() {
           padding: "14px 20px",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: "flex-start",
           gap: "6px",
         }}
       >
