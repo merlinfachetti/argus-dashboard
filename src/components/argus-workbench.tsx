@@ -230,24 +230,13 @@ function statusStyle(status: string): React.CSSProperties {
   return { background: "rgba(100,116,139,.15)", color: "#94a3b8", outline: "1px solid rgba(100,116,139,.3)", borderRadius: "999px", padding: "2px 8px", fontSize: "10px", fontWeight: 700 };
 }
 
-function nextActionLabel(score: number, status?: string | null) {
-  if (status === "Entrevista") {
-    return "Preparar conversa";
-  }
-
-  if (status === "Aplicada") {
-    return "Acompanhar retorno";
-  }
-
-  if (status === "Aplicar" || score >= 78) {
-    return "Executar aplicacao";
-  }
-
-  if (status === "Pronta para revisar" || score >= 64) {
-    return "Revisao final";
-  }
-
-  return "Triagem e contexto";
+/** Returns an i18n key — resolve with t() at call site. */
+function nextActionKey(score: number, status?: string | null): string {
+  if (status === "Entrevista") return "nextAction.prepareInterview";
+  if (status === "Aplicada") return "nextAction.followUp";
+  if (status === "Aplicar" || score >= 78) return "nextAction.execute";
+  if (status === "Pronta para revisar" || score >= 64) return "nextAction.finalReview";
+  return "nextAction.triage";
 }
 
 function daysSince(isoDate?: string | null): number | null {
@@ -506,7 +495,7 @@ export function ArgusWorkbench({
 
         if (!response.ok || !payload.profile) {
           setProfileSyncState("error");
-          setProfileSyncMessage(payload.error ?? "Falha ao carregar perfil do servidor");
+          setProfileSyncMessage(payload.error ?? t("sync.loadProfileError"));
           return;
         }
 
@@ -515,16 +504,16 @@ export function ArgusWorkbench({
 
         if (!payload.available) {
           setProfileSyncState("offline");
-          setProfileSyncMessage("Banco ainda nao configurado para sync server-side");
+          setProfileSyncMessage(t("sync.dbNotConfigured"));
           return;
         }
 
         if (!hasStoredProfileDraft) {
           setCvText(payload.profile.cvText);
           setCoverLetterText(payload.profile.coverLetterText);
-          setProfileSyncMessage("Documentos ativos carregados do banco");
+          setProfileSyncMessage(t("sync.documentsLoaded"));
         } else {
-          setProfileSyncMessage("Draft local detectado e pronto para sincronizar");
+          setProfileSyncMessage(t("sync.draftDetected"));
         }
 
         setProfileSyncState("synced");
@@ -534,7 +523,7 @@ export function ArgusWorkbench({
         }
 
         setProfileSyncState("error");
-        setProfileSyncMessage("Falha ao verificar documentos persistidos");
+        setProfileSyncMessage(t("sync.verifyError"));
       } finally {
         if (isMounted) {
           setRemoteProfileChecked(true);
@@ -743,7 +732,7 @@ export function ArgusWorkbench({
     }
 
     setProfileSyncState("syncing");
-    setProfileSyncMessage("Sincronizando CV e cover letter no servidor...");
+    setProfileSyncMessage(t("sync.syncingCvCover"));
 
     const timeoutId = window.setTimeout(() => {
       void (async () => {
@@ -767,24 +756,24 @@ export function ArgusWorkbench({
             if (response.status === 503) {
               setProfileSyncState("offline");
               setProfileSyncMessage(
-                payload.error ?? "Banco ainda nao configurado para sync server-side",
+                payload.error ?? t("sync.dbNotConfigured"),
               );
               return;
             }
 
-            throw new Error(payload.error ?? "Falha ao sincronizar perfil no servidor");
+            throw new Error(payload.error ?? t("sync.syncProfileError"));
           }
 
           const nextSignature = `${payload.profile.cvText.trim()}::${payload.profile.coverLetterText.trim()}`;
           setLastSyncedDocuments(nextSignature);
           setProfileSyncState("synced");
-          setProfileSyncMessage("Documentos sincronizados com o banco");
+          setProfileSyncMessage(t("sync.documentsSynced"));
         } catch (error) {
           setProfileSyncState("error");
           setProfileSyncMessage(
             error instanceof Error
               ? error.message
-              : "Falha ao sincronizar documentos do perfil",
+              : t("sync.syncDocumentsError"),
           );
         }
       })();
@@ -965,19 +954,19 @@ export function ArgusWorkbench({
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? "Falha ao persistir vaga");
+        throw new Error(payload.error ?? t("radar.persistError"));
       }
 
       const payload = (await response.json()) as { job: TrackedJob };
       mergePersistedJob(payload.job);
       setSyncState("connected");
-      setSyncMessage("Radar persistido no banco");
+      setSyncMessage(t("sync.statusSynced"));
     } catch (error) {
       setSyncState("offline");
       setSyncMessage(
         error instanceof Error
           ? error.message
-          : "Banco indisponivel, mantendo estado local",
+          : t("sync.dbUnavailable"),
       );
     }
   }
@@ -994,19 +983,19 @@ export function ArgusWorkbench({
 
       if (!response.ok) {
         const payload = (await response.json()) as { error?: string };
-        throw new Error(payload.error ?? "Falha ao atualizar status");
+        throw new Error(payload.error ?? t("radar.updateStatusError"));
       }
 
       const payload = (await response.json()) as { job: TrackedJob };
       mergePersistedJob(payload.job);
       setSyncState("connected");
-      setSyncMessage("Status sincronizado com o banco");
+      setSyncMessage(t("sync.statusSynced"));
     } catch (error) {
       setSyncState("offline");
       setSyncMessage(
         error instanceof Error
           ? error.message
-          : "Falha ao sincronizar status, mantendo alteracao local",
+          : t("sync.syncStatusError"),
       );
     }
   }
@@ -1379,12 +1368,12 @@ export function ArgusWorkbench({
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <p style={{ color: "var(--dim)", fontSize: "12px", lineHeight: 1.5 }}>Cole o texto da vaga (mesmo desorganizado). O Argus estrutura, calcula match e salva no radar.</p>
+              <p style={{ color: "var(--dim)", fontSize: "12px", lineHeight: 1.5 }}>{t("cc.pasteJD")}</p>
               <textarea
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
                 style={{ width: "100%", minHeight: "180px", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "8px", padding: "12px 14px", fontSize: "13px", lineHeight: 1.6, color: "var(--text)", outline: "none", resize: "vertical" }}
-                placeholder="Cole aqui a vaga inteira, mesmo desorganizada."
+                placeholder={t("cc.intakePlaceholder")}
               />
               <button
                 type="button"
@@ -1404,10 +1393,10 @@ export function ArgusWorkbench({
   // ─── JOBS MODE ───────────────────────────────────────────────────────────────
   if (isJobsPage) {
     const filterLabels: Record<RadarFilter, string> = {
-      all: "Todas",
-      crawler: "Crawler",
-      manual: "Manual",
-      priority: "≥ 70%",
+      all: t("jobs.filterAll"),
+      crawler: t("jobs.filterCrawler"),
+      manual: t("jobs.filterManual"),
+      priority: t("jobs.filterPriority"),
     };
 
     return (
@@ -1452,7 +1441,7 @@ export function ArgusWorkbench({
                 cursor: "pointer",
               }}
             >
-              <option value="all">Senioridade</option>
+              <option value="all">{t("jobs.seniority")}</option>
               {[...new Set(trackedJobs.map((j) => j.seniority).filter(Boolean))].map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
@@ -1482,16 +1471,16 @@ export function ArgusWorkbench({
                 cursor: "pointer",
               }}
             >
-              <option value="updated">Recentes</option>
+              <option value="updated">{t("jobs.sortRecent")}</option>
               <option value="score">Score</option>
-              <option value="company">Empresa</option>
+              <option value="company">{t("jobs.sortCompany")}</option>
             </select>
 
             {/* Search */}
             <input
               value={radarQuery}
               onChange={(e) => setRadarQuery(e.target.value)}
-              placeholder="Filtrar..."
+              placeholder={t("jobs.searchPlaceholder")}
               className="w-[120px] sm:w-[150px]"
               style={{
                 background: "var(--surf)",
@@ -1534,7 +1523,7 @@ export function ArgusWorkbench({
             {jobsSpotlight.length > 0 && (
               <div className="hidden sm:block" style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
                 <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>
-                  Spotlight
+                  {t("jobs.spotlight")}
                 </div>
                 <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
                   {jobsSpotlight.map((job, i) => (
@@ -1570,12 +1559,12 @@ export function ArgusWorkbench({
                 <div style={{ width: "40px", height: "40px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surf)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", color: "var(--dim)" }}>◎</div>
                 <div>
                   <p style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, marginBottom: "4px" }}>
-                    {radarFilter !== "all" || jobsSeniorityFilter !== "all" ? "Nenhuma vaga para esses filtros" : "Radar vazio"}
+                    {radarFilter !== "all" || jobsSeniorityFilter !== "all" ? t("jobs.emptyFiltered") : t("jobs.radarEmpty")}
                   </p>
                   <p style={{ color: "var(--dim)", fontSize: "12px" }}>
                     {radarFilter !== "all" || jobsSeniorityFilter !== "all"
-                      ? "Tente remover os filtros para ver todos os resultados."
-                      : "Adicione vagas pelo Control Center para começar."}
+                      ? t("jobs.emptyFilteredHint")
+                      : t("jobs.emptyHint")}
                   </p>
                 </div>
                 {radarFilter !== "all" || jobsSeniorityFilter !== "all" ? (
@@ -1584,14 +1573,14 @@ export function ArgusWorkbench({
                     onClick={() => { setRadarFilter("all"); setJobsSeniorityFilter("all"); }}
                     style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "999px", padding: "6px 16px", fontSize: "12px", fontWeight: 600, color: "var(--muted)", cursor: "pointer" }}
                   >
-                    Limpar filtros
+                    {t("global.clearFilters")}
                   </button>
                 ) : (
                   <Link
                     href="/control-center"
                     style={{ background: "var(--gold)", color: "#020810", borderRadius: "999px", padding: "6px 16px", fontSize: "12px", fontWeight: 700 }}
                   >
-                    Adicionar vaga
+                    {t("jobs.addJob")}
                   </Link>
                 )}
               </div>
@@ -1642,7 +1631,7 @@ export function ArgusWorkbench({
                               rel="noreferrer"
                               style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap" }}
                             >
-                              Aplicar ↗
+                              {t("jobs.apply")}
                             </a>
                           )}
                           <Link
@@ -1650,7 +1639,7 @@ export function ArgusWorkbench({
                             style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 600 }}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            Ver →
+                            {t("jobs.view")}
                           </Link>
                         </div>
                       </div>
@@ -1666,14 +1655,14 @@ export function ArgusWorkbench({
                               rel="noreferrer"
                               style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap" }}
                             >
-                              Aplicar ↗
+                              {t("jobs.apply")}
                             </a>
                           )}
                           <Link
                             href={`/jobs/${job.id}`}
                             style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 600 }}
                           >
-                            Ver →
+                            {t("jobs.view")}
                           </Link>
                         </div>
                       </div>
@@ -1685,7 +1674,7 @@ export function ArgusWorkbench({
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           {job.strengths && job.strengths.length > 0 && (
                             <div>
-                              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", marginBottom: "6px" }}>Pontos fortes</p>
+                              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", marginBottom: "6px" }}>{t("cc.strengths")}</p>
                               {job.strengths.slice(0, 3).map((s) => (
                                 <div key={s} style={{ display: "flex", alignItems: "flex-start", gap: "6px", marginBottom: "4px" }}>
                                   <span style={{ color: "#10b981", fontSize: "11px", marginTop: "1px" }}>✓</span>
@@ -1696,7 +1685,7 @@ export function ArgusWorkbench({
                           )}
                           {job.risks && job.risks.length > 0 && (
                             <div>
-                              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", marginBottom: "6px" }}>Gaps / Riscos</p>
+                              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", marginBottom: "6px" }}>{t("cc.risks")}</p>
                               {job.risks.slice(0, 3).map((r) => (
                                 <div key={r} style={{ display: "flex", alignItems: "flex-start", gap: "6px", marginBottom: "4px" }}>
                                   <span style={{ color: "#f59e0b", fontSize: "11px", marginTop: "1px" }}>⚠</span>
@@ -1721,14 +1710,14 @@ export function ArgusWorkbench({
                             style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "5px 14px", fontSize: "12px", fontWeight: 600 }}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            Operar no CC
+                            {t("jobs.operateInCC")}
                           </Link>
                           <Link
                             href={`/jobs/${job.id}`}
                             style={{ color: "var(--dim)", fontSize: "12px", padding: "5px 0" }}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            Detalhe completo →
+                            {t("jobs.fullDetail")}
                           </Link>
                         </div>
                       </div>
@@ -1745,7 +1734,7 @@ export function ArgusWorkbench({
             {/* Pipeline counts — compact */}
             <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px 16px" }}>
               <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "8px" }}>
-                Pipeline
+                {t("home.pipeline")}
               </div>
               {DASHBOARD_STATUS_LANES.map((status) => {
                 const count = trackedJobs.filter((j) => j.status === status).length;
@@ -1768,7 +1757,7 @@ export function ArgusWorkbench({
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px", marginBottom: "8px" }}>
                   <div style={{ minWidth: 0 }}>
                     <p style={{ color: "var(--dim)", fontSize: "9px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "4px" }}>
-                      Em Foco
+                      {t("jobs.preview")}
                     </p>
                     <p style={{ color: "var(--text)", fontSize: "12px", fontWeight: 600, lineHeight: 1.3 }}>{jobsPreviewJob.title}</p>
                     <p style={{ color: "var(--dim)", fontSize: "10px", marginTop: "2px" }}>{jobsPreviewJob.company}</p>
@@ -1819,13 +1808,13 @@ export function ArgusWorkbench({
                     href={`/control-center?job=${jobsPreviewJob.id}`}
                     style={{ flex: 1, background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "5px 0", textAlign: "center", fontSize: "11px", fontWeight: 700 }}
                   >
-                    Operar no CC
+                    {t("jobs.operateInCC")}
                   </Link>
                   <Link
                     href={`/jobs/${jobsPreviewJob.id}`}
                     style={{ flex: 1, background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "5px 0", textAlign: "center", fontSize: "11px", fontWeight: 600 }}
                   >
-                    Detalhe
+                    {t("job.detail")}
                   </Link>
                 </div>
               </div>
@@ -1844,10 +1833,10 @@ export function ArgusWorkbench({
         <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "24px 20px" }}>
           <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "48px 20px", textAlign: "center" }}>
             <div style={{ width: "48px", height: "48px", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surf)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", color: "var(--dim)", margin: "0 auto 16px" }}>◎</div>
-            <p style={{ color: "var(--text)", fontSize: "15px", fontWeight: 600, marginBottom: "6px" }}>Pipeline vazio</p>
-            <p style={{ color: "var(--dim)", fontSize: "13px", marginBottom: "20px" }}>Adicione vagas pelo Control Center para ver o funil, gargalos e prioridades aqui.</p>
+            <p style={{ color: "var(--text)", fontSize: "15px", fontWeight: 600, marginBottom: "6px" }}>{t("dashboard.pipelineEmpty")}</p>
+            <p style={{ color: "var(--dim)", fontSize: "13px", marginBottom: "20px" }}>{t("dashboard.pipelineHint")}</p>
             <Link href="/control-center" style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "8px 20px", fontSize: "12px", fontWeight: 700 }}>
-              Ir para Control Center
+              {t("dashboard.goToCC")}
             </Link>
           </div>
         </div>
@@ -1890,7 +1879,7 @@ export function ArgusWorkbench({
             {comparisonJobs.length > 0 && (
               <div>
                 <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>
-                  Top Oportunidades
+                  {t("dashboard.topOpps")}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
                   {comparisonJobs.map((job, i) => (
@@ -1914,7 +1903,7 @@ export function ArgusWorkbench({
                       </div>
                       <p style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, lineHeight: 1.3, marginBottom: "4px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>{job.title}</p>
                       <p style={{ color: "var(--dim)", fontSize: "11px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: "8px" }}>{job.company} · {job.location}</p>
-                      <p style={{ color: i === 0 ? "var(--gold)" : "var(--dim)", fontSize: "11px", fontWeight: 600 }}>{nextActionLabel(job.score, job.status)}</p>
+                      <p style={{ color: i === 0 ? "var(--gold)" : "var(--dim)", fontSize: "11px", fontWeight: 600 }}>{t(nextActionKey(job.score, job.status))}</p>
                     </button>
                   ))}
                 </div>
@@ -1924,7 +1913,7 @@ export function ArgusWorkbench({
             {/* Kanban lanes */}
             <div>
               <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>
-                Funil
+                {t("dashboard.funnel")}
               </div>
               <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible xl:grid-cols-4" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
                 {dashboardLanes.map((lane) => {
@@ -1950,7 +1939,7 @@ export function ArgusWorkbench({
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                         {lane.jobs.length === 0 ? (
                           <div style={{ border: "1px dashed var(--border)", borderRadius: "8px", padding: "12px", textAlign: "center", color: "var(--dim)", fontSize: "12px" }}>
-                            Vazio
+                            {t("dashboard.empty")}
                           </div>
                         ) : (
                           lane.jobs.map((job) => (
@@ -1973,14 +1962,14 @@ export function ArgusWorkbench({
                                     onClick={() => handleInspectTrackedJob(job)}
                                     style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--dim)", borderRadius: "4px", padding: "2px 8px", fontSize: "10px", fontWeight: 600, cursor: "pointer" }}
                                   >
-                                    Abrir
+                                    {t("dashboard.open")}
                                   </button>
                                   {job.status !== "Entrevista" && (
                                     <button
                                       type="button"
                                       onClick={() => handleAdvanceTrackedJob(job.id)}
                                       style={{ background: "var(--gold)", color: "#020810", border: "none", borderRadius: "4px", padding: "2px 8px", fontSize: "10px", fontWeight: 700, cursor: "pointer" }}
-                                      title="Avançar stage"
+                                      title={t("dashboard.advanceStage")}
                                     >
                                       →
                                     </button>
@@ -2005,14 +1994,14 @@ export function ArgusWorkbench({
             {analytics.totalJobs > 0 && (
               <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
                 <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "14px" }}>
-                  Analytics
+                  {t("dashboard.analytics")}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "14px" }}>
                   {[
-                    { label: "Apply rate", value: `${analytics.applyRate}%` },
-                    { label: "Interview", value: `${analytics.interviewRate}%` },
-                    { label: "Avg score", value: `${analytics.avgScore}%` },
-                    { label: "Top score", value: `${analytics.topScore}%` },
+                    { label: t("dashboard.applyRate"), value: `${analytics.applyRate}%` },
+                    { label: t("dashboard.interview"), value: `${analytics.interviewRate}%` },
+                    { label: t("dashboard.avgScore"), value: `${analytics.avgScore}%` },
+                    { label: t("dashboard.topScore"), value: `${analytics.topScore}%` },
                   ].map((k) => (
                     <div key={k.label} style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "6px", padding: "8px 10px" }}>
                       <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>{k.label}</p>
@@ -2024,7 +2013,7 @@ export function ArgusWorkbench({
                 {/* Score distribution */}
                 {analytics.scoreBuckets.length > 0 && (
                   <div style={{ marginBottom: "14px" }}>
-                    <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "8px" }}>Score dist.</p>
+                    <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "8px" }}>{t("dashboard.scoreDist")}</p>
                     {analytics.scoreBuckets.map((b) => (
                       <div key={b.label} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "5px" }}>
                         <span style={{ color: "var(--muted)", fontSize: "10px", fontWeight: 600, width: "40px", flexShrink: 0 }}>{b.label}</span>
@@ -2060,17 +2049,17 @@ export function ArgusWorkbench({
             {/* Quick actions */}
             <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
               <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "12px" }}>
-                Ações rápidas
+                {t("cc.quickActions")}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 <Link href="/control-center" style={{ display: "block", background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "8px 14px", fontSize: "12px", fontWeight: 700, textAlign: "center" }}>
-                  + Adicionar vaga
+                  {t("cc.addJob")}
                 </Link>
                 <Link href="/jobs" style={{ display: "block", background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "7px 14px", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
-                  Ver radar completo
+                  {t("cc.viewFullRadar")}
                 </Link>
                 <Link href="/sources" style={{ display: "block", color: "var(--dim)", fontSize: "12px", padding: "4px 0", textAlign: "center" }}>
-                  Gerenciar fontes →
+                  {t("cc.manageSources")}
                 </Link>
               </div>
             </div>
@@ -2098,16 +2087,16 @@ export function ArgusWorkbench({
             {!radarLoaded ? (
               <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "64px 20px", textAlign: "center" }}>
                 <div style={{ width: "48px", height: "48px", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surf)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", color: "var(--dim)", margin: "0 auto 16px" }}>◎</div>
-                <p style={{ color: "var(--text)", fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>Carregando radar...</p>
-                <p style={{ color: "var(--dim)", fontSize: "12px" }}>Verificando vagas persistidas</p>
+                <p style={{ color: "var(--text)", fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>{t("cc.loadingRadar")}</p>
+                <p style={{ color: "var(--dim)", fontSize: "12px" }}>{t("cc.loadingJobs")}</p>
               </div>
             ) : (
               <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden" }}>
                 <div style={{ borderBottom: "1px solid var(--border)", padding: "24px 28px" }}>
                   <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "8px" }}>Control Center</p>
-                  <h2 style={{ color: "var(--text)", fontSize: "22px", fontWeight: 700, letterSpacing: "-0.02em", marginBottom: "6px" }}>Radar vazio — adicione a primeira vaga</h2>
+                  <h2 style={{ color: "var(--text)", fontSize: "22px", fontWeight: 700, letterSpacing: "-0.02em", marginBottom: "6px" }}>{t("cc.radarEmpty")}</h2>
                   <p style={{ color: "var(--muted)", fontSize: "13px", lineHeight: 1.6 }}>
-                    Use discovery real para puxar vagas dos portais conectados, ou cole um JD manualmente para começar.
+                    {t("cc.welcomeDescription")}
                   </p>
                 </div>
                 <div className="grid sm:grid-cols-2">
@@ -2117,19 +2106,19 @@ export function ArgusWorkbench({
                     </div>
                     <div>
                       <p style={{ color: "var(--text)", fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>Discovery real</p>
-                      <p style={{ color: "var(--dim)", fontSize: "12px", lineHeight: 1.5 }}>Puxe vagas diretamente dos portais Siemens, Rheinmetall e BWI.</p>
+                      <p style={{ color: "var(--dim)", fontSize: "12px", lineHeight: 1.5 }}>{t("cc.discoveryDescription")}</p>
                     </div>
-                    <span style={{ color: "#3b82f6", fontSize: "12px", fontWeight: 700 }}>Iniciar discovery →</span>
+                    <span style={{ color: "#3b82f6", fontSize: "12px", fontWeight: 700 }}>{t("cc.startDiscovery")}</span>
                   </button>
                   <button type="button" onClick={() => setWorkspaceMode("manual")} style={{ padding: "24px", textAlign: "left", background: "none", cursor: "pointer", display: "flex", flexDirection: "column", gap: "12px" }}>
                     <div style={{ width: "40px", height: "40px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surf)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <svg style={{ width: "20px", height: "20px", color: "var(--muted)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg>
                     </div>
                     <div>
-                      <p style={{ color: "var(--text)", fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>Intake manual</p>
-                      <p style={{ color: "var(--dim)", fontSize: "12px", lineHeight: 1.5 }}>Cole qualquer JD — o Argus estrutura, calcula match e salva no radar.</p>
+                      <p style={{ color: "var(--text)", fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>{t("cc.manualIntake")}</p>
+                      <p style={{ color: "var(--dim)", fontSize: "12px", lineHeight: 1.5 }}>{t("cc.manualDescription")}</p>
                     </div>
-                    <span style={{ color: "var(--muted)", fontSize: "12px", fontWeight: 700 }}>Colar JD →</span>
+                    <span style={{ color: "var(--muted)", fontSize: "12px", fontWeight: 700 }}>{t("cc.pasteJDShort")}</span>
                   </button>
                 </div>
               </div>
@@ -2142,7 +2131,7 @@ export function ArgusWorkbench({
           {/* Sidebar */}
           <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "12px", position: "sticky", top: "70px" }}>
             <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
-              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>Perfil ativo</p>
+              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>{t("cc.activeProfile")}</p>
               <p style={{ color: "var(--text)", fontSize: "14px", fontWeight: 600 }}>{activeProfile.name}</p>
               <p style={{ color: "var(--dim)", fontSize: "12px", marginTop: "2px", marginBottom: "12px" }}>{activeProfile.location} · {activeProfile.availability}</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
@@ -2152,7 +2141,7 @@ export function ArgusWorkbench({
               </div>
             </div>
             <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
-              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>Sources live</p>
+              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>{t("cc.sourcesLive")}</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {sources.filter((s) => /live/i.test(s.status)).map((s) => (
                   <div key={s.company} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "6px", padding: "6px 10px" }}>
@@ -2280,7 +2269,7 @@ export function ArgusWorkbench({
                 </a>
               ) : (
                 <span style={{ border: "1px solid var(--border)", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", color: "var(--dim)" }}>
-                  ⚠ Vaga sem link de origem
+                  {t("cc.noJobUrl")}
                 </span>
               )}
               <button type="button" onClick={handleCopyRecruiterMessage} style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: 600, color: "var(--muted)", cursor: "pointer" }}>
@@ -2288,7 +2277,7 @@ export function ArgusWorkbench({
               </button>
               {activeTrackedJob && (
                 <button type="button" onClick={() => handleAdvanceTrackedJob(activeTrackedJob.id)} style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: 600, color: "var(--muted)", cursor: "pointer" }}>
-                  Avançar stage →
+                  {t("cc.advanceStage")}
                 </button>
               )}
               {activeTrackedJob && (
@@ -2371,10 +2360,10 @@ export function ArgusWorkbench({
               {/* Details */}
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {[
-                  { l: "Senioridade", v: parsedJob.seniority },
-                  { l: "Modelo", v: parsedJob.workModel },
-                  { l: "Contrato", v: parsedJob.employmentType },
-                  { l: "Idiomas", v: parsedJob.languages.join(", ") || "Não detectados" },
+                  { l: t("job.seniority"), v: parsedJob.seniority },
+                  { l: t("job.workModel"), v: parsedJob.workModel },
+                  { l: t("job.contract"), v: parsedJob.employmentType },
+                  { l: t("job.languages"), v: parsedJob.languages.join(", ") || t("job.notDetected") },
                 ].map((item) => (
                   <div key={item.l} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "10px", padding: "14px 16px" }}>
                     <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--dim)" }}>{item.l}</p>
@@ -2403,7 +2392,7 @@ export function ArgusWorkbench({
                     ))}
                   </div>
                   <button type="button" onClick={handleCopyRecruiterMessage} style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "4px 14px", fontSize: "12px", fontWeight: 700, border: "none", cursor: "pointer" }}>
-                    {copiedState === "copied" ? "✓ Copiado" : "Copiar"}
+                    {copiedState === "copied" ? t("global.copied") : t("global.copy")}
                   </button>
                 </div>
               </div>
@@ -2557,7 +2546,7 @@ export function ArgusWorkbench({
             {filteredTrackedJobs.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-4 py-6 text-center">
                 <p className="text-[12px]" style={{ color: "var(--dim)" }}>
-                  {radarFilter === "priority" ? "Nenhuma vaga com score ≥ 70%" : "Radar vazio"}
+                  {radarFilter === "priority" ? t("sync.noJobsFilter") : t("sync.noJobs")}
                 </p>
                 {radarFilter === "priority" && (
                   <button
@@ -2611,16 +2600,16 @@ export function ArgusWorkbench({
                 { background: "rgba(148,163,184,.1)", color: "var(--muted)" }
               }
             >
-              {profileSyncState === "synced" ? "✓ Sincronizado" :
-               profileSyncState === "syncing" ? "Salvando..." :
-               profileSyncState === "error" ? "Erro ao salvar" :
-               profileSyncState === "offline" ? "Local" : "Verificando..."}
+              {profileSyncState === "synced" ? t("profile.synced") :
+               profileSyncState === "syncing" ? t("profile.syncing") :
+               profileSyncState === "error" ? t("profile.syncError") :
+               profileSyncState === "offline" ? t("profile.local") : t("profile.checking")}
             </span>
           </div>
 
           {/* Info contextual */}
           <p className="mb-3 text-[11px] leading-5" style={{ color: "var(--dim)" }}>
-            Atualizar o CV e a cover letter recalcula o match de todas as vagas automaticamente.
+            {t("profile.syncNote")}
           </p>
 
           <div className="space-y-2.5">
@@ -2629,7 +2618,7 @@ export function ArgusWorkbench({
                 <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>CV</span>
                 <label className="cursor-pointer">
                   <span className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition" style={{ background: "transparent", color: "var(--gold)", border: "1px solid rgba(245,158,11,.3)" }}>
-                    {cvUploadState === "uploading" ? "Lendo..." : "Subir arquivo ↑"}
+                    {cvUploadState === "uploading" ? t("profile.reading") : t("profile.uploadFile")}
                   </span>
                   <input
                     type="file"
@@ -2640,7 +2629,7 @@ export function ArgusWorkbench({
                       const file = e.target.files?.[0];
                       if (!file) return;
                       setCvUploadState("uploading");
-                      setCvUploadMsg("Extraindo texto...");
+                      setCvUploadMsg(t("profile.extracting"));
                       try {
                         const fd = new FormData();
                         fd.append("cv", file);
@@ -2648,16 +2637,16 @@ export function ArgusWorkbench({
                         const payload = await res.json() as { text?: string; error?: string; charCount?: number };
                         if (!res.ok || !payload.text) {
                           setCvUploadState("error");
-                          setCvUploadMsg(payload.error ?? "Falha ao extrair texto");
+                          setCvUploadMsg(payload.error ?? t("profile.extractError"));
                         } else {
                           setCvText(payload.text);
                           setCvUploadState("done");
-                          setCvUploadMsg(`✓ ${payload.charCount?.toLocaleString()} chars extraídos — revisando...`);
+                          setCvUploadMsg(`✓ ${payload.charCount?.toLocaleString()} ${t("profile.extractSuccess")}`);
                           setTimeout(() => setCvUploadState("idle"), 4000);
                         }
                       } catch {
                         setCvUploadState("error");
-                        setCvUploadMsg("Falha no upload");
+                        setCvUploadMsg(t("profile.uploadError"));
                       }
                       e.target.value = "";
                     }}
@@ -2674,7 +2663,7 @@ export function ArgusWorkbench({
                 onChange={(e) => setCvText(e.target.value)}
                 className="min-h-[110px] w-full rounded-xl px-3 py-2.5 text-[12px] leading-5 outline-none transition"
                 style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
-                placeholder="Cole o texto completo do seu CV ou use 'Subir arquivo' acima..."
+                placeholder={t("profile.cvPlaceholder")}
               />
             </div>
             <label className="block">
@@ -2684,7 +2673,7 @@ export function ArgusWorkbench({
                 onChange={(e) => setCoverLetterText(e.target.value)}
                 className="mt-1 min-h-[80px] w-full rounded-xl px-3 py-2.5 text-[12px] leading-5 outline-none transition"
                 style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
-                placeholder="Cole o parágrafo base da sua cover letter..."
+                placeholder={t("profile.coverPlaceholder")}
               />
             </label>
           </div>
@@ -2702,20 +2691,20 @@ export function ArgusWorkbench({
                 }).then(async (r) => {
                   if (r.ok) {
                     setProfileSyncState("synced");
-                    setProfileSyncMessage("Perfil salvo manualmente.");
+                    setProfileSyncMessage(t("sync.savedManually"));
                   } else {
                     setProfileSyncState("error");
-                    setProfileSyncMessage("Erro ao salvar.");
+                    setProfileSyncMessage(t("profile.saveError"));
                   }
                 }).catch(() => {
                   setProfileSyncState("error");
-                  setProfileSyncMessage("Falha na conexão.");
+                  setProfileSyncMessage(t("profile.connectionError"));
                 });
               }}
               className="rounded-full px-3 py-1 text-[11px] font-semibold transition"
               style={{ background: "transparent", color: "var(--gold)", border: "1px solid rgba(245,158,11,.3)" }}
             >
-              Salvar agora
+              {t("profile.saveNow")}
             </button>
             {profileSyncState !== "checking" && (
               <p className="text-[10px]" style={{ color: "var(--dim)" }}>{profileSyncMessage}</p>
