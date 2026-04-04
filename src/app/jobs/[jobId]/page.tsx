@@ -13,10 +13,10 @@ export default async function JobDetailPage({
   return (
     <div className="mx-auto flex w-full max-w-[92rem] flex-col gap-6 px-6 py-10 lg:px-10 lg:py-12">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-[12px] text-slate-400">
-        <Link href="/jobs" className="transition hover:text-slate-700">Jobs</Link>
+      <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--dim)" }}>
+        <Link href="/jobs" className="transition" style={{ color: "var(--muted)" }}>Jobs</Link>
         <span>/</span>
-        <span className="text-slate-600">Detalhe</span>
+        <span style={{ color: "var(--text)" }}>Detalhe</span>
       </div>
 
       <JobDetailWorkspace jobId={decodeURIComponent(jobId)} profile={profile} />

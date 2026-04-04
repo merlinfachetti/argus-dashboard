@@ -32,16 +32,16 @@ type RadarPayload = {
 };
 
 function badgeStyle(score: number): React.CSSProperties {
-  if (score >= 78) return { background: "#ecfdf5", color: "#047857", outline: "1px solid #a7f3d0" };
-  if (score >= 60) return { background: "#fffbeb", color: "#b45309", outline: "1px solid #fde68a" };
-  return { background: "#fff1f2", color: "#be123c", outline: "1px solid #fecdd3" };
+  if (score >= 78) return { background: "rgba(16,185,129,.15)", color: "#10b981", outline: "1px solid rgba(16,185,129,.3)", borderRadius: "999px", padding: "2px 10px", fontSize: "11px", fontWeight: 700 };
+  if (score >= 60) return { background: "rgba(245,158,11,.15)", color: "#f59e0b", outline: "1px solid rgba(245,158,11,.3)", borderRadius: "999px", padding: "2px 10px", fontSize: "11px", fontWeight: 700 };
+  return { background: "rgba(239,68,68,.15)", color: "#ef4444", outline: "1px solid rgba(239,68,68,.3)", borderRadius: "999px", padding: "2px 10px", fontSize: "11px", fontWeight: 700 };
 }
 
 function statusStyle(status: string): React.CSSProperties {
-  if (status === "Entrevista") return { background: "#ecfdf5", color: "#047857", outline: "1px solid #a7f3d0" };
-  if (status === "Aplicada" || status === "Aplicar") return { background: "#eff6ff", color: "#1d4ed8", outline: "1px solid #bfdbfe" };
-  if (status === "Pronta para revisar") return { background: "#f5f3ff", color: "#6d28d9", outline: "1px solid #ddd6fe" };
-  return { background: "#f1f5f9", color: "#334155", outline: "1px solid #cbd5e1" };
+  if (status === "Entrevista") return { background: "rgba(16,185,129,.15)", color: "#10b981", outline: "1px solid rgba(16,185,129,.3)" };
+  if (status === "Aplicada" || status === "Aplicar") return { background: "rgba(59,130,246,.15)", color: "#60a5fa", outline: "1px solid rgba(59,130,246,.3)" };
+  if (status === "Pronta para revisar") return { background: "rgba(139,92,246,.15)", color: "#a78bfa", outline: "1px solid rgba(139,92,246,.3)" };
+  return { background: "rgba(148,163,184,.1)", color: "var(--muted)", outline: "1px solid var(--border)" };
 }
 
 
@@ -216,8 +216,8 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
   // Loading
   if (isLoading) {
     return (
-      <div className="flex items-center gap-3 rounded-2xl border border-slate-200/60 bg-white px-5 py-8 text-[13px] text-slate-400">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-sky-400" />
+      <div className="flex items-center gap-3 rounded-2xl px-5 py-8 text-[13px]" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--dim)" }}>
+        <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: "var(--gold)" }} />
         {syncMessage}
       </div>
     );
@@ -226,24 +226,26 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
   // Not found
   if (!job || !analysis) {
     return (
-      <div className="rounded-[28px] border border-slate-200/60 bg-white p-8 shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+      <div className="rounded-[28px] p-8" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
           Job Detail
         </p>
-        <h2 className="mt-2 text-2xl font-semibold text-slate-950">Vaga não encontrada</h2>
-        <p className="mt-2 text-[13px] leading-6 text-slate-500">
+        <h2 className="mt-2 text-2xl font-semibold" style={{ color: "var(--text)" }}>Vaga não encontrada</h2>
+        <p className="mt-2 text-[13px] leading-6" style={{ color: "var(--dim)" }}>
           Esta vaga não apareceu no radar persistido nem no estado local. Volte ao explorer.
         </p>
         <div className="mt-5 flex gap-2.5">
           <Link
             href="/jobs"
-            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50"
+            className="rounded-full px-4 py-2 text-[13px] font-semibold transition"
+            style={{ background: "transparent", color: "var(--muted)", border: "1px solid var(--border)" }}
           >
             Voltar para jobs
           </Link>
           <Link
             href="/control-center"
-            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="rounded-full px-4 py-2 text-[13px] font-semibold transition"
+            style={{ background: "transparent", color: "var(--dim)", border: "1px solid var(--border)" }}
           >
             Control center
           </Link>
@@ -257,26 +259,26 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
   return (
     <div className="space-y-4">
       {/* Hero */}
-      <div className="overflow-hidden rounded-[28px] border border-slate-900/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
+      <div className="overflow-hidden rounded-[28px]" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
         {/* Top bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.07] px-4 py-3 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
-            <span className="text-[11px] text-slate-400">{syncMessage}</span>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--gold)" }} />
+            <span className="text-[11px]" style={{ color: "var(--dim)" }}>{syncMessage}</span>
           </div>
-          <span className="text-[11px] font-medium text-slate-500">{job.intakeMode}</span>
+          <span className="text-[11px] font-medium" style={{ color: "var(--dim)" }}>{job.intakeMode}</span>
         </div>
 
         <div className="px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-col gap-4">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-400">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: "var(--gold)" }}>
                 Vaga em foco
               </p>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
                 {job.title}
               </h1>
-              <p className="mt-1 text-[13px] text-slate-400">
+              <p className="mt-1 text-[13px]" style={{ color: "var(--dim)" }}>
                 {job.company} · {job.location} · {job.seniority}
               </p>
             </div>
@@ -291,8 +293,8 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
           </div>
 
           {/* Score bar */}
-          <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-sky-400 transition-all" style={{ width: scoreWidth }} />
+          <div className="mt-5 h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(148,163,184,.1)" }}>
+            <div className="h-full rounded-full transition-all" style={{ width: scoreWidth, background: "var(--gold)" }} />
           </div>
 
           {/* Quick stats */}
@@ -303,49 +305,53 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
               { l: "Idiomas", v: job.languages.join(", ") || "—" },
               { l: "Veredito", v: analysis.verdict },
             ].map((item) => (
-              <div key={item.l} className="rounded-2xl border border-white/[0.07] bg-white/[0.05] px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{item.l}</p>
-                <p className="mt-1.5 text-[13px] font-semibold text-slate-100">{item.v || "—"}</p>
+              <div key={item.l} className="rounded-2xl px-4 py-3" style={{ background: "var(--surf)", border: "1px solid var(--border)" }}>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--dim)" }}>{item.l}</p>
+                <p className="mt-1.5 text-[13px] font-semibold" style={{ color: "var(--text)" }}>{item.v || "—"}</p>
               </div>
             ))}
           </div>
 
-          {/* Actions — P0: aplicar sempre primeiro */}
+          {/* Actions */}
           <div className="mt-5 flex flex-wrap gap-2">
             {job.sourceUrl ? (
               <a
                 href={job.sourceUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-5 py-2.5 text-[13px] font-bold text-white shadow-[0_2px_12px_rgba(56,189,248,0.4)] transition hover:bg-sky-400"
+                className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[13px] font-bold transition hover:opacity-80"
+                style={{ background: "var(--gold)", color: "#000" }}
               >
                 Aplicar na vaga ↗
               </a>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-4 py-2 text-[12px] text-slate-500">
-                ⚠ Sem link de aplicação
+              <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px]" style={{ color: "var(--dim)", border: "1px solid var(--border)" }}>
+                Sem link de aplicação
               </span>
             )}
             <Link
               href={`/control-center?job=${encodeURIComponent(job.id)}`}
-              className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-300 transition hover:bg-white/[0.12]"
+              className="rounded-full px-4 py-2 text-[12px] font-semibold transition"
+              style={{ background: "transparent", color: "var(--muted)", border: "1px solid var(--border)" }}
             >
               Analisar no CC
             </Link>
             <button
               type="button"
               onClick={() => void handleCopy()}
-              className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-200 transition hover:bg-white/[0.12]"
+              className="rounded-full px-4 py-2 text-[12px] font-semibold transition"
+              style={{ background: "transparent", color: "var(--muted)", border: "1px solid var(--border)" }}
             >
               {copied ? t("global.copied") : t("cc.copyMessage")}
             </button>
             <select
               value={job.status}
               onChange={(e) => void handleStatusChange(e.target.value)}
-              className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-200 outline-none transition hover:bg-white/[0.12]"
+              className="rounded-full px-4 py-2 text-[12px] font-semibold outline-none transition"
+              style={{ background: "var(--surf)", color: "var(--text)", border: "1px solid var(--border)" }}
             >
               {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s} className="text-slate-950">{s}</option>
+                <option key={s} value={s} style={{ background: "var(--card)", color: "var(--text)" }}>{s}</option>
               ))}
             </select>
           </div>
@@ -353,18 +359,17 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-0.5 overflow-x-auto rounded-full border border-slate-200 bg-slate-50 p-1" style={{scrollbarWidth:"none"}}>
+      <div className="flex gap-0.5 overflow-x-auto rounded-full p-1" style={{ background: "var(--surf)", border: "1px solid var(--border)", scrollbarWidth: "none" }}>
         {(["overview", "match", "message", "history"] as const).map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={[
-              "flex-1 rounded-full py-2 text-[12px] font-semibold transition",
-              activeTab === tab
-                ? "bg-white text-slate-950 shadow-[0_2px_8px_rgba(15,23,42,0.10)]"
-                : "text-slate-500 hover:text-slate-700",
-            ].join(" ")}
+            className="flex-1 rounded-full py-2 text-[12px] font-semibold transition"
+            style={activeTab === tab
+              ? { background: "var(--gold)", color: "#000" }
+              : { color: "var(--muted)" }
+            }
           >
             {tab === "overview" ? t("cc.tabSummary") : tab === "match" ? "Match" : tab === "message" ? "Mensagem" : t("cc.tabHistory")}
           </button>
@@ -375,20 +380,21 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
       {activeTab === "overview" && (
         <div className="flex flex-col gap-3 xl:grid xl:grid-cols-[1.1fr_0.9fr]">
           {/* Summary + skills */}
-          <div className="rounded-[24px] border border-slate-200/60 bg-white p-6 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+          <div className="rounded-[24px] p-6" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
               Resumo
             </p>
-            <p className="mt-3 text-[13px] leading-7 text-slate-600">{job.summary || "Sem resumo disponível."}</p>
+            <p className="mt-3 text-[13px] leading-7" style={{ color: "var(--muted)" }}>{job.summary || "Sem resumo disponível."}</p>
             {job.skills.length > 0 && (
               <div className="mt-4">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Skills</p>
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Skills</p>
                 <div className="flex flex-wrap gap-1.5">
                   {job.skills.map((skill) => (
                     <a
                       key={skill}
                       href={`/jobs?q=${encodeURIComponent(skill)}`}
-                      className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[12px] text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700"
+                      className="rounded-full px-2.5 py-1 text-[12px] transition"
+                      style={{ background: "var(--surf)", color: "var(--text)", border: "1px solid var(--border)" }}
                       title={`Filtrar vagas com ${skill}`}
                     >
                       {skill}
@@ -407,9 +413,9 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
               { label: t("job.languages"), value: job.languages.join(", ") || "Não detectados" },
               { label: t("job.origin"), value: job.intakeMode },
             ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-slate-200/60 bg-white px-4 py-3.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
-                <p className="mt-1 text-[14px] font-semibold text-slate-950">{item.value || "—"}</p>
+              <div key={item.label} className="rounded-2xl px-4 py-3.5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--dim)" }}>{item.label}</p>
+                <p className="mt-1 text-[14px] font-semibold" style={{ color: "var(--text)" }}>{item.value || "—"}</p>
               </div>
             ))}
           </div>
@@ -418,12 +424,12 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
 
       {activeTab === "match" && (
         <div className="space-y-3">
-          {/* Decisão — primeira coisa a ver */}
-          <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
+          {/* Decisão */}
+          <div className="rounded-[24px] p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Veredito</p>
-                <p className="mt-1 text-[15px] font-semibold text-slate-950">{analysis.verdict}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Veredito</p>
+                <p className="mt-1 text-[15px] font-semibold" style={{ color: "var(--text)" }}>{analysis.verdict}</p>
               </div>
               <div className="flex flex-col items-end gap-1">
                 <span style={badgeStyle(analysis.score)} className="rounded-full px-3 py-1 text-[14px] font-bold">
@@ -434,7 +440,8 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
                     href={job.sourceUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-[11px] font-semibold text-sky-600 hover:text-sky-500"
+                    className="text-[11px] font-semibold"
+                    style={{ color: "var(--gold)" }}
                   >
                     Aplicar ↗
                   </a>
@@ -445,35 +452,35 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
 
           {/* Forças e riscos */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[24px] border border-emerald-200/60 bg-gradient-to-b from-emerald-50/60 to-white p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-600">
+            <div className="rounded-[24px] p-5" style={{ background: "var(--card)", border: "1px solid rgba(16,185,129,.25)" }}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "#10b981" }}>
                 Por que combina
               </p>
               <div className="mt-3 space-y-2">
                 {analysis.strengths.length === 0 ? (
-                  <p className="text-[13px] text-slate-400">Nenhum ponto de força identificado.</p>
+                  <p className="text-[13px]" style={{ color: "var(--dim)" }}>Nenhum ponto de força identificado.</p>
                 ) : (
                   analysis.strengths.map((s) => (
-                    <div key={s} className="flex items-start gap-2.5 rounded-xl border border-emerald-100 bg-white px-3.5 py-2.5">
-                      <span className="mt-0.5 shrink-0 text-emerald-500">✓</span>
-                      <p className="text-[13px] leading-5 text-slate-700">{s}</p>
+                    <div key={s} className="flex items-start gap-2.5 rounded-xl px-3.5 py-2.5" style={{ background: "var(--surf)", border: "1px solid rgba(16,185,129,.2)" }}>
+                      <span className="mt-0.5 shrink-0" style={{ color: "#10b981" }}>✓</span>
+                      <p className="text-[13px] leading-5" style={{ color: "var(--muted)" }}>{s}</p>
                     </div>
                   ))
                 )}
               </div>
             </div>
-            <div className="rounded-[24px] border border-amber-200/60 bg-gradient-to-b from-amber-50/60 to-white p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-600">
+            <div className="rounded-[24px] p-5" style={{ background: "var(--card)", border: "1px solid rgba(245,158,11,.25)" }}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "#f59e0b" }}>
                 Gaps a endereçar
               </p>
               <div className="mt-3 space-y-2">
                 {analysis.risks.length === 0 ? (
-                  <p className="text-[13px] text-slate-400">Nenhum gap crítico identificado.</p>
+                  <p className="text-[13px]" style={{ color: "var(--dim)" }}>Nenhum gap crítico identificado.</p>
                 ) : (
                   analysis.risks.map((r) => (
-                    <div key={r} className="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-white px-3.5 py-2.5">
-                      <span className="mt-0.5 shrink-0 text-amber-500">⚠</span>
-                      <p className="text-[13px] leading-5 text-slate-600">{r}</p>
+                    <div key={r} className="flex items-start gap-2.5 rounded-xl px-3.5 py-2.5" style={{ background: "var(--surf)", border: "1px solid rgba(245,158,11,.2)" }}>
+                      <span className="mt-0.5 shrink-0" style={{ color: "#f59e0b" }}>⚠</span>
+                      <p className="text-[13px] leading-5" style={{ color: "var(--muted)" }}>{r}</p>
                     </div>
                   ))
                 )}
@@ -482,10 +489,10 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
           </div>
 
           {/* Próximo passo */}
-          <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/60 bg-white px-5 py-4">
+          <div className="flex items-center justify-between gap-3 rounded-2xl px-5 py-4" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Próximo passo</p>
-              <p className="mt-1 text-[13px] font-medium text-slate-700">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Próximo passo</p>
+              <p className="mt-1 text-[13px] font-medium" style={{ color: "var(--text)" }}>
                 {analysis.score >= 80
                   ? "Alta prioridade — enviar mensagem e aplicar hoje."
                   : analysis.score >= 65
@@ -498,7 +505,8 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
                 href={job.sourceUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="shrink-0 rounded-full bg-sky-500 px-4 py-2 text-[12px] font-bold text-white transition hover:bg-sky-400"
+                className="shrink-0 rounded-full px-4 py-2 text-[12px] font-bold transition hover:opacity-80"
+                style={{ background: "var(--gold)", color: "#000" }}
               >
                 Aplicar ↗
               </a>
@@ -508,44 +516,46 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
       )}
 
       {activeTab === "message" && (
-        <div className="rounded-[24px] border border-slate-200/60 bg-white p-6 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
+        <div className="rounded-[24px] p-6" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
               Mensagem para recruiter
             </p>
             <button
               type="button"
               onClick={() => void handleCopy()}
-              className="rounded-full border border-slate-900 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50"
+              className="rounded-full px-4 py-1.5 text-[12px] font-semibold transition"
+              style={{ background: "transparent", color: "var(--gold)", border: "1px solid rgba(245,158,11,.3)" }}
             >
               {copied ? t("global.copied") : t("global.copy")}
             </button>
           </div>
-          <pre className="whitespace-pre-wrap rounded-2xl border border-slate-100 bg-slate-50 p-5 text-[13px] leading-6 text-slate-700 font-sans">
+          <pre className="whitespace-pre-wrap rounded-2xl p-5 text-[13px] leading-6 font-sans" style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}>
             {recruiterMessage}
           </pre>
         </div>
       )}
 
       {activeTab === "history" && (
-        <div className="rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+        <div className="rounded-[24px] p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
             Histórico de status
           </p>
           <div className="space-y-2">
             {job.history.length === 0 ? (
-              <p className="text-[13px] text-slate-400">Sem histórico ainda.</p>
+              <p className="text-[13px]" style={{ color: "var(--dim)" }}>Sem histórico ainda.</p>
             ) : (
               job.history.map((entry, i) => (
                 <div
                   key={`${entry.status}-${entry.changedAt}-${i}`}
-                  className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+                  className="flex items-center gap-3 rounded-xl px-4 py-3"
+                  style={{ background: "var(--surf)", border: "1px solid var(--border)" }}
                 >
                   <span style={statusStyle(entry.status)} className="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold">
                     {entry.status}
                   </span>
-                  <span className="flex-1 text-[12px] text-slate-500">{entry.note ?? ""}</span>
-                  <span className="text-[11px] tabular-nums text-slate-400">{formatDate(entry.changedAt)}</span>
+                  <span className="flex-1 text-[12px]" style={{ color: "var(--dim)" }}>{entry.note ?? ""}</span>
+                  <span className="text-[11px] tabular-nums" style={{ color: "var(--dim)" }}>{formatDate(entry.changedAt)}</span>
                 </div>
               ))
             )}
