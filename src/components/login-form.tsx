@@ -74,34 +74,35 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
 
       <form className="mt-6 grid gap-3" onSubmit={handleSubmit}>
         <label className="grid gap-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
             Senha de acesso
           </span>
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="h-11 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-[13px] text-slate-800 outline-none transition focus:border-sky-300 focus:bg-white focus:ring-4 focus:ring-sky-100"
+            className="h-11 rounded-2xl px-4 text-[13px] outline-none transition"
+            style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
             placeholder="Senha privada do Argus"
           />
         </label>
 
         {passwordStrength ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="rounded-2xl px-4 py-3" style={{ background: "var(--surf)", border: "1px solid var(--border)" }}>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[12px] font-semibold text-slate-700">{passwordStrength.label}</span>
+              <span className="text-[12px] font-semibold" style={{ color: "var(--text)" }}>{passwordStrength.label}</span>
             </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full" style={{ background: "rgba(148,163,184,.15)" }}>
               <div
-                className="h-full rounded-full bg-slate-900 transition-all duration-300"
-                style={{ width: passwordStrength.width }}
+                className="h-full rounded-full transition-all duration-300"
+                style={{ width: passwordStrength.width, background: "var(--gold)" }}
               />
             </div>
           </div>
         ) : null}
 
         {error ? (
-          <div className="rounded-[20px] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-[20px] px-4 py-3 text-sm" style={{ background: "rgba(239,68,68,.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,.3)" }}>
             {error}
           </div>
         ) : null}
@@ -109,7 +110,8 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
         <button
           type="submit"
           disabled={isSubmitting || isSuccessAnimating}
-          className="h-11 w-full rounded-2xl bg-slate-950 text-[13px] font-semibold text-white shadow-[0_8px_20px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-11 w-full rounded-2xl text-[13px] font-semibold transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+          style={{ background: "var(--gold)", color: "#000" }}
         >
           {isSubmitting || isSuccessAnimating ? t("login.authenticating") : t("login.submit")}
         </button>

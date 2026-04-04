@@ -31,15 +31,15 @@ function TagEditor({
 
   return (
     <div>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>
-      <div className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>{label}</p>
+      <div className="flex flex-wrap gap-1.5 rounded-xl p-2.5" style={{ background: "var(--surf)", border: "1px solid var(--border)" }}>
         {values.map((v) => (
-          <span key={v} className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[12px] text-slate-700">
+          <span key={v} className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px]" style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--text)" }}>
             {v}
             <button
               type="button"
               onClick={() => onChange(values.filter((x) => x !== v))}
-              className="ml-0.5 text-[10px] text-slate-400 hover:text-rose-500"
+              className="ml-0.5 text-[10px]" style={{ color: "var(--dim)" }}
             >
               ×
             </button>
@@ -51,10 +51,11 @@ function TagEditor({
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(); } }}
           onBlur={addTag}
           placeholder={placeholder}
-          className="min-w-[120px] flex-1 bg-transparent px-1 py-0.5 text-[12px] text-slate-700 outline-none placeholder:text-slate-400"
+          className="min-w-[120px] flex-1 bg-transparent px-1 py-0.5 text-[12px] outline-none"
+          style={{ color: "var(--text)" }}
         />
       </div>
-      <p className="mt-1 text-[10px] text-slate-400">Enter ou vírgula para adicionar · × para remover</p>
+      <p className="mt-1 text-[10px]" style={{ color: "var(--dim)" }}>Enter ou vírgula para adicionar · × para remover</p>
     </div>
   );
 }
@@ -102,8 +103,8 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
   return (
     <div className="space-y-6">
       {/* Identidade */}
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Identidade</p>
+      <section className="rounded-2xl p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Identidade</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {[
             { label: "Nome", value: name, set: setName },
@@ -112,29 +113,31 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
             { label: "Disponibilidade", value: availability, set: setAvailability },
           ].map(({ label, value, set }) => (
             <label key={label} className="block">
-              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</span>
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>{label}</span>
               <input
                 value={value}
                 onChange={(e) => set(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] text-slate-800 outline-none transition focus:border-sky-300 focus:bg-white"
+                className="w-full rounded-xl px-3 py-2 text-[13px] outline-none transition"
+                style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
               />
             </label>
           ))}
         </div>
         <label className="mt-3 block">
-          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Resumo profissional</span>
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>Resumo profissional</span>
           <textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
             rows={3}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] leading-6 text-slate-800 outline-none transition focus:border-sky-300 focus:bg-white"
+            className="w-full rounded-xl px-3 py-2 text-[13px] leading-6 outline-none transition"
+            style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
           />
         </label>
       </section>
 
       {/* Stack + Roles + Idiomas */}
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Competências & alvos</p>
+      <section className="rounded-2xl p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Competências & alvos</p>
         <div className="space-y-4">
           <TagEditor label="Core Stack" values={coreStack} onChange={setCoreStack} placeholder="TypeScript, React..." />
           <TagEditor label="Roles-alvo" values={targetRoles} onChange={setTargetRoles} placeholder="Senior Engineer, Tech Lead..." />
@@ -143,26 +146,28 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
       </section>
 
       {/* Documentos */}
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Documentos</p>
+      <section className="rounded-2xl p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Documentos</p>
         <div className="space-y-3">
           <label className="block">
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">CV (texto completo)</span>
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>CV (texto completo)</span>
             <textarea
               value={cvText}
               onChange={(e) => setCvText(e.target.value)}
               rows={8}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
+              className="w-full rounded-xl px-3 py-2.5 text-[12px] leading-5 outline-none transition"
+              style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
               placeholder="Cole o texto completo do seu CV..."
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Cover letter (parágrafo base)</span>
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>Cover letter (parágrafo base)</span>
             <textarea
               value={coverLetterText}
               onChange={(e) => setCoverLetterText(e.target.value)}
               rows={4}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
+              className="w-full rounded-xl px-3 py-2.5 text-[12px] leading-5 outline-none transition"
+              style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
               placeholder="Parágrafo de apresentação base..."
             />
           </label>
@@ -175,13 +180,13 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
           type="button"
           onClick={() => void handleSave()}
           disabled={saveState === "saving"}
-          style={{ background: "#0f172a", color: "#fff" }}
           className="rounded-full px-6 py-2.5 text-[13px] font-bold transition hover:opacity-80 disabled:opacity-50"
+          style={{ background: "var(--gold)", color: "#000" }}
         >
           {saveState === "saving" ? "Salvando..." : "Salvar perfil"}
         </button>
         {saveMsg && (
-          <p className={["text-[12px]", saveState === "error" ? "text-rose-500" : "text-emerald-600"].join(" ")}>
+          <p className="text-[12px]" style={{ color: saveState === "error" ? "#ef4444" : "#10b981" }}>
             {saveMsg}
           </p>
         )}
