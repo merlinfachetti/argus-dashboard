@@ -307,5 +307,8 @@
   "sync.syncProfileError": "Falha ao sincronizar perfil no servidor",
   "sync.syncStatusError": "Falha ao sincronizar status, mantendo alteração local",
   "sync.verifyError": "Falha ao verificar documentos persistidos",
-  "sync.viewAll": "Ver todas"
+  "sync.viewAll": "Ver todas",
+  "verdict.goodMatch": "Boa aderência",
+  "verdict.highPriority": "Alta prioridade",
+  "verdict.partialMatch": "Aderência parcial"
 }

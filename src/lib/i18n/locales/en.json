@@ -307,5 +307,8 @@
   "sync.syncProfileError": "Failed to sync profile to server",
   "sync.syncStatusError": "Failed to sync status, keeping local change",
   "sync.verifyError": "Failed to verify persisted documents",
-  "sync.viewAll": "View all"
+  "sync.viewAll": "View all",
+  "verdict.goodMatch": "Good match",
+  "verdict.highPriority": "High priority",
+  "verdict.partialMatch": "Partial match"
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/context";
+import { OmniSearch } from "@/components/omni-search";
 
 const NAV_ITEMS = [
   { href: "/jobs",           labelKey: "Jobs" },
@@ -135,27 +136,10 @@ export function AppHeader() {
             flexShrink: 0,
           }}
         >
-          {/* Search — only desktop */}
-          <Link
-            href="/jobs"
-            className="hidden lg:flex"
-            style={{
-              background: "transparent",
-              border: "1px solid var(--border)",
-              color: "var(--dim)",
-              borderRadius: "6px",
-              padding: "5px 9px",
-              fontSize: "13px",
-              alignItems: "center",
-              textDecoration: "none",
-            }}
-            title="Buscar vagas"
-          >
-            <svg style={{ width: "14px", height: "14px" }} fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={2.5}>
-              <circle cx="7" cy="7" r="5" />
-              <path d="M11 11l3 3" strokeLinecap="round" />
-            </svg>
-          </Link>
+          {/* Omnisearch — desktop */}
+          <div className="hidden lg:block">
+            <OmniSearch />
+          </div>
 
           {/* Language toggle */}
           <button

@@ -28,6 +28,7 @@ import {
   createHistoryEntry,
   DASHBOARD_STATUS_LANES,
   STATUS_OPTIONS,
+  statusToDisplay,
   type JobHistoryEntry,
   type TrackedJob,
 } from "@/lib/radar-types";
@@ -1506,7 +1507,7 @@ export function ArgusWorkbench({
             const count = trackedJobs.filter((j) => j.status === status).length;
             return (
               <div key={status} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", padding: "8px 14px", flexShrink: 0, display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ color: "var(--muted)", fontSize: "11px", whiteSpace: "nowrap" }}>{status}</span>
+                <span style={{ color: "var(--muted)", fontSize: "11px", whiteSpace: "nowrap" }}>{statusToDisplay(status, t)}</span>
                 <span style={{ color: count > 0 ? "var(--text)" : "var(--dim)", fontSize: "12px", fontWeight: count > 0 ? 700 : 400 }}>{count}</span>
               </div>
             );
@@ -1621,7 +1622,7 @@ export function ArgusWorkbench({
                           </p>
                         </div>
 
-                        <span className="hidden sm:inline-flex" style={statusStyle(job.status)}>{job.status}</span>
+                        <span className="hidden sm:inline-flex" style={statusStyle(job.status)}>{statusToDisplay(job.status, t)}</span>
 
                         <div className="hidden sm:flex" style={{ alignItems: "center", gap: "6px", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
                           {job.sourceUrl && (
@@ -1646,7 +1647,7 @@ export function ArgusWorkbench({
 
                       {/* Mobile-only: status + actions row */}
                       <div className="mt-2 flex items-center gap-2 sm:hidden" onClick={(e) => e.stopPropagation()}>
-                        <span style={statusStyle(job.status)}>{job.status}</span>
+                        <span style={statusStyle(job.status)}>{statusToDisplay(job.status, t)}</span>
                         <div style={{ marginLeft: "auto", display: "flex", gap: "6px" }}>
                           {job.sourceUrl && (
                             <a
@@ -1740,7 +1741,7 @@ export function ArgusWorkbench({
                 const count = trackedJobs.filter((j) => j.status === status).length;
                 return (
                   <div key={status} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid var(--border)" }}>
-                    <span style={{ color: "var(--muted)", fontSize: "11px" }}>{status}</span>
+                    <span style={{ color: "var(--muted)", fontSize: "11px" }}>{statusToDisplay(status, t)}</span>
                     <span style={{ color: count > 0 ? "var(--text)" : "var(--dim)", fontSize: "11px", fontWeight: count > 0 ? 700 : 400 }}>{count}</span>
                   </div>
                 );
@@ -1933,7 +1934,7 @@ export function ArgusWorkbench({
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                        <p style={{ color: laneColor, fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em" }}>{lane.status}</p>
+                        <p style={{ color: laneColor, fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em" }}>{statusToDisplay(lane.status, t)}</p>
                         <span style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "999px", padding: "2px 8px", fontSize: "11px", fontWeight: 700, color: lane.count > 0 ? "var(--text)" : "var(--dim)" }}>{lane.count}</span>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>

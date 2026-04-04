@@ -56,3 +56,34 @@ export function createHistoryEntry(
     changedAt,
   };
 }
+
+// ─── i18n display mapping ─────────────────────────────────────────────────────
+// DB values are in PT-BR. These functions map them to translated display strings.
+// The `t` parameter is the translation function from useT() or t(key, lang).
+
+const STATUS_I18N_MAP: Record<UiJobStatus, string> = {
+  "Nova":                "status.nova",
+  "Pronta para revisar": "status.prontaParaRevisar",
+  "Requer triagem":      "status.requerTriagem",
+  "Aplicar":             "status.aplicar",
+  "Aplicada":            "status.aplicada",
+  "Entrevista":          "status.entrevista",
+};
+
+const VERDICT_I18N_MAP: Record<UiMatchVerdict, string> = {
+  "Alta prioridade":   "verdict.highPriority",
+  "Boa aderência":     "verdict.goodMatch",
+  "Aderência parcial": "verdict.partialMatch",
+};
+
+/** Translate a persisted status value for display. */
+export function statusToDisplay(status: UiJobStatus, t: (key: string) => string): string {
+  const key = STATUS_I18N_MAP[status];
+  return key ? t(key) : status;
+}
+
+/** Translate a persisted verdict value for display. */
+export function verdictToDisplay(verdict: UiMatchVerdict, t: (key: string) => string): string {
+  const key = VERDICT_I18N_MAP[verdict];
+  return key ? t(key) : verdict;
+}
