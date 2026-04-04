@@ -99,11 +99,12 @@ function MinimalHero({ eyebrow, title, description, metrics, actions }: PageHero
       </div>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: "var(--text)" }}>
+          <h1 className="max-w-2xl text-xl font-semibold tracking-tight sm:text-3xl" style={{ color: "var(--text)" }}>
             {title}
           </h1>
+          {/* Description hidden on mobile for compactness */}
           {description && (
-            <p className="mt-2 max-w-xl text-[14px] leading-7" style={{ color: "var(--dim)" }}>
+            <p className="mt-2 hidden max-w-xl text-[14px] leading-7 sm:block" style={{ color: "var(--dim)" }}>
               {description}
             </p>
           )}
@@ -113,17 +114,17 @@ function MinimalHero({ eyebrow, title, description, metrics, actions }: PageHero
         )}
       </div>
       {metrics && metrics.length > 0 && (
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:mt-5 sm:flex sm:flex-wrap">
           {metrics.map((metric) => (
             <div
               key={`${metric.label}-${metric.value}`}
               style={metricToneStyle(metric.tone)}
-              className="rounded-xl px-4 py-2.5"
+              className="rounded-xl px-3 py-2 sm:px-4 sm:py-2.5"
             >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-40">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.18em] opacity-40 sm:text-[10px]">
                 {metric.label}
               </p>
-              <p className="mt-0.5 text-lg font-semibold tracking-tight">
+              <p className="mt-0.5 text-base font-semibold tracking-tight sm:text-lg">
                 {metric.value}
               </p>
             </div>

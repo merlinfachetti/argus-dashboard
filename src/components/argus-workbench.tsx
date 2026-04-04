@@ -1411,54 +1411,58 @@ export function ArgusWorkbench({
     };
 
     return (
-      <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "24px 20px" }}>
+      <div>
 
         {/* ── Filter bar ──────────────────────────────────────────────────────── */}
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", marginBottom: "20px" }}>
-          {(["all", "crawler", "manual", "priority"] as RadarFilter[]).map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setRadarFilter(f)}
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center" style={{ marginBottom: "20px" }}>
+          {/* Left: type filters */}
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
+            {(["all", "crawler", "manual", "priority"] as RadarFilter[]).map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setRadarFilter(f)}
+                style={{
+                  borderRadius: "999px",
+                  border: radarFilter === f ? "1px solid var(--gold)" : "1px solid var(--border)",
+                  background: radarFilter === f ? "rgba(245,158,11,.12)" : "var(--surf)",
+                  color: radarFilter === f ? "var(--gold)" : "var(--muted)",
+                  padding: "5px 14px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all .15s",
+                }}
+              >
+                {filterLabels[f]}
+              </button>
+            ))}
+
+            <select
+              value={jobsSeniorityFilter}
+              onChange={(e) => setJobsSeniorityFilter(e.target.value)}
               style={{
                 borderRadius: "999px",
-                border: radarFilter === f ? "1px solid var(--gold)" : "1px solid var(--border)",
-                background: radarFilter === f ? "rgba(245,158,11,.12)" : "var(--surf)",
-                color: radarFilter === f ? "var(--gold)" : "var(--muted)",
+                border: "1px solid var(--border)",
+                background: "var(--surf)",
+                color: "var(--muted)",
                 padding: "5px 14px",
                 fontSize: "12px",
-                fontWeight: 600,
+                outline: "none",
                 cursor: "pointer",
-                transition: "all .15s",
               }}
             >
-              {filterLabels[f]}
-            </button>
-          ))}
+              <option value="all">Senioridade</option>
+              {[...new Set(trackedJobs.map((j) => j.seniority).filter(Boolean))].map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
 
-          <select
-            value={jobsSeniorityFilter}
-            onChange={(e) => setJobsSeniorityFilter(e.target.value)}
-            style={{
-              borderRadius: "999px",
-              border: "1px solid var(--border)",
-              background: "var(--surf)",
-              color: "var(--muted)",
-              padding: "5px 14px",
-              fontSize: "12px",
-              outline: "none",
-              cursor: "pointer",
-            }}
-          >
-            <option value="all">Senioridade</option>
-            {[...new Set(trackedJobs.map((j) => j.seniority).filter(Boolean))].map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            {/* Sync indicator */}
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "999px", padding: "4px 10px", fontSize: "11px", color: "var(--dim)" }}>
+          {/* Right: sort + search + count */}
+          <div className="flex items-center gap-2 sm:ml-auto" style={{ flexWrap: "wrap" }}>
+            {/* Sync indicator — hidden on mobile */}
+            <div className="hidden sm:inline-flex" style={{ alignItems: "center", gap: "6px", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "999px", padding: "4px 10px", fontSize: "11px", color: "var(--dim)" }}>
               <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: syncDotColor, flexShrink: 0 }} />
               <span>{syncMessage}</span>
             </div>
@@ -1488,6 +1492,7 @@ export function ArgusWorkbench({
               value={radarQuery}
               onChange={(e) => setRadarQuery(e.target.value)}
               placeholder="Filtrar..."
+              className="w-[120px] sm:w-[150px]"
               style={{
                 background: "var(--surf)",
                 border: "1px solid var(--border)",
@@ -1496,7 +1501,6 @@ export function ArgusWorkbench({
                 fontSize: "12px",
                 color: "var(--text)",
                 outline: "none",
-                width: "150px",
               }}
             />
 
@@ -1507,19 +1511,32 @@ export function ArgusWorkbench({
           </div>
         </div>
 
+        {/* ── Mobile pipeline summary (visible < xl) ──────────────────────── */}
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1 xl:hidden" style={{ scrollbarWidth: "none" }}>
+          {DASHBOARD_STATUS_LANES.map((status) => {
+            const count = trackedJobs.filter((j) => j.status === status).length;
+            return (
+              <div key={status} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px", padding: "8px 14px", flexShrink: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ color: "var(--muted)", fontSize: "11px", whiteSpace: "nowrap" }}>{status}</span>
+                <span style={{ color: count > 0 ? "var(--text)" : "var(--dim)", fontSize: "12px", fontWeight: count > 0 ? 700 : 400 }}>{count}</span>
+              </div>
+            );
+          })}
+        </div>
+
         {/* ── Grid: list + sidebar ────────────────────────────────────────────── */}
         <div className="flex flex-col gap-4 xl:grid" style={{ gridTemplateColumns: "1fr 272px", alignItems: "start" }}>
 
           {/* Job list */}
           <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden" }}>
 
-            {/* Spotlight strip */}
+            {/* Spotlight strip — hidden on small mobile for cleaner UX */}
             {jobsSpotlight.length > 0 && (
-              <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
+              <div className="hidden sm:block" style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
                 <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>
                   Spotlight
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
                   {jobsSpotlight.map((job, i) => (
                     <button
                       key={`spot-${job.id}`}
@@ -1599,47 +1616,73 @@ export function ArgusWorkbench({
                       setExpandedJobId(isExpanded ? null : job.id);
                     }}
                   >
-                    {/* Row collapsed: score + title + company + status + apply */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span style={badgeStyle(job.score)}>{job.score}%</span>
+                    {/* Row collapsed */}
+                    <div>
+                      {/* Top line: score + title + actions */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <span style={badgeStyle(job.score)}>{job.score}%</span>
 
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {job.title}
-                        </p>
-                        <p style={{ color: "var(--dim)", fontSize: "11px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {job.company}{job.location ? ` · ${job.location}` : ""}
-                          {job.workModel && job.workModel !== "Not specified" ? ` · ${job.workModel}` : ""}
-                        </p>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {job.title}
+                          </p>
+                          <p style={{ color: "var(--dim)", fontSize: "11px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {job.company}{job.location ? ` · ${job.location}` : ""}
+                            <span className="hidden sm:inline">{job.workModel && job.workModel !== "Not specified" ? ` · ${job.workModel}` : ""}</span>
+                          </p>
+                        </div>
+
+                        <span className="hidden sm:inline-flex" style={statusStyle(job.status)}>{job.status}</span>
+
+                        <div className="hidden sm:flex" style={{ alignItems: "center", gap: "6px", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                          {job.sourceUrl && (
+                            <a
+                              href={job.sourceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap" }}
+                            >
+                              Aplicar ↗
+                            </a>
+                          )}
+                          <Link
+                            href={`/jobs/${job.id}`}
+                            style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 600 }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Ver →
+                          </Link>
+                        </div>
                       </div>
 
-                      <span style={statusStyle(job.status)}>{job.status}</span>
-
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                        {job.sourceUrl && (
-                          <a
-                            href={job.sourceUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap" }}
+                      {/* Mobile-only: status + actions row */}
+                      <div className="mt-2 flex items-center gap-2 sm:hidden" onClick={(e) => e.stopPropagation()}>
+                        <span style={statusStyle(job.status)}>{job.status}</span>
+                        <div style={{ marginLeft: "auto", display: "flex", gap: "6px" }}>
+                          {job.sourceUrl && (
+                            <a
+                              href={job.sourceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap" }}
+                            >
+                              Aplicar ↗
+                            </a>
+                          )}
+                          <Link
+                            href={`/jobs/${job.id}`}
+                            style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 600 }}
                           >
-                            Aplicar ↗
-                          </a>
-                        )}
-                        <Link
-                          href={`/jobs/${job.id}`}
-                          style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 600 }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Ver →
-                        </Link>
+                            Ver →
+                          </Link>
+                        </div>
                       </div>
                     </div>
 
                     {/* Row expanded: strengths + gaps + tags */}
                     {isExpanded && (
                       <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)" }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           {job.strengths && job.strengths.length > 0 && (
                             <div>
                               <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", marginBottom: "6px" }}>Pontos fortes</p>
@@ -1696,92 +1739,91 @@ export function ArgusWorkbench({
             )}
           </div>
 
-          {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-          <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "12px", position: "sticky", top: "70px" }}>
+          {/* ── Sidebar (compact) ────────────────────────────────────────── */}
+          <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "10px", position: "sticky", top: "70px" }}>
 
-            {/* Pipeline counts */}
-            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
-              <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "12px" }}>
+            {/* Pipeline counts — compact */}
+            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px 16px" }}>
+              <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "8px" }}>
                 Pipeline
               </div>
               {DASHBOARD_STATUS_LANES.map((status) => {
                 const count = trackedJobs.filter((j) => j.status === status).length;
                 return (
-                  <div key={status} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "1px solid var(--border)" }}>
-                    <span style={{ color: "var(--muted)", fontSize: "12px" }}>{status}</span>
-                    <span style={{ color: count > 0 ? "var(--text)" : "var(--dim)", fontSize: "12px", fontWeight: count > 0 ? 700 : 400 }}>{count}</span>
+                  <div key={status} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid var(--border)" }}>
+                    <span style={{ color: "var(--muted)", fontSize: "11px" }}>{status}</span>
+                    <span style={{ color: count > 0 ? "var(--text)" : "var(--dim)", fontSize: "11px", fontWeight: count > 0 ? 700 : 400 }}>{count}</span>
                   </div>
                 );
               })}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", marginTop: "2px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "6px" }}>
                 <span style={{ color: "var(--dim)", fontSize: "11px" }}>Total</span>
-                <span style={{ color: "var(--gold)", fontSize: "12px", fontWeight: 700 }}>{trackedJobs.length}</span>
+                <span style={{ color: "var(--gold)", fontSize: "11px", fontWeight: 700 }}>{trackedJobs.length}</span>
               </div>
             </div>
 
-            {/* Active job preview */}
+            {/* Active job preview — compact */}
             {jobsPreviewJob && (
-              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
-                <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "12px" }}>
-                  Em Foco
-                </div>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px", marginBottom: "10px" }}>
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "10px", padding: "12px 16px" }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px", marginBottom: "8px" }}>
                   <div style={{ minWidth: 0 }}>
-                    <p style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, lineHeight: 1.3 }}>{jobsPreviewJob.title}</p>
-                    <p style={{ color: "var(--dim)", fontSize: "11px", marginTop: "3px" }}>{jobsPreviewJob.company}</p>
+                    <p style={{ color: "var(--dim)", fontSize: "9px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "4px" }}>
+                      Em Foco
+                    </p>
+                    <p style={{ color: "var(--text)", fontSize: "12px", fontWeight: 600, lineHeight: 1.3 }}>{jobsPreviewJob.title}</p>
+                    <p style={{ color: "var(--dim)", fontSize: "10px", marginTop: "2px" }}>{jobsPreviewJob.company}</p>
                   </div>
                   <span style={badgeStyle(jobsPreviewJob.score)}>{jobsPreviewJob.score}%</span>
                 </div>
 
                 {/* Score bar */}
-                <div style={{ height: "3px", background: "var(--border)", borderRadius: "999px", overflow: "hidden", marginBottom: "12px" }}>
+                <div style={{ height: "2px", background: "var(--border)", borderRadius: "999px", overflow: "hidden", marginBottom: "8px" }}>
                   <div style={{ height: "100%", width: `${Math.max(4, Math.min(jobsPreviewJob.score, 100))}%`, background: jobsPreviewJob.score >= 78 ? "#10b981" : jobsPreviewJob.score >= 60 ? "#f59e0b" : "#ef4444", borderRadius: "999px", transition: "width .3s" }} />
                 </div>
 
-                {/* Quick facts */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "12px" }}>
+                {/* Quick facts — inline chips */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "8px" }}>
                   {[
-                    { l: "Seniority", v: jobsPreviewJob.seniority },
-                    { l: "Modelo", v: jobsPreviewJob.workModel },
-                    { l: "Status", v: jobsPreviewJob.status },
-                    { l: "Contrato", v: jobsPreviewJob.employmentType },
-                  ].map((item) => (
-                    <div key={item.l} style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "6px", padding: "6px 8px" }}>
-                      <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>{item.l}</p>
-                      <p style={{ color: "var(--muted)", fontSize: "11px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "2px" }}>{item.v || "—"}</p>
-                    </div>
+                    jobsPreviewJob.seniority,
+                    jobsPreviewJob.workModel,
+                    jobsPreviewJob.status,
+                    jobsPreviewJob.employmentType,
+                  ].filter(Boolean).map((v) => (
+                    <span key={v} style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "4px", padding: "2px 7px", fontSize: "10px", color: "var(--muted)" }}>
+                      {v}
+                    </span>
                   ))}
                 </div>
 
-                {/* Match preview */}
+                {/* Match preview — max 2 items */}
                 {jobsPreviewAnalysis && (
-                  <>
-                    {jobsPreviewAnalysis.strengths.slice(0, 2).map((s) => (
-                      <div key={s} style={{ display: "flex", gap: "6px", marginBottom: "4px" }}>
-                        <span style={{ color: "#10b981", fontSize: "11px", flexShrink: 0, marginTop: "1px" }}>✓</span>
-                        <p style={{ color: "var(--muted)", fontSize: "11px", lineHeight: 1.5 }}>{s}</p>
+                  <div style={{ marginBottom: "8px" }}>
+                    {jobsPreviewAnalysis.strengths.slice(0, 1).map((s) => (
+                      <div key={s} style={{ display: "flex", gap: "5px", marginBottom: "3px" }}>
+                        <span style={{ color: "#10b981", fontSize: "10px", flexShrink: 0, marginTop: "1px" }}>✓</span>
+                        <p style={{ color: "var(--muted)", fontSize: "10px", lineHeight: 1.4 }}>{s}</p>
                       </div>
                     ))}
                     {jobsPreviewAnalysis.risks.slice(0, 1).map((r) => (
-                      <div key={r} style={{ display: "flex", gap: "6px", marginBottom: "4px" }}>
-                        <span style={{ color: "#f59e0b", fontSize: "11px", flexShrink: 0, marginTop: "1px" }}>⚠</span>
-                        <p style={{ color: "var(--dim)", fontSize: "11px", lineHeight: 1.5 }}>{r}</p>
+                      <div key={r} style={{ display: "flex", gap: "5px", marginBottom: "3px" }}>
+                        <span style={{ color: "#f59e0b", fontSize: "10px", flexShrink: 0, marginTop: "1px" }}>⚠</span>
+                        <p style={{ color: "var(--dim)", fontSize: "10px", lineHeight: 1.4 }}>{r}</p>
                       </div>
                     ))}
-                  </>
+                  </div>
                 )}
 
                 {/* Actions */}
-                <div style={{ display: "flex", gap: "8px", marginTop: "14px" }}>
+                <div style={{ display: "flex", gap: "6px" }}>
                   <Link
                     href={`/control-center?job=${jobsPreviewJob.id}`}
-                    style={{ flex: 1, background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "7px 0", textAlign: "center", fontSize: "12px", fontWeight: 700 }}
+                    style={{ flex: 1, background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "5px 0", textAlign: "center", fontSize: "11px", fontWeight: 700 }}
                   >
                     Operar no CC
                   </Link>
                   <Link
                     href={`/jobs/${jobsPreviewJob.id}`}
-                    style={{ flex: 1, background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "7px 0", textAlign: "center", fontSize: "12px", fontWeight: 600 }}
+                    style={{ flex: 1, background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "5px 0", textAlign: "center", fontSize: "11px", fontWeight: 600 }}
                   >
                     Detalhe
                   </Link>
