@@ -219,32 +219,15 @@ function trackedJobToParsedJob(job: TrackedJob): ParsedJob {
 }
 
 function badgeStyle(score: number): React.CSSProperties {
-  if (score >= 78) return { background: "#ecfdf5", color: "#047857", outline: "1px solid #a7f3d0" };
-  if (score >= 60) return { background: "#fffbeb", color: "#b45309", outline: "1px solid #fde68a" };
-  return { background: "#fff1f2", color: "#be123c", outline: "1px solid #fecdd3" };
+  if (score >= 78) return { background: "rgba(16,185,129,.15)", color: "#10b981", outline: "1px solid rgba(16,185,129,.3)", borderRadius: "999px", padding: "2px 10px", fontSize: "11px", fontWeight: 700 };
+  if (score >= 60) return { background: "rgba(245,158,11,.15)", color: "#f59e0b", outline: "1px solid rgba(245,158,11,.3)", borderRadius: "999px", padding: "2px 10px", fontSize: "11px", fontWeight: 700 };
+  return { background: "rgba(239,68,68,.15)", color: "#ef4444", outline: "1px solid rgba(239,68,68,.3)", borderRadius: "999px", padding: "2px 10px", fontSize: "11px", fontWeight: 700 };
 }
-
 
 function statusStyle(status: string): React.CSSProperties {
-  if (status === "Aplicada" || status === "Entrevista") return { background: "#ecfdf5", color: "#047857", outline: "1px solid #a7f3d0" };
-  if (status === "Aplicar" || status === "Pronta para revisar") return { background: "#eff6ff", color: "#1d4ed8", outline: "1px solid #bfdbfe" };
-  return { background: "#f1f5f9", color: "#334155", outline: "1px solid #cbd5e1" };
-}
-
-function laneTone(status: string) {
-  if (status === "Entrevista") {
-    return "border-emerald-200 bg-[linear-gradient(180deg,rgba(236,253,245,0.95),rgba(255,255,255,0.92))]";
-  }
-
-  if (status === "Aplicada" || status === "Aplicar") {
-    return "border-sky-200 bg-[linear-gradient(180deg,rgba(239,246,255,0.95),rgba(255,255,255,0.92))]";
-  }
-
-  if (status === "Pronta para revisar") {
-    return "border-violet-200 bg-[linear-gradient(180deg,rgba(245,243,255,0.95),rgba(255,255,255,0.92))]";
-  }
-
-  return "border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.92))]";
+  if (status === "Aplicada" || status === "Entrevista") return { background: "rgba(16,185,129,.15)", color: "#10b981", outline: "1px solid rgba(16,185,129,.3)", borderRadius: "999px", padding: "2px 8px", fontSize: "10px", fontWeight: 700 };
+  if (status === "Aplicar" || status === "Pronta para revisar") return { background: "rgba(59,130,246,.15)", color: "#3b82f6", outline: "1px solid rgba(59,130,246,.3)", borderRadius: "999px", padding: "2px 8px", fontSize: "10px", fontWeight: 700 };
+  return { background: "rgba(100,116,139,.15)", color: "#94a3b8", outline: "1px solid rgba(100,116,139,.3)", borderRadius: "999px", padding: "2px 8px", fontSize: "10px", fontWeight: 700 };
 }
 
 function nextActionLabel(score: number, status?: string | null) {
@@ -302,12 +285,6 @@ function formatActivityLabel(value?: string | null) {
   }).format(date);
 }
 
-function trackedJobLastTouch(job: TrackedJob) {
-  return formatActivityLabel(
-    job.updatedAt ?? job.history[job.history.length - 1]?.changedAt ?? job.createdAt,
-  );
-}
-
 export function ArgusWorkbench({
   profile,
   sources,
@@ -361,6 +338,7 @@ export function ArgusWorkbench({
   const [jobsSeniorityFilter, setJobsSeniorityFilter] = useState("all");
   const [jobsMinimumScore, setJobsMinimumScore] = useState("all");
   const [jobsSort, setJobsSort] = useState<JobsSort>("updated");
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<
     "checking" | "connected" | "offline" | "error"
   >("checking");
@@ -1312,361 +1290,110 @@ export function ArgusWorkbench({
 
   // ─── RENDER ──────────────────────────────────────────────────────────────────
 
-  // Sync status pill
-  const syncPill =
-    syncState === "connected"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : syncState === "checking"
-        ? "border-sky-200 bg-sky-50 text-sky-700"
-        : "border-amber-200 bg-amber-50 text-amber-700";
+  const syncDotColor =
+    syncState === "connected" ? "#10b981" : syncState === "checking" ? "#3b82f6" : "#f59e0b";
 
-  const syncDot =
-    syncState === "connected"
-      ? "bg-emerald-500"
-      : syncState === "checking"
-        ? "bg-sky-500 animate-pulse"
-        : "bg-amber-500";
-
-  // ─── JOBS MODE ───────────────────────────────────────────────────────────────
-  if (isJobsPage) {
+  // ─── INTAKE AREA (shared between CC welcome + main workbench) ─────────────────
+  function renderIntakeArea() {
     return (
-      <div className="space-y-5">
-        {/* Filters + sync row */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Radar filter pills */}
-          {(["all", "crawler", "manual", "priority"] as RadarFilter[]).map((f) => (
+      <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden" }}>
+        <div style={{ display: "flex", borderBottom: "1px solid var(--border)" }}>
+          {(["discovery", "manual"] as WorkspaceMode[]).map((mode) => (
             <button
-              key={f}
+              key={mode}
               type="button"
-              onClick={() => setRadarFilter(f)}
-              className={[
-                "rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
-                radarFilter === f
-                  ? "border-slate-800 bg-slate-950 text-white"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300",
-              ].join(" ")}
+              onClick={() => setWorkspaceMode(mode)}
+              style={{
+                flex: 1, padding: "12px", fontSize: "12px", fontWeight: 600, cursor: "pointer",
+                background: "none", border: "none",
+                borderBottom: workspaceMode === mode ? "2px solid var(--gold)" : "2px solid transparent",
+                color: workspaceMode === mode ? "var(--gold)" : "var(--dim)",
+              }}
             >
-              {f === "all" ? t("jobs.all") : f === "crawler" ? t("jobs.filterCrawler") : f === "manual" ? t("jobs.filterManual") : "≥ 70%"}
+              {mode === "discovery" ? t("cc.discoveryReal") : t("cc.manualIntake")}
             </button>
           ))}
-
-          {/* Seniority filter */}
-          <select
-            value={jobsSeniorityFilter}
-            onChange={(e) => setJobsSeniorityFilter(e.target.value)}
-            className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-[12px] font-medium text-slate-700 outline-none"
-          >
-            <option value="all">Senioridade</option>
-            {[...new Set(trackedJobs.map((j) => j.seniority).filter(Boolean))].map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-
-          <div className="ml-auto flex items-center gap-2">
-            {/* Sync pill integrado */}
-            <div className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${syncPill}`}>
-              <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${syncDot}`} />
-              <span className="hidden sm:inline">{syncMessage}</span>
-            </div>
-            {/* Sort */}
-            <select
-              value={jobsSort}
-              onChange={(e) => setJobsSort(e.target.value as JobsSort)}
-              className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-[12px] font-medium text-slate-700 outline-none"
-            >
-              <option value="updated">Recentes</option>
-              <option value="score">Score</option>
-              <option value="company">Empresa</option>
-            </select>
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px] font-semibold text-slate-500">
-              {jobsFilteredTrackedJobs.length}
-            </span>
-          </div>
         </div>
-
-        {/* Spotlight */}
-        {jobsSpotlight.length > 0 && (
-          <div>
-            <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Spotlight
-            </p>
-            <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible" style={{WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
-              {jobsSpotlight.map((job, i) => (
-                <button
-                  key={`spot-${job.id}`}
-                  type="button"
-                  onClick={() => handleInspectTrackedJob(job)}
-                  className={[
-                    "min-w-[72vw] max-w-[280px] flex-shrink-0 rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 sm:min-w-0 sm:max-w-none",
-                    activeTrackedJobId === job.id
-                      ? "border-sky-300 bg-gradient-to-b from-sky-50 to-white shadow-[0_12px_32px_rgba(14,165,233,0.14)]"
-                      : "border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)] hover:border-slate-300",
-                  ].join(" ")}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                      #{i + 1}
-                    </span>
-                    <span style={badgeStyle(job.score)} className="rounded-full px-2.5 py-0.5 text-[11px] font-bold">
-                      {job.score}%
-                    </span>
-                  </div>
-                  <p className="mt-2.5 text-[14px] font-semibold leading-snug text-slate-950">{job.title}</p>
-                  <p className="mt-1 text-[12px] text-slate-500">{job.company} · {job.location}</p>
-                  <p className="mt-3 text-[11px] font-semibold text-slate-400">
-                    {nextActionLabel(job.score, job.status)}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Main grid — list + preview */}
-        <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[1fr_360px]">
-          {/* List */}
-          <div className="rounded-[24px] border border-slate-200/80 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)] overflow-x-visible">
-            {/* List header */}
-            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-              <p className="text-[12px] font-semibold text-slate-600">
-                {radarQuery.trim() ? `Busca: "${radarQuery}"` : "Todos os resultados"}
-              </p>
-              <input
-                value={radarQuery}
-                onChange={(e) => setRadarQuery(e.target.value)}
-                placeholder="Filtrar lista..."
-                className="h-7 w-full max-w-[180px] rounded-full border border-slate-200 bg-slate-50 px-3 text-[12px] text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
-              />
-            </div>
-
-            {/* Rows */}
-            <div className="divide-y divide-slate-100">
-              {jobsFilteredTrackedJobs.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 px-5 py-12 text-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-[18px]">
-                    ◎
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-slate-600">
-                      {radarFilter !== "all" || jobsSeniorityFilter !== "all"
-                        ? "Nenhuma vaga para esses filtros"
-                        : "Radar vazio"}
-                    </p>
-                    <p className="mt-1 text-[12px] text-slate-400">
-                      {radarFilter !== "all" || jobsSeniorityFilter !== "all"
-                        ? "Tente remover os filtros ou reset para ver todos os resultados."
-                        : "Adicione vagas pelo Control Center para começar o radar."}
-                    </p>
-                  </div>
-                  {radarFilter !== "all" || jobsSeniorityFilter !== "all" ? (
-                    <button
-                      type="button"
-                      onClick={() => { setRadarFilter("all"); setJobsSeniorityFilter("all"); }}
-                      className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                      Limpar filtros
-                    </button>
-                  ) : (
-                    <Link
-                      href="/control-center"
-                      className="rounded-full border border-slate-900 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50"
-                    >
-                      Ir para Control Center
-                    </Link>
-                  )}
-                </div>
-              ) : (
-                jobsFilteredTrackedJobs.map((job) => (
-                  <div
-                    key={job.id}
-                    className={[
-                      "border-b border-slate-100 px-4 py-4 last:border-0 transition",
-                      activeTrackedJobId === job.id ? "bg-sky-50" : "hover:bg-slate-50/60",
-                    ].join(" ")}
+        <div style={{ padding: "20px" }}>
+          {workspaceMode === "discovery" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {(Object.entries(DISCOVERY_SOURCES) as [DiscoverySourceId, (typeof DISCOVERY_SOURCES)[DiscoverySourceId]][]).map(([id, src]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setSelectedDiscoverySource(id)}
+                    style={{
+                      borderRadius: "999px",
+                      border: selectedDiscoverySource === id ? "1px solid var(--gold)" : "1px solid var(--border)",
+                      background: selectedDiscoverySource === id ? "rgba(245,158,11,.12)" : "var(--surf)",
+                      color: selectedDiscoverySource === id ? "var(--gold)" : "var(--muted)",
+                      padding: "4px 12px", fontSize: "12px", fontWeight: 600, cursor: "pointer",
+                    }}
                   >
-                    {/* Linha 1 — identidade + score */}
-                    <div className="flex items-start gap-3">
-                      <span style={badgeStyle(job.score)} className="mt-0.5 shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
-                        {job.score}%
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <Link
-                          href={`/jobs/${job.id}`}
-                          onClick={() => { setActiveTrackedJobId(job.id); handleInspectTrackedJob(job); }}
-                          className="block truncate text-[13px] font-semibold text-slate-950 hover:text-sky-700"
-                        >
-                          {job.title}
-                        </Link>
-                        <p className="mt-0.5 truncate text-[12px] text-slate-500">
-                          {job.company} · {job.location}
-                          {job.workModel && job.workModel !== "Not specified" ? ` · ${job.workModel}` : ""}
-                        </p>
-                      </div>
-                      <span style={statusStyle(job.status)} className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">
-                        {job.status}
-                      </span>
-                    </div>
-
-                    {/* Linha 2 — strengths + ação */}
-                    <div className="mt-2.5 flex items-center justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        {job.strengths && job.strengths.length > 0 ? (
-                          <p className="truncate text-[11px] text-emerald-700">
-                            ✓ {job.strengths[0]}
-                            {job.strengths[1] ? ` · ${job.strengths[1]}` : ""}
-                          </p>
-                        ) : (
-                          <p className="text-[11px] text-slate-400">{trackedJobLastTouch(job)}</p>
-                        )}
-                        {job.risks && job.risks.length > 0 && (
-                          <p className="truncate text-[11px] text-amber-700">⚠ {job.risks[0]}</p>
-                        )}
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        {job.sourceUrl ? (
-                          <a
-                            href={job.sourceUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
-                          >
-                            Aplicar ↗
-                          </a>
-                        ) : (
-                          <span className="rounded-full border border-slate-100 px-2.5 py-0.5 text-[10px] text-slate-400">
-                            sem link
-                          </span>
-                        )}
-                        <Link
-                          href={`/jobs/${job.id}`}
-                          onClick={() => { setActiveTrackedJobId(job.id); handleInspectTrackedJob(job); }}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
-                        >
-                          Ver →
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Preview panel — hidden em mobile */}
-          {jobsPreviewJob ? (
-            <div className="hidden xl:block sticky top-[68px] space-y-3">
-              {/* Job header */}
-              <div className="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      Em foco
-                    </p>
-                    <h2 className="mt-1 text-[16px] font-semibold leading-snug text-slate-950">
-                      {jobsPreviewJob.title}
-                    </h2>
-                    <p className="mt-0.5 text-[12px] text-slate-500">
-                      {jobsPreviewJob.company} · {jobsPreviewJob.location}
-                    </p>
-                  </div>
-                  <span style={badgeStyle(jobsPreviewJob.score)} className="shrink-0 rounded-full px-3 py-1 text-[12px] font-bold">
-                    {jobsPreviewJob.score}%
-                  </span>
-                </div>
-
-                {/* Score bar */}
-                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-sky-500 transition-all"
-                    style={{ width: `${Math.max(8, Math.min(jobsPreviewJob.score, 100))}%` }}
-                  />
-                </div>
-
-                {/* Quick facts */}
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {[
-                    { l: "Senioridade", v: jobsPreviewJob.seniority },
-                    { l: "Modelo", v: jobsPreviewJob.workModel },
-                    { l: "Contrato", v: jobsPreviewJob.employmentType },
-                    { l: "Status", v: jobsPreviewJob.status },
-                  ].map((item) => (
-                    <div key={item.l} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{item.l}</p>
-                      <p className="mt-0.5 text-[12px] font-semibold text-slate-800 truncate">{item.v || "—"}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Summary */}
-                {jobsPreviewJob.summary && (
-                  <p className="mt-4 text-[12px] leading-6 text-slate-500 line-clamp-3">
-                    {jobsPreviewJob.summary}
-                  </p>
-                )}
-
-                {/* Actions */}
-                <div className="mt-4 flex gap-2">
-                  <Link
-                    href={`/control-center?job=${jobsPreviewJob.id}`}
-                    className="flex-1 rounded-full border border-slate-900 bg-white py-2 text-center text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50"
-                  >
-                    Operar no CC
-                  </Link>
-                  <Link
-                    href={`/jobs/${jobsPreviewJob.id}`}
-                    className="flex-1 rounded-full border border-slate-200 bg-white py-2 text-center text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50"
-                  >
-                    Ver detalhe
-                  </Link>
-                </div>
+                    {src.label}
+                  </button>
+                ))}
               </div>
-
-              {/* Match preview */}
-              {jobsPreviewAnalysis && (
-                <div className="rounded-[24px] border border-slate-200/80 bg-white p-5 shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Match</p>
-                  <p className="mt-1.5 text-[14px] font-semibold text-slate-950">{jobsPreviewAnalysis.verdict}</p>
-                  {jobsPreviewAnalysis.strengths.length > 0 && (
-                    <div className="mt-3 space-y-1.5">
-                      {jobsPreviewAnalysis.strengths.slice(0, 3).map((s) => (
-                        <div key={s} className="flex items-start gap-2">
-                          <span className="mt-0.5 shrink-0 text-emerald-500">✓</span>
-                          <p className="text-[12px] leading-5 text-slate-600">{s}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {jobsPreviewAnalysis.risks.length > 0 && (
-                    <div className="mt-3 space-y-1.5">
-                      {jobsPreviewAnalysis.risks.slice(0, 2).map((r) => (
-                        <div key={r} className="flex items-start gap-2">
-                          <span className="mt-0.5 shrink-0 text-amber-500">⚠</span>
-                          <p className="text-[12px] leading-5 text-slate-500">{r}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              <p style={{ color: "var(--dim)", fontSize: "12px", lineHeight: 1.5 }}>{activeDiscoverySourceConfig.description}</p>
+              <button
+                type="button"
+                onClick={() => void handleRunSourceDiscovery()}
+                disabled={isDiscovering}
+                style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "8px 20px", fontSize: "13px", fontWeight: 700, cursor: "pointer", border: "none", opacity: isDiscovering ? 0.5 : 1, alignSelf: "flex-start" }}
+              >
+                {isDiscovering ? t("cc.searching") : activeDiscoverySourceConfig.buttonLabel}
+              </button>
+              {discoveryError && (
+                <p style={{ background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.25)", borderRadius: "8px", padding: "10px 14px", fontSize: "12px", color: "#ef4444" }}>
+                  {discoveryError}
+                </p>
+              )}
+              {filteredDiscoveredJobs.length > 0 && (
+                <div style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "8px", overflow: "hidden" }}>
+                  {filteredDiscoveredJobs.map((job) => (
+                    <button
+                      key={job.listing.externalId}
+                      type="button"
+                      onClick={() => handleInspectDiscovery(job)}
+                      style={{
+                        display: "flex", width: "100%", alignItems: "center", gap: "10px",
+                        padding: "10px 14px", textAlign: "left", cursor: "pointer", border: "none",
+                        borderBottom: "1px solid var(--border)",
+                        background: activeDiscoveryId === job.listing.externalId ? "rgba(245,158,11,.08)" : "transparent",
+                      }}
+                    >
+                      <span style={badgeStyle(job.analysis.score)}>{job.analysis.score}%</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.listing.title}</p>
+                        <p style={{ color: "var(--dim)", fontSize: "11px" }}>{job.listing.company} · {job.listing.location}</p>
+                        {job.analysis.strengths[0] && (
+                          <p style={{ color: "#10b981", fontSize: "10px" }}>✓ {job.analysis.strengths[0]}</p>
+                        )}
+                      </div>
+                      <span style={{ color: "var(--gold)", fontSize: "10px" }}>→</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
           ) : (
-            <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/60 p-7 text-center">
-              <p className="text-[13px] font-medium text-slate-500">
-                {jobsFilteredTrackedJobs.length === 0
-                  ? t("sync.noJobs")
-                  : t("jobs.selectJob")}
-              </p>
-              {jobsFilteredTrackedJobs.length === 0 && (
-                <div className="mt-4 flex justify-center gap-2">
-                  <Link
-                    href="/control-center"
-                    className="rounded-full border border-slate-900 bg-white px-4 py-2 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50"
-                  >
-                    Adicionar vaga
-                  </Link>
-                </div>
-              )}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <p style={{ color: "var(--dim)", fontSize: "12px", lineHeight: 1.5 }}>Cole o texto da vaga (mesmo desorganizado). O Argus estrutura, calcula match e salva no radar.</p>
+              <textarea
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                style={{ width: "100%", minHeight: "180px", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "8px", padding: "12px 14px", fontSize: "13px", lineHeight: 1.6, color: "var(--text)", outline: "none", resize: "vertical" }}
+                placeholder="Cole aqui a vaga inteira, mesmo desorganizada."
+              />
+              <button
+                type="button"
+                onClick={handleProcessDescription}
+                disabled={isPending}
+                style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "8px 20px", fontSize: "13px", fontWeight: 700, cursor: "pointer", border: "none", opacity: isPending ? 0.5 : 1, alignSelf: "flex-start" }}
+              >
+                {isPending ? t("cc.processing") : t("cc.structureJob")}
+              </button>
             </div>
           )}
         </div>
@@ -1674,249 +1401,639 @@ export function ArgusWorkbench({
     );
   }
 
-  // ─── DASHBOARD MODE ───────────────────────────────────────────────────────────
-  if (isDashboardPage) {
-    // Dashboard sem vagas reais — mostrar CTA de onboarding
-    if (!hasRealJobs && radarLoaded) {
-      return (
-        <div className="space-y-5">
-          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium ${syncPill}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${syncDot}`} />
-            {syncMessage}
+  // ─── JOBS MODE ───────────────────────────────────────────────────────────────
+  if (isJobsPage) {
+    const filterLabels: Record<RadarFilter, string> = {
+      all: "Todas",
+      crawler: "Crawler",
+      manual: "Manual",
+      priority: "≥ 70%",
+    };
+
+    return (
+      <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "24px 20px" }}>
+
+        {/* ── Filter bar ──────────────────────────────────────────────────────── */}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", marginBottom: "20px" }}>
+          {(["all", "crawler", "manual", "priority"] as RadarFilter[]).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setRadarFilter(f)}
+              style={{
+                borderRadius: "999px",
+                border: radarFilter === f ? "1px solid var(--gold)" : "1px solid var(--border)",
+                background: radarFilter === f ? "rgba(245,158,11,.12)" : "var(--surf)",
+                color: radarFilter === f ? "var(--gold)" : "var(--muted)",
+                padding: "5px 14px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all .15s",
+              }}
+            >
+              {filterLabels[f]}
+            </button>
+          ))}
+
+          <select
+            value={jobsSeniorityFilter}
+            onChange={(e) => setJobsSeniorityFilter(e.target.value)}
+            style={{
+              borderRadius: "999px",
+              border: "1px solid var(--border)",
+              background: "var(--surf)",
+              color: "var(--muted)",
+              padding: "5px 14px",
+              fontSize: "12px",
+              outline: "none",
+              cursor: "pointer",
+            }}
+          >
+            <option value="all">Senioridade</option>
+            {[...new Set(trackedJobs.map((j) => j.seniority).filter(Boolean))].map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            {/* Sync indicator */}
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "999px", padding: "4px 10px", fontSize: "11px", color: "var(--dim)" }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: syncDotColor, flexShrink: 0 }} />
+              <span>{syncMessage}</span>
+            </div>
+
+            {/* Sort */}
+            <select
+              value={jobsSort}
+              onChange={(e) => setJobsSort(e.target.value as JobsSort)}
+              style={{
+                borderRadius: "999px",
+                border: "1px solid var(--border)",
+                background: "var(--surf)",
+                color: "var(--muted)",
+                padding: "5px 14px",
+                fontSize: "12px",
+                outline: "none",
+                cursor: "pointer",
+              }}
+            >
+              <option value="updated">Recentes</option>
+              <option value="score">Score</option>
+              <option value="company">Empresa</option>
+            </select>
+
+            {/* Search */}
+            <input
+              value={radarQuery}
+              onChange={(e) => setRadarQuery(e.target.value)}
+              placeholder="Filtrar..."
+              style={{
+                background: "var(--surf)",
+                border: "1px solid var(--border)",
+                borderRadius: "999px",
+                padding: "5px 14px",
+                fontSize: "12px",
+                color: "var(--text)",
+                outline: "none",
+                width: "150px",
+              }}
+            />
+
+            {/* Count */}
+            <span style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "999px", padding: "4px 12px", fontSize: "12px", fontWeight: 600, color: "var(--dim)" }}>
+              {jobsFilteredTrackedJobs.length}
+            </span>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="col-span-full rounded-[24px] border border-dashed border-slate-200 bg-white p-8 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-xl">
-                ◎
+        </div>
+
+        {/* ── Grid: list + sidebar ────────────────────────────────────────────── */}
+        <div className="flex flex-col gap-4 xl:grid" style={{ gridTemplateColumns: "1fr 272px", alignItems: "start" }}>
+
+          {/* Job list */}
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden" }}>
+
+            {/* Spotlight strip */}
+            {jobsSpotlight.length > 0 && (
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)" }}>
+                <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>
+                  Spotlight
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                  {jobsSpotlight.map((job, i) => (
+                    <button
+                      key={`spot-${job.id}`}
+                      type="button"
+                      onClick={() => { setActiveTrackedJobId(job.id); handleInspectTrackedJob(job); }}
+                      style={{
+                        background: activeTrackedJobId === job.id ? "rgba(245,158,11,.08)" : "var(--surf)",
+                        border: activeTrackedJobId === job.id ? "1px solid var(--gold)" : "1px solid var(--border)",
+                        borderRadius: "8px",
+                        padding: "12px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        transition: "all .15s",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
+                        <span style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700 }}>#{i + 1}</span>
+                        <span style={badgeStyle(job.score)}>{job.score}%</span>
+                      </div>
+                      <p style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, lineHeight: 1.3, marginBottom: "4px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>{job.title}</p>
+                      <p style={{ color: "var(--dim)", fontSize: "11px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{job.company}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <p className="mt-4 text-[15px] font-semibold text-slate-900">Pipeline vazio</p>
-              <p className="mt-1.5 text-[13px] text-slate-500">
-                Adicione vagas pelo Control Center para ver o funil, gargalos e prioridades aqui.
-              </p>
-              <div className="mt-5 flex justify-center gap-2.5">
-                <Link href="/control-center" className="rounded-full border border-slate-900 bg-white px-4 py-2 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50">
-                  Ir para Control Center
-                </Link>
+            )}
+
+            {/* Empty state */}
+            {jobsFilteredTrackedJobs.length === 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "48px 20px", textAlign: "center" }}>
+                <div style={{ width: "40px", height: "40px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surf)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", color: "var(--dim)" }}>◎</div>
+                <div>
+                  <p style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, marginBottom: "4px" }}>
+                    {radarFilter !== "all" || jobsSeniorityFilter !== "all" ? "Nenhuma vaga para esses filtros" : "Radar vazio"}
+                  </p>
+                  <p style={{ color: "var(--dim)", fontSize: "12px" }}>
+                    {radarFilter !== "all" || jobsSeniorityFilter !== "all"
+                      ? "Tente remover os filtros para ver todos os resultados."
+                      : "Adicione vagas pelo Control Center para começar."}
+                  </p>
+                </div>
+                {radarFilter !== "all" || jobsSeniorityFilter !== "all" ? (
+                  <button
+                    type="button"
+                    onClick={() => { setRadarFilter("all"); setJobsSeniorityFilter("all"); }}
+                    style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "999px", padding: "6px 16px", fontSize: "12px", fontWeight: 600, color: "var(--muted)", cursor: "pointer" }}
+                  >
+                    Limpar filtros
+                  </button>
+                ) : (
+                  <Link
+                    href="/control-center"
+                    style={{ background: "var(--gold)", color: "#020810", borderRadius: "999px", padding: "6px 16px", fontSize: "12px", fontWeight: 700 }}
+                  >
+                    Adicionar vaga
+                  </Link>
+                )}
+              </div>
+            ) : (
+              /* Job rows */
+              jobsFilteredTrackedJobs.map((job) => {
+                const isActive = activeTrackedJobId === job.id;
+                const isExpanded = expandedJobId === job.id;
+                return (
+                  <div
+                    key={job.id}
+                    style={{
+                      borderBottom: "1px solid var(--border)",
+                      padding: "14px 20px",
+                      background: isActive ? "rgba(245,158,11,.05)" : "transparent",
+                      transition: "background .15s",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      setActiveTrackedJobId(job.id);
+                      handleInspectTrackedJob(job);
+                      setExpandedJobId(isExpanded ? null : job.id);
+                    }}
+                  >
+                    {/* Row collapsed: score + title + company + status + apply */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={badgeStyle(job.score)}>{job.score}%</span>
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {job.title}
+                        </p>
+                        <p style={{ color: "var(--dim)", fontSize: "11px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {job.company}{job.location ? ` · ${job.location}` : ""}
+                          {job.workModel && job.workModel !== "Not specified" ? ` · ${job.workModel}` : ""}
+                        </p>
+                      </div>
+
+                      <span style={statusStyle(job.status)}>{job.status}</span>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                        {job.sourceUrl && (
+                          <a
+                            href={job.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap" }}
+                          >
+                            Aplicar ↗
+                          </a>
+                        )}
+                        <Link
+                          href={`/jobs/${job.id}`}
+                          style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", fontWeight: 600 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Ver →
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Row expanded: strengths + gaps + tags */}
+                    {isExpanded && (
+                      <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                          {job.strengths && job.strengths.length > 0 && (
+                            <div>
+                              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", marginBottom: "6px" }}>Pontos fortes</p>
+                              {job.strengths.slice(0, 3).map((s) => (
+                                <div key={s} style={{ display: "flex", alignItems: "flex-start", gap: "6px", marginBottom: "4px" }}>
+                                  <span style={{ color: "#10b981", fontSize: "11px", marginTop: "1px" }}>✓</span>
+                                  <p style={{ color: "var(--muted)", fontSize: "12px", lineHeight: 1.5 }}>{s}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {job.risks && job.risks.length > 0 && (
+                            <div>
+                              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.16em", marginBottom: "6px" }}>Gaps / Riscos</p>
+                              {job.risks.slice(0, 3).map((r) => (
+                                <div key={r} style={{ display: "flex", alignItems: "flex-start", gap: "6px", marginBottom: "4px" }}>
+                                  <span style={{ color: "#f59e0b", fontSize: "11px", marginTop: "1px" }}>⚠</span>
+                                  <p style={{ color: "var(--muted)", fontSize: "12px", lineHeight: 1.5 }}>{r}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {job.skills && job.skills.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginTop: "10px" }}>
+                            {job.skills.slice(0, 8).map((skill) => (
+                              <span key={skill} style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--dim)", borderRadius: "4px", padding: "2px 7px", fontSize: "11px" }}>
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div style={{ marginTop: "12px", display: "flex", gap: "8px" }}>
+                          <Link
+                            href={`/control-center?job=${job.id}`}
+                            style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "5px 14px", fontSize: "12px", fontWeight: 600 }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Operar no CC
+                          </Link>
+                          <Link
+                            href={`/jobs/${job.id}`}
+                            style={{ color: "var(--dim)", fontSize: "12px", padding: "5px 0" }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Detalhe completo →
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* ── Sidebar ─────────────────────────────────────────────────────── */}
+          <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "12px", position: "sticky", top: "70px" }}>
+
+            {/* Pipeline counts */}
+            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
+              <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "12px" }}>
+                Pipeline
+              </div>
+              {DASHBOARD_STATUS_LANES.map((status) => {
+                const count = trackedJobs.filter((j) => j.status === status).length;
+                return (
+                  <div key={status} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderBottom: "1px solid var(--border)" }}>
+                    <span style={{ color: "var(--muted)", fontSize: "12px" }}>{status}</span>
+                    <span style={{ color: count > 0 ? "var(--text)" : "var(--dim)", fontSize: "12px", fontWeight: count > 0 ? 700 : 400 }}>{count}</span>
+                  </div>
+                );
+              })}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", marginTop: "2px" }}>
+                <span style={{ color: "var(--dim)", fontSize: "11px" }}>Total</span>
+                <span style={{ color: "var(--gold)", fontSize: "12px", fontWeight: 700 }}>{trackedJobs.length}</span>
               </div>
             </div>
+
+            {/* Active job preview */}
+            {jobsPreviewJob && (
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
+                <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "12px" }}>
+                  Em Foco
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px", marginBottom: "10px" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, lineHeight: 1.3 }}>{jobsPreviewJob.title}</p>
+                    <p style={{ color: "var(--dim)", fontSize: "11px", marginTop: "3px" }}>{jobsPreviewJob.company}</p>
+                  </div>
+                  <span style={badgeStyle(jobsPreviewJob.score)}>{jobsPreviewJob.score}%</span>
+                </div>
+
+                {/* Score bar */}
+                <div style={{ height: "3px", background: "var(--border)", borderRadius: "999px", overflow: "hidden", marginBottom: "12px" }}>
+                  <div style={{ height: "100%", width: `${Math.max(4, Math.min(jobsPreviewJob.score, 100))}%`, background: jobsPreviewJob.score >= 78 ? "#10b981" : jobsPreviewJob.score >= 60 ? "#f59e0b" : "#ef4444", borderRadius: "999px", transition: "width .3s" }} />
+                </div>
+
+                {/* Quick facts */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "12px" }}>
+                  {[
+                    { l: "Seniority", v: jobsPreviewJob.seniority },
+                    { l: "Modelo", v: jobsPreviewJob.workModel },
+                    { l: "Status", v: jobsPreviewJob.status },
+                    { l: "Contrato", v: jobsPreviewJob.employmentType },
+                  ].map((item) => (
+                    <div key={item.l} style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "6px", padding: "6px 8px" }}>
+                      <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>{item.l}</p>
+                      <p style={{ color: "var(--muted)", fontSize: "11px", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "2px" }}>{item.v || "—"}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Match preview */}
+                {jobsPreviewAnalysis && (
+                  <>
+                    {jobsPreviewAnalysis.strengths.slice(0, 2).map((s) => (
+                      <div key={s} style={{ display: "flex", gap: "6px", marginBottom: "4px" }}>
+                        <span style={{ color: "#10b981", fontSize: "11px", flexShrink: 0, marginTop: "1px" }}>✓</span>
+                        <p style={{ color: "var(--muted)", fontSize: "11px", lineHeight: 1.5 }}>{s}</p>
+                      </div>
+                    ))}
+                    {jobsPreviewAnalysis.risks.slice(0, 1).map((r) => (
+                      <div key={r} style={{ display: "flex", gap: "6px", marginBottom: "4px" }}>
+                        <span style={{ color: "#f59e0b", fontSize: "11px", flexShrink: 0, marginTop: "1px" }}>⚠</span>
+                        <p style={{ color: "var(--dim)", fontSize: "11px", lineHeight: 1.5 }}>{r}</p>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* Actions */}
+                <div style={{ display: "flex", gap: "8px", marginTop: "14px" }}>
+                  <Link
+                    href={`/control-center?job=${jobsPreviewJob.id}`}
+                    style={{ flex: 1, background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "7px 0", textAlign: "center", fontSize: "12px", fontWeight: 700 }}
+                  >
+                    Operar no CC
+                  </Link>
+                  <Link
+                    href={`/jobs/${jobsPreviewJob.id}`}
+                    style={{ flex: 1, background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "7px 0", textAlign: "center", fontSize: "12px", fontWeight: 600 }}
+                  >
+                    Detalhe
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── DASHBOARD MODE ───────────────────────────────────────────────────────────
+  if (isDashboardPage) {
+    // Empty state
+    if (!hasRealJobs && radarLoaded) {
+      return (
+        <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "24px 20px" }}>
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "48px 20px", textAlign: "center" }}>
+            <div style={{ width: "48px", height: "48px", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surf)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", color: "var(--dim)", margin: "0 auto 16px" }}>◎</div>
+            <p style={{ color: "var(--text)", fontSize: "15px", fontWeight: 600, marginBottom: "6px" }}>Pipeline vazio</p>
+            <p style={{ color: "var(--dim)", fontSize: "13px", marginBottom: "20px" }}>Adicione vagas pelo Control Center para ver o funil, gargalos e prioridades aqui.</p>
+            <Link href="/control-center" style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "8px 20px", fontSize: "12px", fontWeight: 700 }}>
+              Ir para Control Center
+            </Link>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="space-y-5">
-        {/* Sync */}
-        <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium ${syncPill}`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${syncDot}`} />
-          {syncMessage}
-        </div>
+      <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "24px 20px" }}>
 
-        {/* KPIs row */}
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        {/* ── KPI cards ───────────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" style={{ marginBottom: "20px" }}>
           {[
-            { label: t("dashboard.totalRadar"), value: trackedJobs.length, accent: false },
-            { label: t("dashboard.highPriority"), value: priorityJobs, accent: true },
-            { label: t("dashboard.inInterview"), value: dashboardInterviewCount, emerald: true },
-            { label: t("dashboard.execQueue"), value: dashboardExecutionCount, amber: true },
+            { label: t("dashboard.totalRadar"), value: trackedJobs.length, color: "var(--text)", accent: null },
+            { label: t("dashboard.highPriority"), value: priorityJobs, color: "#3b82f6", accent: "rgba(59,130,246,.08)" },
+            { label: t("dashboard.inInterview"), value: dashboardInterviewCount, color: "#10b981", accent: "rgba(16,185,129,.08)" },
+            { label: t("dashboard.execQueue"), value: dashboardExecutionCount, color: "#f59e0b", accent: "rgba(245,158,11,.08)" },
           ].map((kpi) => (
             <div
               key={kpi.label}
-              className={[
-                "rounded-2xl border p-4",
-                kpi.emerald ? "border-emerald-200/60 bg-gradient-to-b from-emerald-50 to-white" :
-                kpi.amber ? "border-amber-200/60 bg-gradient-to-b from-amber-50 to-white" :
-                kpi.accent ? "border-sky-200/60 bg-gradient-to-b from-sky-50 to-white" :
-                "border-slate-200/60 bg-white",
-              ].join(" ")}
+              style={{
+                background: kpi.accent ?? "var(--card)",
+                border: `1px solid ${kpi.accent ? kpi.color.replace(")", ", .25)").replace("rgb", "rgba") : "var(--border)"}`,
+                borderRadius: "10px",
+                padding: "16px 18px",
+              }}
             >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{kpi.label}</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{kpi.value}</p>
+              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "8px" }}>{kpi.label}</p>
+              <p style={{ color: kpi.color, fontSize: "32px", fontWeight: 700, lineHeight: 1, letterSpacing: "-0.02em" }}>{kpi.value}</p>
             </div>
           ))}
         </div>
 
-        {/* Kanban board */}
-        <div className="flex gap-3 overflow-x-auto pb-3 sm:grid sm:grid-cols-2 sm:overflow-visible xl:grid-cols-4" style={{WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
-          {dashboardLanes.map((lane) => (
-            <section
-              key={lane.status}
-              className={`min-w-[76vw] max-w-[300px] flex-shrink-0 rounded-2xl border p-4 sm:min-w-0 sm:max-w-none ${laneTone(lane.status)}`}
-            >
-              {/* Lane header */}
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  {lane.status}
-                </p>
-                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[12px] font-bold text-slate-700">
-                  {lane.count}
-                </span>
-              </div>
+        {/* ── Main: top spotlight + pipeline ──────────────────────────────────── */}
+        <div className="flex flex-col gap-4 xl:grid" style={{ gridTemplateColumns: "1fr 272px", alignItems: "start" }}>
 
-              {/* Cards */}
-              <div className="max-h-[480px] space-y-2 overflow-y-auto">
-                {lane.jobs.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-center text-[12px] text-slate-400">
-                    Vazio
-                  </div>
-                ) : (
-                  lane.jobs.map((job) => (
-                    <div
-                      key={`${lane.status}-${job.id}`}
-                      className="rounded-xl border border-white/80 bg-white p-3 shadow-[0_4px_16px_rgba(15,23,42,0.06)]"
+          {/* Left: spotlight + kanban */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+            {/* Top oportunidades */}
+            {comparisonJobs.length > 0 && (
+              <div>
+                <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>
+                  Top Oportunidades
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+                  {comparisonJobs.map((job, i) => (
+                    <button
+                      key={`cmp-${job.id}`}
+                      type="button"
+                      onClick={() => handleInspectTrackedJob(job)}
+                      style={{
+                        background: i === 0 ? "rgba(245,158,11,.06)" : "var(--card)",
+                        border: i === 0 ? "1px solid var(--gold)" : "1px solid var(--border)",
+                        borderRadius: "10px",
+                        padding: "14px 16px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        transition: "all .15s",
+                      }}
                     >
-                      <button
-                        type="button"
-                        onClick={() => handleInspectTrackedJob(job)}
-                        className="w-full text-left"
-                      >
-                        <p className="text-[13px] font-semibold leading-snug text-slate-950">{job.title}</p>
-                        <p className="mt-0.5 text-[11px] text-slate-500">{job.company}</p>
-                      </button>
-                      {/* Score bar */}
-                      <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full bg-sky-500"
-                          style={{ width: `${Math.max(8, Math.min(job.score, 100))}%` }}
-                        />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                        <span style={{ color: i === 0 ? "var(--gold)" : "var(--dim)", fontSize: "10px", fontWeight: 700 }}>#{i + 1}</span>
+                        <span style={badgeStyle(job.score)}>{job.score}%</span>
                       </div>
-                      <div className="mt-2 flex items-center justify-between gap-1">
-                        <span style={badgeStyle(job.score)} className="rounded-full px-2 py-0.5 text-[10px] font-bold">
-                          {job.score}%
-                        </span>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleInspectTrackedJob(job)}
-                            className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-700 transition hover:bg-slate-50"
-                          >
-                            Abrir
-                          </button>
-                          {job.status !== "Entrevista" && (
-                            <button
-                              type="button"
-                              onClick={() => handleAdvanceTrackedJob(job.id)}
-                              title="Avançar stage"
-                              className="rounded-full border border-slate-900 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-900 transition hover:bg-slate-50"
+                      <p style={{ color: "var(--text)", fontSize: "13px", fontWeight: 600, lineHeight: 1.3, marginBottom: "4px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>{job.title}</p>
+                      <p style={{ color: "var(--dim)", fontSize: "11px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: "8px" }}>{job.company} · {job.location}</p>
+                      <p style={{ color: i === 0 ? "var(--gold)" : "var(--dim)", fontSize: "11px", fontWeight: 600 }}>{nextActionLabel(job.score, job.status)}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Kanban lanes */}
+            <div>
+              <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>
+                Funil
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible xl:grid-cols-4" style={{ WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
+                {dashboardLanes.map((lane) => {
+                  const laneColor =
+                    lane.status === "Entrevista" ? "#10b981" :
+                    lane.status === "Aplicada" || lane.status === "Aplicar" ? "#3b82f6" :
+                    lane.status === "Pronta para revisar" ? "#8b5cf6" : "var(--dim)";
+                  return (
+                    <div
+                      key={lane.status}
+                      className="min-w-[72vw] sm:min-w-0"
+                      style={{
+                        background: "var(--card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "10px",
+                        padding: "14px 16px",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <p style={{ color: laneColor, fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em" }}>{lane.status}</p>
+                        <span style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "999px", padding: "2px 8px", fontSize: "11px", fontWeight: 700, color: lane.count > 0 ? "var(--text)" : "var(--dim)" }}>{lane.count}</span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {lane.jobs.length === 0 ? (
+                          <div style={{ border: "1px dashed var(--border)", borderRadius: "8px", padding: "12px", textAlign: "center", color: "var(--dim)", fontSize: "12px" }}>
+                            Vazio
+                          </div>
+                        ) : (
+                          lane.jobs.map((job) => (
+                            <div
+                              key={`${lane.status}-${job.id}`}
+                              style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "8px", padding: "10px 12px" }}
                             >
-                              →
-                            </button>
-                          )}
-                        </div>
+                              <button type="button" onClick={() => handleInspectTrackedJob(job)} style={{ width: "100%", textAlign: "left", cursor: "pointer", background: "none", border: "none", padding: 0 }}>
+                                <p style={{ color: "var(--text)", fontSize: "12px", fontWeight: 600, lineHeight: 1.3, marginBottom: "2px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>{job.title}</p>
+                                <p style={{ color: "var(--dim)", fontSize: "11px" }}>{job.company}</p>
+                              </button>
+                              <div style={{ height: "2px", background: "var(--border)", borderRadius: "999px", overflow: "hidden", margin: "8px 0" }}>
+                                <div style={{ height: "100%", width: `${Math.max(4, Math.min(job.score, 100))}%`, background: laneColor, borderRadius: "999px" }} />
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span style={badgeStyle(job.score)}>{job.score}%</span>
+                                <div style={{ display: "flex", gap: "4px" }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleInspectTrackedJob(job)}
+                                    style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--dim)", borderRadius: "4px", padding: "2px 8px", fontSize: "10px", fontWeight: 600, cursor: "pointer" }}
+                                  >
+                                    Abrir
+                                  </button>
+                                  {job.status !== "Entrevista" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAdvanceTrackedJob(job.id)}
+                                      style={{ background: "var(--gold)", color: "#020810", border: "none", borderRadius: "4px", padding: "2px 8px", fontSize: "10px", fontWeight: 700, cursor: "pointer" }}
+                                      title="Avançar stage"
+                                    >
+                                      →
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
-                  ))
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Right sidebar: analytics ─────────────────────────────────────── */}
+          <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "12px", position: "sticky", top: "70px" }}>
+
+            {/* Pipeline analytics */}
+            {analytics.totalJobs > 0 && (
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
+                <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "14px" }}>
+                  Analytics
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "14px" }}>
+                  {[
+                    { label: "Apply rate", value: `${analytics.applyRate}%` },
+                    { label: "Interview", value: `${analytics.interviewRate}%` },
+                    { label: "Avg score", value: `${analytics.avgScore}%` },
+                    { label: "Top score", value: `${analytics.topScore}%` },
+                  ].map((k) => (
+                    <div key={k.label} style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "6px", padding: "8px 10px" }}>
+                      <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>{k.label}</p>
+                      <p style={{ color: "var(--text)", fontSize: "18px", fontWeight: 700, lineHeight: 1.2, marginTop: "2px" }}>{k.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Score distribution */}
+                {analytics.scoreBuckets.length > 0 && (
+                  <div style={{ marginBottom: "14px" }}>
+                    <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: "8px" }}>Score dist.</p>
+                    {analytics.scoreBuckets.map((b) => (
+                      <div key={b.label} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "5px" }}>
+                        <span style={{ color: "var(--muted)", fontSize: "10px", fontWeight: 600, width: "40px", flexShrink: 0 }}>{b.label}</span>
+                        <div style={{ flex: 1, height: "4px", background: "var(--border)", borderRadius: "999px", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${analytics.totalJobs ? (b.count / analytics.totalJobs) * 100 : 0}%`, background: "#3b82f6", borderRadius: "999px" }} />
+                        </div>
+                        <span style={{ color: "var(--dim)", fontSize: "10px", width: "16px", textAlign: "right", flexShrink: 0 }}>{b.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Stalled / ready */}
+                {analytics.stalledJobs.length > 0 && (
+                  <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.2)", borderRadius: "8px", padding: "10px 12px", marginBottom: "8px" }}>
+                    <p style={{ color: "#f59e0b", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "6px" }}>Stalled ({analytics.stalledJobs.length})</p>
+                    {analytics.stalledJobs.slice(0, 2).map((j) => (
+                      <p key={j.id} style={{ color: "var(--muted)", fontSize: "11px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: "2px" }}>{j.title}</p>
+                    ))}
+                  </div>
+                )}
+                {analytics.readyToApply.length > 0 && (
+                  <div style={{ background: "rgba(16,185,129,.08)", border: "1px solid rgba(16,185,129,.2)", borderRadius: "8px", padding: "10px 12px" }}>
+                    <p style={{ color: "#10b981", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "6px" }}>Ready ({analytics.readyToApply.length})</p>
+                    {analytics.readyToApply.slice(0, 2).map((j) => (
+                      <p key={j.id} style={{ color: "var(--muted)", fontSize: "11px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: "2px" }}>{j.score}% · {j.title}</p>
+                    ))}
+                  </div>
                 )}
               </div>
-            </section>
-          ))}
+            )}
+
+            {/* Quick actions */}
+            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
+              <div style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "12px" }}>
+                Ações rápidas
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <Link href="/control-center" style={{ display: "block", background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "8px 14px", fontSize: "12px", fontWeight: 700, textAlign: "center" }}>
+                  + Adicionar vaga
+                </Link>
+                <Link href="/jobs" style={{ display: "block", background: "var(--surf)", border: "1px solid var(--border)", color: "var(--muted)", borderRadius: "6px", padding: "7px 14px", fontSize: "12px", fontWeight: 600, textAlign: "center" }}>
+                  Ver radar completo
+                </Link>
+                <Link href="/sources" style={{ display: "block", color: "var(--dim)", fontSize: "12px", padding: "4px 0", textAlign: "center" }}>
+                  Gerenciar fontes →
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {/* Priority comparison */}
-        {/* Pipeline analytics */}
-        {analytics.totalJobs > 0 && (
-          <div className="rounded-2xl border border-slate-200/60 bg-white p-5">
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Pipeline analytics</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 mb-4">
-              {[
-                { label: "Apply rate",     value: `${analytics.applyRate}%`,   sub: `${analytics.appliedJobs}/${analytics.totalJobs}` },
-                { label: "Interview rate", value: `${analytics.interviewRate}%`, sub: `${analytics.interviewJobs} interviews` },
-                { label: "Avg score",      value: `${analytics.avgScore}%`,    sub: `top ${analytics.topScore}%` },
-                { label: "Days → apply",   value: analytics.avgDaysToApply !== null ? `${analytics.avgDaysToApply}d` : "—", sub: "Nova → Applied" },
-              ].map((k) => (
-                <div key={k.label} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{k.label}</p>
-                  <p className="mt-0.5 text-[18px] font-semibold text-slate-950">{k.value}</p>
-                  <p className="text-[11px] text-slate-400">{k.sub}</p>
-                </div>
-              ))}
-            </div>
-            {analytics.scoreBuckets.length > 0 && (
-              <div className="mb-4 space-y-1.5">
-                <p className="text-[11px] font-semibold text-slate-400 mb-2">Score distribution</p>
-                {analytics.scoreBuckets.map((b) => (
-                  <div key={b.label} className="flex items-center gap-3">
-                    <span className="w-14 shrink-0 text-[11px] font-semibold text-slate-600">{b.label}</span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                      <div className="h-full rounded-full bg-sky-400" style={{ width: `${(b.count / analytics.totalJobs) * 100}%` }} />
-                    </div>
-                    <span className="w-10 shrink-0 text-right text-[11px] text-slate-500">{b.count}</span>
-                    {b.conversion > 0 && (
-                      <span style={{ background: "#ecfdf5", color: "#047857" }} className="rounded-full px-2 py-0.5 text-[10px] font-bold">{b.conversion}% →</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            {analytics.sourceStats.length > 0 && (
-              <div className="mb-4">
-                <p className="text-[11px] font-semibold text-slate-400 mb-2">By source</p>
-                <div className="space-y-1.5">
-                  {analytics.sourceStats.map((s) => (
-                    <div key={s.source} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5">
-                      <span className="text-[12px] font-medium text-slate-700">{s.source}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-400">{s.count} jobs · avg {s.avgScore}%</span>
-                        {s.applied > 0 && <span style={{ background: "#eff6ff", color: "#1d4ed8" }} className="rounded-full px-2 py-0.5 text-[10px] font-bold">{s.applied} applied</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="grid gap-3 sm:grid-cols-2">
-              {analytics.stalledJobs.length > 0 && (
-                <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 p-3">
-                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-600">Stalled ({analytics.stalledJobs.length})</p>
-                  {analytics.stalledJobs.slice(0, 3).map((j) => (
-                    <p key={j.id} className="truncate text-[12px] text-slate-600">{j.title} — {j.company}</p>
-                  ))}
-                </div>
-              )}
-              {analytics.readyToApply.length > 0 && (
-                <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-3">
-                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-600">Ready to apply ({analytics.readyToApply.length})</p>
-                  {analytics.readyToApply.slice(0, 3).map((j) => (
-                    <p key={j.id} className="truncate text-[12px] text-slate-600">{j.score}% · {j.title} — {j.company}</p>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {comparisonJobs.length > 0 && (
-          <div>
-            <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Top oportunidades
-            </p>
-            <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-visible" style={{WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
-              {comparisonJobs.map((job, i) => (
-                <button
-                  key={`cmp-${job.id}`}
-                  type="button"
-                  onClick={() => handleInspectTrackedJob(job)}
-                  className={[
-                    "rounded-2xl border p-4 text-left transition hover:-translate-y-0.5",
-                    i === 0
-                      ? "border-sky-200/60 bg-gradient-to-b from-sky-50 to-white shadow-[0_8px_28px_rgba(14,165,233,0.10)]"
-                      : "border-slate-200/60 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]",
-                  ].join(" ")}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">#{i + 1}</span>
-                    <span style={badgeStyle(job.score)} className="rounded-full px-2.5 py-0.5 text-[11px] font-bold">
-                      {job.score}%
-                    </span>
-                  </div>
-                  <p className="mt-2 text-[13px] font-semibold text-slate-950">{job.title}</p>
-                  <p className="mt-0.5 text-[12px] text-slate-500">{job.company} · {job.location}</p>
-                  <p className="mt-3 text-[11px] font-semibold text-slate-400">{nextActionLabel(job.score, job.status)}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -1926,251 +2043,111 @@ export function ArgusWorkbench({
   // Welcome screen — radar ainda carregando ou sem vagas reais
   if (!radarLoaded || !hasRealJobs) {
     return (
-      <div className="flex flex-col gap-4 xl:grid xl:items-start xl:grid-cols-[1fr_360px]">
-        {/* Welcome / onboarding */}
-        <div className="space-y-4">
-          {/* Status bar */}
-          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-medium ${syncPill}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${syncDot}`} />
-            {!radarLoaded ? t("sync.checking") : syncMessage}
+      <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "24px 20px" }}>
+        <div className="flex flex-col gap-4 xl:grid xl:items-start" style={{ gridTemplateColumns: "1fr 272px" }}>
+          {/* Main column */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* Status */}
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "999px", padding: "5px 12px", fontSize: "12px", color: "var(--dim)", alignSelf: "flex-start" }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: syncDotColor }} />
+              {!radarLoaded ? t("sync.checking") : syncMessage}
+            </div>
+
+            {!radarLoaded ? (
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "64px 20px", textAlign: "center" }}>
+                <div style={{ width: "48px", height: "48px", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surf)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", color: "var(--dim)", margin: "0 auto 16px" }}>◎</div>
+                <p style={{ color: "var(--text)", fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>Carregando radar...</p>
+                <p style={{ color: "var(--dim)", fontSize: "12px" }}>Verificando vagas persistidas</p>
+              </div>
+            ) : (
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden" }}>
+                <div style={{ borderBottom: "1px solid var(--border)", padding: "24px 28px" }}>
+                  <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "8px" }}>Control Center</p>
+                  <h2 style={{ color: "var(--text)", fontSize: "22px", fontWeight: 700, letterSpacing: "-0.02em", marginBottom: "6px" }}>Radar vazio — adicione a primeira vaga</h2>
+                  <p style={{ color: "var(--muted)", fontSize: "13px", lineHeight: 1.6 }}>
+                    Use discovery real para puxar vagas dos portais conectados, ou cole um JD manualmente para começar.
+                  </p>
+                </div>
+                <div className="grid sm:grid-cols-2">
+                  <button type="button" onClick={() => setWorkspaceMode("discovery")} style={{ borderRight: "1px solid var(--border)", padding: "24px", textAlign: "left", background: "none", cursor: "pointer", display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", border: "1px solid rgba(59,130,246,.3)", background: "rgba(59,130,246,.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg style={{ width: "20px", height: "20px", color: "#3b82f6" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                    </div>
+                    <div>
+                      <p style={{ color: "var(--text)", fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>Discovery real</p>
+                      <p style={{ color: "var(--dim)", fontSize: "12px", lineHeight: 1.5 }}>Puxe vagas diretamente dos portais Siemens, Rheinmetall e BWI.</p>
+                    </div>
+                    <span style={{ color: "#3b82f6", fontSize: "12px", fontWeight: 700 }}>Iniciar discovery →</span>
+                  </button>
+                  <button type="button" onClick={() => setWorkspaceMode("manual")} style={{ padding: "24px", textAlign: "left", background: "none", cursor: "pointer", display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--surf)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg style={{ width: "20px", height: "20px", color: "var(--muted)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg>
+                    </div>
+                    <div>
+                      <p style={{ color: "var(--text)", fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>Intake manual</p>
+                      <p style={{ color: "var(--dim)", fontSize: "12px", lineHeight: 1.5 }}>Cole qualquer JD — o Argus estrutura, calcula match e salva no radar.</p>
+                    </div>
+                    <span style={{ color: "var(--muted)", fontSize: "12px", fontWeight: 700 }}>Colar JD →</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Intake area */}
+            {radarLoaded && renderIntakeArea()}
           </div>
 
-          {!radarLoaded ? (
-            /* Loading state */
-            <div className="flex items-center justify-center rounded-[28px] border border-slate-200/60 bg-white py-20">
-              <div className="text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-sky-200 bg-sky-50">
-                  <span className="text-xl">◎</span>
-                </div>
-                <p className="mt-4 text-[14px] font-semibold text-slate-700">Carregando radar...</p>
-                <p className="mt-1 text-[12px] text-slate-400">Verificando vagas persistidas</p>
-              </div>
-            </div>
-          ) : (
-            /* Empty state — radar carregado mas sem vagas */
-            <div className="rounded-[28px] border border-slate-200/60 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
-              {/* Header */}
-              <div className="border-b border-slate-100 px-7 py-6">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Control Center
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                  Radar vazio — adicione a primeira vaga
-                </h2>
-                <p className="mt-2 text-[13px] leading-6 text-slate-500">
-                  Use discovery real para puxar vagas dos portais conectados, ou cole um JD manualmente para começar.
-                </p>
-              </div>
-
-              {/* Two action paths */}
-              <div className="grid gap-0 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setWorkspaceMode("discovery")}
-                  className="group flex flex-col gap-3 border-r border-slate-100 p-6 text-left transition hover:bg-slate-50"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-600 transition group-hover:border-sky-300 group-hover:bg-sky-100">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-[14px] font-semibold text-slate-950">Discovery real</p>
-                    <p className="mt-1 text-[12px] leading-5 text-slate-500">
-                      Puxe vagas diretamente dos portais Siemens, Rheinmetall e BWI com um clique.
-                    </p>
-                  </div>
-                  <span className="text-[12px] font-semibold text-sky-600 transition group-hover:translate-x-0.5">
-                    Iniciar discovery →
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setWorkspaceMode("manual")}
-                  className="group flex flex-col gap-3 p-6 text-left transition hover:bg-slate-50"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition group-hover:border-slate-300 group-hover:bg-slate-100">
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-[14px] font-semibold text-slate-950">Intake manual</p>
-                    <p className="mt-1 text-[12px] leading-5 text-slate-500">
-                      Cole qualquer JD — mesmo desorganizado. O Argus estrutura, calcula match e salva no radar.
-                    </p>
-                  </div>
-                  <span className="text-[12px] font-semibold text-slate-600 transition group-hover:translate-x-0.5">
-                    Colar JD →
-                  </span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Intake area — sempre visível no welcome state */}
-          {radarLoaded && (
-            <div className="overflow-hidden rounded-[24px] border border-slate-200/60 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
-              <div className="flex border-b border-slate-100">
-                {(["discovery", "manual"] as WorkspaceMode[]).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setWorkspaceMode(mode)}
-                    className={[
-                      "flex-1 py-3 text-[12px] font-semibold transition",
-                      workspaceMode === mode
-                        ? "border-b-2 border-sky-500 text-sky-700"
-                        : "text-slate-500 hover:text-slate-700",
-                    ].join(" ")}
-                  >
-                    {mode === "discovery" ? t("cc.discoveryReal") : t("cc.manualIntake")}
-                  </button>
+          {/* Sidebar */}
+          <div className="hidden xl:flex" style={{ flexDirection: "column", gap: "12px", position: "sticky", top: "70px" }}>
+            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
+              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>Perfil ativo</p>
+              <p style={{ color: "var(--text)", fontSize: "14px", fontWeight: 600 }}>{activeProfile.name}</p>
+              <p style={{ color: "var(--dim)", fontSize: "12px", marginTop: "2px", marginBottom: "12px" }}>{activeProfile.location} · {activeProfile.availability}</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                {activeProfile.coreStack.slice(0, 5).map((s) => (
+                  <span key={s} style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--dim)", borderRadius: "4px", padding: "2px 7px", fontSize: "11px" }}>{s}</span>
                 ))}
               </div>
-
-              <div className="p-5">
-                {workspaceMode === "discovery" ? (
-                  <div className="space-y-3">
-                    <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible" style={{WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
-                      {(Object.entries(DISCOVERY_SOURCES) as [DiscoverySourceId, (typeof DISCOVERY_SOURCES)[DiscoverySourceId]][]).map(([id, src]) => (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => setSelectedDiscoverySource(id)}
-                          className={[
-                            "rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
-                            selectedDiscoverySource === id
-                              ? "border-slate-800 bg-slate-950 text-white"
-                              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300",
-                          ].join(" ")}
-                        >
-                          {src.label}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-[12px] leading-5 text-slate-500">
-                      {activeDiscoverySourceConfig.description}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => void handleRunSourceDiscovery()}
-                      disabled={isDiscovering}
-                      className="rounded-full border border-slate-900 bg-white px-5 py-2.5 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      {isDiscovering ? t("cc.searching") : activeDiscoverySourceConfig.buttonLabel}
-                    </button>
-                    {discoveryError && (
-                      <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-[12px] text-rose-700">
-                        {discoveryError}
-                      </p>
-                    )}
-                    {filteredDiscoveredJobs.length > 0 && (
-                      <div className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
-                        {filteredDiscoveredJobs.map((job) => (
-                          <button
-                            key={job.listing.externalId}
-                            type="button"
-                            onClick={() => handleInspectDiscovery(job)}
-                            className={[
-                              "flex w-full items-center gap-3 px-4 py-3 text-left transition",
-                              activeDiscoveryId === job.listing.externalId ? "bg-sky-50" : "hover:bg-slate-50",
-                            ].join(" ")}
-                          >
-                            <span style={badgeStyle(job.analysis.score)} className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
-                              {job.analysis.score}%
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-[13px] font-semibold text-slate-950">{job.listing.title}</p>
-                              <p className="truncate text-[11px] text-slate-500">
-                                {job.listing.company} · {job.listing.location}
-                              </p>
-                              {job.analysis.strengths[0] && (
-                                <p className="truncate text-[10px] text-emerald-700">✓ {job.analysis.strengths[0]}</p>
-                              )}
-                            </div>
-                            <span className="shrink-0 text-[10px] text-sky-500">→</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+            </div>
+            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
+              <p style={{ color: "var(--dim)", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: "10px" }}>Sources live</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {sources.filter((s) => /live/i.test(s.status)).map((s) => (
+                  <div key={s.company} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "6px", padding: "6px 10px" }}>
+                    <p style={{ color: "var(--muted)", fontSize: "12px" }}>{s.company}</p>
+                    <span style={{ background: "rgba(16,185,129,.15)", color: "#10b981", borderRadius: "999px", padding: "1px 8px", fontSize: "10px", fontWeight: 700 }}>live</span>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-[12px] text-slate-500">
-                      Cole o texto da vaga (mesmo desorganizado). O Argus estrutura, calcula match e salva no radar.
-                    </p>
-                    <textarea
-                      value={jobDescription}
-                      onChange={(e) => setJobDescription(e.target.value)}
-                      className="min-h-[200px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[13px] leading-6 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
-                      placeholder="Cole aqui a vaga inteira, mesmo desorganizada."
-                    />
-                    <button
-                      type="button"
-                      onClick={handleProcessDescription}
-                      disabled={isPending}
-                      className="rounded-full border border-slate-900 bg-white px-5 py-2.5 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      {isPending ? t("cc.processing") : t("cc.structureJob")}
-                    </button>
-                  </div>
-                )}
+                ))}
               </div>
             </div>
-          )}
+          </div>
         </div>
-
-        {/* Sidebar mínima no welcome state */}
-        <aside className="sticky top-[68px] space-y-4">
-          <div className="rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Perfil ativo</p>
-            <p className="mt-2 text-[14px] font-semibold text-slate-950">{activeProfile.name}</p>
-            <p className="mt-1 text-[12px] text-slate-500">{activeProfile.location} · {activeProfile.availability}</p>
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {activeProfile.coreStack.slice(0, 5).map((s) => (
-                <span key={s} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-600">{s}</span>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Sources live</p>
-            <div className="mt-3 space-y-2">
-              {sources.filter((s) => /live/i.test(s.status)).map((s) => (
-                <div key={s.company} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                  <p className="text-[12px] font-medium text-slate-700">{s.company}</p>
-                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">live</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 xl:grid xl:items-start xl:grid-cols-[1fr_360px]">
+    <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "24px 20px" }}>
+      <div className="flex flex-col gap-4 xl:grid xl:items-start" style={{ gridTemplateColumns: "1fr 272px" }}>
       {/* ── Main column ─────────────────────────────────────────────────────── */}
-      <div className="space-y-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {/* Active job hero */}
-        <div className="w-full overflow-hidden rounded-[28px] border border-slate-900/80 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)]">
+        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden", color: "var(--text)" }}>
           {/* Top bar */}
-          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-white/[0.07] px-4 py-3 sm:px-6">
-            <div className="flex items-center gap-2">
-              <span className={`h-2 w-2 shrink-0 rounded-full ${syncDot}`} />
-              <p className="text-[11px] font-medium text-slate-400">{syncMessage}</p>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "8px", borderBottom: "1px solid var(--border)", padding: "10px 20px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: syncDotColor, flexShrink: 0 }} />
+              <p style={{ fontSize: "11px", fontWeight: 500, color: "var(--dim)" }}>{syncMessage}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               {activeTrackedJob && (
                 <select
                   value={activeTrackedJob.status}
                   onChange={(e) => handleUpdateTrackedJobStatus(activeTrackedJob.id, e.target.value)}
-                  className="rounded-full border border-white/10 bg-white/[0.08] px-3 py-1 text-[11px] font-semibold text-slate-200 outline-none transition hover:bg-white/[0.12]"
+                  style={{ borderRadius: "999px", border: "1px solid var(--border)", background: "var(--surf)", padding: "4px 12px", fontSize: "11px", fontWeight: 600, color: "var(--muted)", outline: "none", cursor: "pointer" }}
                 >
                   {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s} className="text-slate-950">{s}</option>
+                    <option key={s} value={s} style={{ background: "var(--bg)", color: "var(--text)" }}>{s}</option>
                   ))}
                 </select>
               )}
@@ -2178,15 +2155,15 @@ export function ArgusWorkbench({
           </div>
 
           {/* Hero content */}
-          <div className="px-4 py-5 sm:px-6">
+          <div style={{ padding: "20px" }}>
             {/* Título + empresa */}
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sky-400">Vaga ativa</p>
-              <h1 className="mt-1.5 break-words text-xl font-bold leading-snug tracking-tight">
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.22em", color: "var(--gold)" }}>Vaga ativa</p>
+              <h1 style={{ marginTop: "6px", fontSize: "20px", fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.02em", wordBreak: "break-word", color: "var(--text)" }}>
                 {parsedJob.title}
               </h1>
-              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-slate-400">
-                {parsedJob.company && <span className="font-medium text-slate-300">{parsedJob.company}</span>}
+              <p style={{ marginTop: "4px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px", fontSize: "12px", color: "var(--dim)" }}>
+                {parsedJob.company && <span style={{ fontWeight: 500, color: "var(--muted)" }}>{parsedJob.company}</span>}
                 {parsedJob.company && <span>·</span>}
                 <span>{parsedJob.location}</span>
                 {parsedJob.seniority && parsedJob.seniority !== "Not specified" && (
@@ -2198,38 +2175,34 @@ export function ArgusWorkbench({
               </p>
             </div>
 
-            {/* Score + match bar — visual primário */}
-            <div className="mt-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span style={badgeStyle(analysis.score)} className="rounded-full px-3 py-1 text-[14px] font-bold">
-                    {analysis.score}%
-                  </span>
-                  <span className="text-[12px] font-medium text-slate-400">{analysis.verdict}</span>
+            {/* Score + match bar */}
+            <div style={{ marginTop: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={badgeStyle(analysis.score)}>{analysis.score}%</span>
+                  <span style={{ fontSize: "12px", fontWeight: 500, color: "var(--dim)" }}>{analysis.verdict}</span>
                 </div>
                 {activeTrackedJob && (
-                  <span style={statusStyle(activeTrackedJob.status)} className="rounded-full px-2.5 py-0.5 text-[10px] font-bold">
-                    {activeTrackedJob.status}
-                  </span>
+                  <span style={statusStyle(activeTrackedJob.status)}>{activeTrackedJob.status}</span>
                 )}
               </div>
-              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-sky-400 transition-all" style={{ width: matchMeterWidth }} />
+              <div style={{ marginTop: "10px", height: "4px", background: "var(--border)", borderRadius: "999px", overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: "999px", background: analysis.score >= 78 ? "#10b981" : analysis.score >= 60 ? "#f59e0b" : "#ef4444", transition: "width .3s", width: matchMeterWidth }} />
               </div>
             </div>
 
-            {/* Strengths + gaps — inline, compacto */}
+            {/* Strengths + gaps */}
             {(analysis.strengths.length > 0 || analysis.risks.length > 0) && (
-              <div className="mt-4 space-y-1.5">
+              <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "4px" }}>
                 {analysis.strengths.slice(0, 2).map((s) => (
-                  <p key={s} className="flex items-start gap-1.5 text-[12px] text-emerald-400">
-                    <span className="mt-0.5 shrink-0">✓</span>
+                  <p key={s} style={{ display: "flex", alignItems: "flex-start", gap: "6px", fontSize: "12px", color: "#10b981" }}>
+                    <span style={{ marginTop: "1px", flexShrink: 0 }}>✓</span>
                     <span>{s}</span>
                   </p>
                 ))}
                 {analysis.risks.slice(0, 1).map((r) => (
-                  <p key={r} className="flex items-start gap-1.5 text-[12px] text-amber-400">
-                    <span className="mt-0.5 shrink-0">⚠</span>
+                  <p key={r} style={{ display: "flex", alignItems: "flex-start", gap: "6px", fontSize: "12px", color: "#f59e0b" }}>
+                    <span style={{ marginTop: "1px", flexShrink: 0 }}>⚠</span>
                     <span>{r}</span>
                   </p>
                 ))}
@@ -2238,52 +2211,41 @@ export function ArgusWorkbench({
 
             {/* Follow-up alert */}
             {followUpUrgency(activeTrackedJob) === "overdue" && (
-              <div className="mt-3 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2">
-                <p className="text-[11px] font-semibold text-rose-400">
+              <div style={{ marginTop: "12px", background: "rgba(239,68,68,.1)", border: "1px solid rgba(239,68,68,.25)", borderRadius: "8px", padding: "8px 12px" }}>
+                <p style={{ fontSize: "11px", fontWeight: 600, color: "#ef4444" }}>
                   {daysSince(activeTrackedJob.updatedAt)}d sem resposta — fazer follow up
                 </p>
               </div>
             )}
             {followUpUrgency(activeTrackedJob) === "due-soon" && (
-              <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2">
-                <p className="text-[11px] font-semibold text-amber-400">
+              <div style={{ marginTop: "12px", background: "rgba(245,158,11,.1)", border: "1px solid rgba(245,158,11,.25)", borderRadius: "8px", padding: "8px 12px" }}>
+                <p style={{ fontSize: "11px", fontWeight: 600, color: "#f59e0b" }}>
                   {daysSince(activeTrackedJob.updatedAt)}d aplicado — considerar follow up
                 </p>
               </div>
             )}
 
-            {/* Action buttons — CTA principal sempre visível */}
-            <div className="mt-5 flex flex-wrap gap-2">
-              {/* P0: Link de aplicação */}
+            {/* Action buttons */}
+            <div style={{ marginTop: "16px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
               {(activeTrackedJob?.sourceUrl ?? activeDiscovery?.listing.sourceUrl) ? (
                 <a
                   href={activeTrackedJob?.sourceUrl ?? activeDiscovery?.listing.sourceUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-5 py-2 text-[13px] font-bold text-white shadow-[0_2px_12px_rgba(56,189,248,0.35)] transition hover:bg-sky-400"
+                  style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "8px 20px", fontSize: "13px", fontWeight: 700 }}
                 >
                   Aplicar na vaga ↗
                 </a>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-4 py-2 text-[12px] text-slate-500">
+                <span style={{ border: "1px solid var(--border)", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", color: "var(--dim)" }}>
                   ⚠ Vaga sem link de origem
                 </span>
               )}
-              {/* Copiar mensagem */}
-              <button
-                type="button"
-                onClick={handleCopyRecruiterMessage}
-                className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-300 transition hover:bg-white/[0.12]"
-              >
+              <button type="button" onClick={handleCopyRecruiterMessage} style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: 600, color: "var(--muted)", cursor: "pointer" }}>
                 {copiedState === "copied" ? t("cc.messageCopied") : t("cc.copyMessage")}
               </button>
-              {/* Avançar stage */}
               {activeTrackedJob && (
-                <button
-                  type="button"
-                  onClick={() => handleAdvanceTrackedJob(activeTrackedJob.id)}
-                  className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-[12px] font-semibold text-slate-300 transition hover:bg-white/[0.12]"
-                >
+                <button type="button" onClick={() => handleAdvanceTrackedJob(activeTrackedJob.id)} style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: 600, color: "var(--muted)", cursor: "pointer" }}>
                   Avançar stage →
                 </button>
               )}
@@ -2296,8 +2258,7 @@ export function ArgusWorkbench({
                     setExportState("done");
                     setTimeout(() => setExportState("idle"), 2000);
                   }}
-                  style={{ border: "1px solid rgba(255,255,255,0.12)", color: exportState === "done" ? "#4ade80" : "#94a3b8" }}
-                  className="rounded-full bg-transparent px-4 py-2 text-[12px] font-semibold transition hover:text-white"
+                  style={{ background: "transparent", border: "1px solid var(--border)", borderRadius: "6px", padding: "8px 16px", fontSize: "12px", fontWeight: 600, color: exportState === "done" ? "#10b981" : "var(--dim)", cursor: "pointer" }}
                 >
                   {exportState === "done" ? "✓ Package ready" : "Export package ↓"}
                 </button>
@@ -2307,7 +2268,7 @@ export function ArgusWorkbench({
         </div>
 
         {/* Panel tabs */}
-        <div className="flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-slate-100/60 p-1 sm:overflow-visible" style={{scrollbarWidth:"none"}}>
+        <div style={{ display: "flex", gap: "2px", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "10px", padding: "3px", overflowX: "auto", scrollbarWidth: "none" }}>
           {([
             { id: "summary", label: t("cc.tabSummary"), hint: parsedJob.title ? "✓" : "" },
             { id: "match",   label: t("cc.tabMatch"),   hint: `${analysis.score}%` },
@@ -2320,21 +2281,21 @@ export function ArgusWorkbench({
               key={panel.id}
               type="button"
               onClick={() => setActivePanel(panel.id)}
-              className={[
-                "flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-[12px] font-semibold transition",
-                activePanel === panel.id
-                  ? "bg-white text-slate-950 shadow-[0_2px_8px_rgba(15,23,42,0.08)]"
-                  : "text-slate-500 hover:text-slate-700",
-              ].join(" ")}
+              style={{
+                flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "5px",
+                borderRadius: "8px", padding: "8px 4px", fontSize: "12px", fontWeight: 600, cursor: "pointer",
+                border: "none", transition: "all .15s",
+                background: activePanel === panel.id ? "var(--card)" : "transparent",
+                color: activePanel === panel.id ? "var(--gold)" : "var(--dim)",
+              }}
             >
               {panel.label}
               {panel.hint && (
-                <span className={[
-                  "rounded-full px-1.5 py-0.5 text-[9px] font-bold",
-                  activePanel === panel.id
-                    ? "bg-sky-100 text-sky-700"
-                    : "bg-slate-200 text-slate-500",
-                ].join(" ")}>
+                <span style={{
+                  borderRadius: "999px", padding: "1px 6px", fontSize: "9px", fontWeight: 700,
+                  background: activePanel === panel.id ? "rgba(245,158,11,.15)" : "var(--border)",
+                  color: activePanel === panel.id ? "var(--gold)" : "var(--dim)",
+                }}>
                   {panel.hint}
                 </span>
               )}
@@ -2347,17 +2308,17 @@ export function ArgusWorkbench({
           {activePanel === "summary" && (
             <div className="grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
               {/* Role brief */}
-              <div className="rounded-[24px] border border-slate-900/80 bg-gradient-to-b from-slate-950 to-slate-900 p-5 text-white">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-400">Role brief</p>
-                <h3 className="mt-3 text-xl font-semibold">{parsedJob.title}</h3>
-                <p className="mt-0.5 text-[12px] text-slate-300">{parsedJob.company} · {parsedJob.location}</p>
-                <p className="mt-4 text-[13px] leading-6 text-slate-200">{parsedJob.summary}</p>
-                <div className="mt-4 flex flex-wrap gap-1.5">
+              <div style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--gold)", marginBottom: "12px" }}>Role brief</p>
+                <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--text)", marginBottom: "4px" }}>{parsedJob.title}</h3>
+                <p style={{ fontSize: "12px", color: "var(--dim)", marginBottom: "14px" }}>{parsedJob.company} · {parsedJob.location}</p>
+                <p style={{ fontSize: "13px", lineHeight: 1.6, color: "var(--muted)", marginBottom: "14px" }}>{parsedJob.summary}</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                   {parsedJob.skills.slice(0, 6).map((skill) => (
                     <a
                       key={skill}
                       href={`/jobs?q=${encodeURIComponent(skill)}`}
-                      className="rounded-full border border-white/10 bg-white/[0.07] px-2.5 py-1 text-[11px] font-medium text-slate-300 transition hover:border-sky-400/40 hover:bg-sky-500/10 hover:text-sky-300"
+                      style={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--dim)", borderRadius: "4px", padding: "2px 8px", fontSize: "11px" }}
                       title={`Buscar vagas com ${skill}`}
                     >
                       {skill}
@@ -2366,16 +2327,16 @@ export function ArgusWorkbench({
                 </div>
               </div>
               {/* Details */}
-              <div className="space-y-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {[
                   { l: "Senioridade", v: parsedJob.seniority },
                   { l: "Modelo", v: parsedJob.workModel },
                   { l: "Contrato", v: parsedJob.employmentType },
                   { l: "Idiomas", v: parsedJob.languages.join(", ") || "Não detectados" },
                 ].map((item) => (
-                  <div key={item.l} className="rounded-2xl border border-slate-200/60 bg-white p-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{item.l}</p>
-                    <p className="mt-1.5 text-[14px] font-semibold text-slate-950">{item.v || "—"}</p>
+                  <div key={item.l} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "10px", padding: "14px 16px" }}>
+                    <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--dim)" }}>{item.l}</p>
+                    <p style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)", marginTop: "4px" }}>{item.v || "—"}</p>
                   </div>
                 ))}
               </div>
@@ -2385,77 +2346,49 @@ export function ArgusWorkbench({
           
 
           {activePanel === "message" && (
-            <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Recruiter message
-                </p>
-                <div className="flex items-center gap-2">
-                  {/* Seletor de idioma */}
-                  <div className="flex gap-1 rounded-full border border-slate-200 bg-slate-50 p-0.5">
+            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "14px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--dim)" }}>Recruiter message</p>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ display: "flex", gap: "2px", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "999px", padding: "2px" }}>
                     {(["en", "de", "pt"] as const).map((lang) => (
-                      <button
-                        key={lang}
-                        type="button"
-                        onClick={() => setMessageLang(lang)}
-                        className={[
-                          "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] transition",
-                          messageLang === lang
-                            ? "bg-slate-950 text-white"
-                            : "text-slate-500 hover:text-slate-700",
-                        ].join(" ")}
-                      >
-                        {lang === "en" ? "EN" : lang === "de" ? "DE" : "PT"}
+                      <button key={lang} type="button" onClick={() => setMessageLang(lang)} style={{
+                        borderRadius: "999px", padding: "3px 10px", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", cursor: "pointer", border: "none",
+                        background: messageLang === lang ? "var(--gold)" : "transparent", color: messageLang === lang ? "#020810" : "var(--dim)",
+                      }}>
+                        {lang.toUpperCase()}
                       </button>
                     ))}
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleCopyRecruiterMessage}
-                    className="rounded-full border border-slate-900 bg-white px-4 py-1.5 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50"
-                  >
+                  <button type="button" onClick={handleCopyRecruiterMessage} style={{ background: "var(--gold)", color: "#020810", borderRadius: "6px", padding: "4px 14px", fontSize: "12px", fontWeight: 700, border: "none", cursor: "pointer" }}>
                     {copiedState === "copied" ? "✓ Copiado" : "Copiar"}
                   </button>
                 </div>
               </div>
-              <pre className="whitespace-pre-wrap rounded-2xl border border-slate-100 bg-slate-50 p-4 text-[13px] leading-6 text-slate-700 font-sans">
+              <pre style={{ whiteSpace: "pre-wrap", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "8px", padding: "16px", fontSize: "13px", lineHeight: 1.6, color: "var(--muted)", fontFamily: "inherit" }}>
                 {recruiterMessage}
               </pre>
-
-              {/* Custom cover paragraph */}
-              <div className="mt-4 border-t border-slate-100 pt-4">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Cover paragraph
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-0.5 rounded-full border border-slate-200 bg-slate-50 p-0.5">
+              <div style={{ marginTop: "16px", borderTop: "1px solid var(--border)", paddingTop: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
+                  <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--dim)" }}>Cover paragraph</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ display: "flex", gap: "2px", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "999px", padding: "2px" }}>
                       {(["en", "de", "pt"] as const).map((lang) => (
-                        <button
-                          key={lang}
-                          type="button"
-                          onClick={() => setCoverLang(lang)}
-                          style={coverLang === lang ? { background: "#0f172a", color: "#fff" } : { color: "#94a3b8" }}
-                          className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase transition"
-                        >
+                        <button key={lang} type="button" onClick={() => setCoverLang(lang)} style={{
+                          borderRadius: "999px", padding: "2px 8px", fontSize: "10px", fontWeight: 700, textTransform: "uppercase", cursor: "pointer", border: "none",
+                          background: coverLang === lang ? "var(--gold)" : "transparent", color: coverLang === lang ? "#020810" : "var(--dim)",
+                        }}>
                           {lang.toUpperCase()}
                         </button>
                       ))}
                     </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await navigator.clipboard.writeText(customCover);
-                        setCoverCopied(true);
-                        setTimeout(() => setCoverCopied(false), 1800);
-                      }}
-                      className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-200"
-                    >
+                    <button type="button" onClick={async () => { await navigator.clipboard.writeText(customCover); setCoverCopied(true); setTimeout(() => setCoverCopied(false), 1800); }}
+                      style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "6px", padding: "3px 10px", fontSize: "11px", fontWeight: 600, color: "var(--muted)", cursor: "pointer" }}>
                       {coverCopied ? "✓ Copied" : "Copy"}
                     </button>
                   </div>
                 </div>
-                <p className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-[13px] leading-6 text-slate-700">
+                <p style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "8px", padding: "16px", fontSize: "13px", lineHeight: 1.6, color: "var(--muted)" }}>
                   {customCover}
                 </p>
               </div>
@@ -2463,22 +2396,19 @@ export function ArgusWorkbench({
           )}
 
           {activePanel === "history" && (
-            <div className="rounded-[24px] border border-slate-200/60 bg-white p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px" }}>
+              <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--dim)", marginBottom: "12px" }}>
                 Histórico de status
               </p>
-              <div className="mt-3 space-y-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 {activeTimeline.length === 0 ? (
-                  <p className="text-[13px] text-slate-400">Sem histórico ainda.</p>
+                  <p style={{ fontSize: "13px", color: "var(--dim)" }}>Sem histórico ainda.</p>
                 ) : (
                   activeTimeline.map((entry, i) => (
-                    <div
-                      key={`${entry.status}-${entry.changedAt}-${i}`}
-                      className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
-                    >
-                      <span style={{ width:8, height:8, borderRadius:"50%", flexShrink:0, background: statusStyle(entry.status).color ?? "#94a3b8" }} />
-                      <p className="flex-1 text-[13px] font-medium text-slate-800">{entry.status}</p>
-                      <p className="text-[11px] text-slate-400">{formatActivityLabel(entry.changedAt)}</p>
+                    <div key={`${entry.status}-${entry.changedAt}-${i}`} style={{ display: "flex", alignItems: "center", gap: "10px", background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "8px", padding: "10px 14px" }}>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: statusStyle(entry.status).color ?? "#94a3b8" }} />
+                      <p style={{ flex: 1, fontSize: "13px", fontWeight: 500, color: "var(--text)" }}>{entry.status}</p>
+                      <p style={{ fontSize: "11px", color: "var(--dim)" }}>{formatActivityLabel(entry.changedAt)}</p>
                     </div>
                   ))
                 )}
@@ -2488,59 +2418,52 @@ export function ArgusWorkbench({
         </div>
 
           {activePanel === "interview" && interviewPrep && (
-            <div className="space-y-3">
-              {/* Talking points */}
-              <div className="rounded-2xl border border-sky-200/60 bg-gradient-to-b from-sky-50 to-white p-4">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-600">Key talking points</p>
-                <div className="space-y-1.5">
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ background: "rgba(59,130,246,.08)", border: "1px solid rgba(59,130,246,.2)", borderRadius: "12px", padding: "16px 20px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "#3b82f6", marginBottom: "10px" }}>Key talking points</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   {interviewPrep.talkingPoints.map((pt, i) => (
-                    <div key={i} className="flex gap-2 text-[13px] text-slate-700">
-                      <span className="mt-0.5 shrink-0 text-sky-500">→</span>
+                    <div key={i} style={{ display: "flex", gap: "8px", fontSize: "13px", color: "var(--muted)" }}>
+                      <span style={{ marginTop: "1px", flexShrink: 0, color: "#3b82f6" }}>→</span>
                       <span>{pt}</span>
                     </div>
                   ))}
                 </div>
               </div>
-
-              {/* Questions */}
-              <div className="rounded-2xl border border-slate-200/60 bg-white p-4">
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Likely questions</p>
-                <div className="space-y-3">
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--dim)", marginBottom: "12px" }}>Likely questions</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {interviewPrep.questions.slice(0, 6).map((q, i) => (
-                    <div key={i} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                      <div className="flex items-start gap-2">
-                        <span style={{ background: q.category === "technical" ? "#eff6ff" : q.category === "behavioral" ? "#f0fdf4" : "#f5f3ff", color: q.category === "technical" ? "#1d4ed8" : q.category === "behavioral" ? "#047857" : "#6d28d9" }} className="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase">
+                    <div key={i} style={{ background: "var(--surf)", border: "1px solid var(--border)", borderRadius: "8px", padding: "12px" }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                        <span style={{ background: q.category === "technical" ? "rgba(59,130,246,.15)" : q.category === "behavioral" ? "rgba(16,185,129,.15)" : "rgba(139,92,246,.15)", color: q.category === "technical" ? "#3b82f6" : q.category === "behavioral" ? "#10b981" : "#8b5cf6", borderRadius: "999px", padding: "2px 8px", fontSize: "9px", fontWeight: 700, textTransform: "uppercase", flexShrink: 0, marginTop: "2px" }}>
                           {q.category}
                         </span>
-                        <p className="text-[13px] font-semibold text-slate-950">{q.question}</p>
+                        <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)" }}>{q.question}</p>
                       </div>
-                      <p className="mt-1.5 text-[12px] leading-5 text-slate-500">{q.hint}</p>
+                      <p style={{ marginTop: "6px", fontSize: "12px", lineHeight: 1.5, color: "var(--dim)" }}>{q.hint}</p>
                     </div>
                   ))}
                 </div>
               </div>
-
-              {/* Research checklist */}
-              <div className="rounded-2xl border border-slate-200/60 bg-white p-4">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Research checklist</p>
-                <div className="space-y-1.5">
+              <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px 20px" }}>
+                <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "var(--dim)", marginBottom: "10px" }}>Research checklist</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                   {interviewPrep.researchChecklist.map((item, i) => (
-                    <div key={i} className="flex gap-2 text-[12px] text-slate-600">
-                      <span className="mt-0.5 shrink-0 text-slate-300">☐</span>
+                    <div key={i} style={{ display: "flex", gap: "8px", fontSize: "12px", color: "var(--muted)" }}>
+                      <span style={{ marginTop: "1px", flexShrink: 0, color: "var(--dim)" }}>☐</span>
                       <span>{item}</span>
                     </div>
                   ))}
                 </div>
               </div>
-
-              {/* Red flags */}
               {interviewPrep.redFlags.length > 0 && (
-                <div className="rounded-2xl border border-amber-200/60 bg-gradient-to-b from-amber-50 to-white p-4">
-                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-600">Ask the interviewer</p>
-                  <div className="space-y-1.5">
+                <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.2)", borderRadius: "12px", padding: "16px 20px" }}>
+                  <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: "#f59e0b", marginBottom: "10px" }}>Ask the interviewer</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                     {interviewPrep.redFlags.map((flag, i) => (
-                      <div key={i} className="flex gap-2 text-[12px] text-slate-700">
-                        <span className="mt-0.5 shrink-0 text-amber-500">?</span>
+                      <div key={i} style={{ display: "flex", gap: "8px", fontSize: "12px", color: "var(--muted)" }}>
+                        <span style={{ marginTop: "1px", flexShrink: 0, color: "#f59e0b" }}>?</span>
                         <span>{flag}</span>
                       </div>
                     ))}
@@ -2551,155 +2474,55 @@ export function ArgusWorkbench({
           )}
 
         {/* Intake area */}
-        <div className="overflow-hidden rounded-[24px] border border-slate-200/60 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
-          <div className="flex border-b border-slate-100">
-            {(["discovery", "manual"] as WorkspaceMode[]).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setWorkspaceMode(mode)}
-                className={[
-                  "flex-1 py-3 text-[12px] font-semibold transition",
-                  workspaceMode === mode
-                    ? "border-b-2 border-sky-500 text-sky-700"
-                    : "text-slate-500 hover:text-slate-700",
-                ].join(" ")}
-              >
-                {mode === "discovery" ? t("cc.discoveryReal") : t("cc.manualIntake")}
-              </button>
-            ))}
-          </div>
-
-          <div className="p-5">
-            {workspaceMode === "discovery" ? (
-              <div className="space-y-3">
-                <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible" style={{WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
-                  {(Object.entries(DISCOVERY_SOURCES) as [DiscoverySourceId, (typeof DISCOVERY_SOURCES)[DiscoverySourceId]][]).map(([id, src]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setSelectedDiscoverySource(id)}
-                      className={[
-                        "rounded-full border px-3.5 py-1.5 text-[12px] font-semibold transition",
-                        selectedDiscoverySource === id
-                          ? "border-slate-800 bg-slate-950 text-white"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300",
-                      ].join(" ")}
-                    >
-                      {src.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[12px] leading-5 text-slate-500">
-                  {activeDiscoverySourceConfig.description}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => void handleRunSourceDiscovery()}
-                  disabled={isDiscovering}
-                  className="rounded-full border border-slate-900 bg-white px-5 py-2.5 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:opacity-50"
-                >
-                  {isDiscovering ? t("cc.searching") : activeDiscoverySourceConfig.buttonLabel}
-                </button>
-                {discoveryError && (
-                  <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-[12px] text-rose-700">
-                    {discoveryError}
-                  </p>
-                )}
-                {filteredDiscoveredJobs.length > 0 && (
-                  <div className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
-                    {filteredDiscoveredJobs.map((job) => (
-                      <button
-                        key={job.listing.externalId}
-                        type="button"
-                        onClick={() => handleInspectDiscovery(job)}
-                        className={[
-                          "flex w-full items-center gap-3 px-4 py-3 text-left transition",
-                          activeDiscoveryId === job.listing.externalId
-                            ? "bg-sky-50"
-                            : "hover:bg-slate-50",
-                        ].join(" ")}
-                      >
-                        <span style={badgeStyle(job.analysis.score)} className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
-                          {job.analysis.score}%
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[13px] font-semibold text-slate-950">{job.listing.title}</p>
-                          <p className="text-[11px] text-slate-400">{job.listing.location}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-[12px] text-slate-500">
-                  Cole o texto da vaga (mesmo desorganizado). O Argus estrutura, calcula match e salva no radar.
-                </p>
-                <textarea
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  className="min-h-[200px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[13px] leading-6 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
-                  placeholder="Cole aqui a vaga inteira, mesmo desorganizada."
-                />
-                <button
-                  type="button"
-                  onClick={handleProcessDescription}
-                  disabled={isPending}
-                  className="rounded-full border border-slate-900 bg-white px-5 py-2.5 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:opacity-50"
-                >
-                  {isPending ? t("cc.processing") : t("cc.structureJob")}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        {renderIntakeArea()}
       </div>
 
       {/* ── Sidebar ──────────────────────────────────────────────────────────── */}
       <aside className="space-y-4 xl:sticky xl:top-[68px]" style={{order: 2}}>
         {/* Radar list */}
-        <div className="overflow-hidden rounded-[24px] border border-slate-200/60 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.05)]">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+        <div className="overflow-hidden rounded-[24px]" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
             <div className="flex items-center gap-2">
-              <p className="text-[12px] font-semibold text-slate-700">Radar</p>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">{trackedJobs.length}</span>
+              <p className="text-[12px] font-semibold" style={{ color: "var(--text)" }}>Radar</p>
+              <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "rgba(148,163,184,.1)", color: "var(--muted)", border: "1px solid var(--border)" }}>{trackedJobs.length}</span>
               {trackedJobs.filter(j => j.status === "Nova").length > 0 && (
-                <span className="rounded-full bg-sky-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                <span className="rounded-full px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "rgba(59,130,246,.2)", color: "#60a5fa" }}>
                   {trackedJobs.filter(j => j.status === "Nova").length} new
                 </span>
               )}
             </div>
             <div className="flex gap-1">
-              {(["all", "priority"] as ("all" | "priority")[]).map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setRadarFilter(f === "priority" ? "priority" : "all")}
-                  className={[
-                    "rounded-full px-2.5 py-1 text-[10px] font-bold transition",
-                    (f === "priority" ? radarFilter === "priority" : radarFilter === "all")
-                      ? "bg-slate-950 text-white"
-                      : "text-slate-500 hover:bg-slate-50",
-                  ].join(" ")}
-                >
-                  {f === "all" ? "Todos" : "≥70%"}
-                </button>
-              ))}
+              {(["all", "priority"] as ("all" | "priority")[]).map((f) => {
+                const isActive = f === "priority" ? radarFilter === "priority" : radarFilter === "all";
+                return (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setRadarFilter(f === "priority" ? "priority" : "all")}
+                    className="rounded-full px-2.5 py-1 text-[10px] font-bold transition"
+                    style={isActive
+                      ? { background: "var(--gold)", color: "#000" }
+                      : { color: "var(--muted)" }
+                    }
+                  >
+                    {f === "all" ? "Todos" : "≥70%"}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="max-h-[320px] divide-y divide-slate-100 overflow-y-auto">
+          <div className="max-h-[320px] overflow-y-auto" style={{ borderColor: "var(--border)" }}>
             {filteredTrackedJobs.length === 0 ? (
               <div className="flex flex-col items-center gap-2 px-4 py-6 text-center">
-                <p className="text-[12px] text-slate-400">
+                <p className="text-[12px]" style={{ color: "var(--dim)" }}>
                   {radarFilter === "priority" ? "Nenhuma vaga com score ≥ 70%" : "Radar vazio"}
                 </p>
                 {radarFilter === "priority" && (
                   <button
                     type="button"
                     onClick={() => setRadarFilter("all")}
-                    className="text-[11px] font-semibold text-sky-600 hover:text-sky-500"
+                    className="text-[11px] font-semibold"
+                    style={{ color: "var(--gold)" }}
                   >
                     Ver todas
                   </button>
@@ -2711,19 +2534,18 @@ export function ArgusWorkbench({
                   key={job.id}
                   href={`/jobs/${job.id}`}
                   onClick={() => handleInspectTrackedJob(job)}
-                  className={[
-                    "flex w-full items-center gap-3 px-4 py-3 text-left transition",
-                    activeTrackedJobId === job.id
-                      ? "bg-sky-50 shadow-[inset_3px_0_0_#38bdf8]"
-                      : "hover:bg-slate-50",
-                  ].join(" ")}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition"
+                  style={activeTrackedJobId === job.id
+                    ? { background: "rgba(245,158,11,.08)", boxShadow: "inset 3px 0 0 var(--gold)", borderBottom: "1px solid var(--border)" }
+                    : { borderBottom: "1px solid var(--border)" }
+                  }
                 >
                   <span style={badgeStyle(job.score)} className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">
                     {job.score}%
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12px] font-semibold text-slate-950">{job.title}</p>
-                    <p className="text-[11px] text-slate-400">{job.company}</p>
+                    <p className="truncate text-[12px] font-semibold" style={{ color: "var(--text)" }}>{job.title}</p>
+                    <p className="text-[11px]" style={{ color: "var(--muted)" }}>{job.company}</p>
                   </div>
                   <span style={statusStyle(job.status)} className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold">
                     {job.status.split(" ")[0]}
@@ -2735,17 +2557,18 @@ export function ArgusWorkbench({
         </div>
 
         {/* Profile sync */}
-        <div className="rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
+        <div className="rounded-[24px] p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
           {/* Header com status */}
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-[12px] font-semibold text-slate-700">CV & Cover Letter</p>
-            <span className={[
-              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
-              profileSyncState === "synced" ? "bg-emerald-50 text-emerald-700" :
-              profileSyncState === "syncing" ? "bg-sky-50 text-sky-700" :
-              profileSyncState === "error" ? "bg-rose-50 text-rose-700" :
-              "bg-slate-50 text-slate-500",
-            ].join(" ")}>
+            <p className="text-[12px] font-semibold" style={{ color: "var(--text)" }}>CV & Cover Letter</p>
+            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+              style={
+                profileSyncState === "synced" ? { background: "rgba(16,185,129,.15)", color: "#10b981" } :
+                profileSyncState === "syncing" ? { background: "rgba(59,130,246,.15)", color: "#60a5fa" } :
+                profileSyncState === "error" ? { background: "rgba(239,68,68,.15)", color: "#ef4444" } :
+                { background: "rgba(148,163,184,.1)", color: "var(--muted)" }
+              }
+            >
               {profileSyncState === "synced" ? "✓ Sincronizado" :
                profileSyncState === "syncing" ? "Salvando..." :
                profileSyncState === "error" ? "Erro ao salvar" :
@@ -2754,16 +2577,16 @@ export function ArgusWorkbench({
           </div>
 
           {/* Info contextual */}
-          <p className="mb-3 text-[11px] leading-5 text-slate-500">
+          <p className="mb-3 text-[11px] leading-5" style={{ color: "var(--dim)" }}>
             Atualizar o CV e a cover letter recalcula o match de todas as vagas automaticamente.
           </p>
 
           <div className="space-y-2.5">
             <div className="block">
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">CV</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>CV</span>
                 <label className="cursor-pointer">
-                  <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[10px] font-semibold text-slate-600 transition hover:bg-slate-50">
+                  <span className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition" style={{ background: "transparent", color: "var(--gold)", border: "1px solid rgba(245,158,11,.3)" }}>
                     {cvUploadState === "uploading" ? "Lendo..." : "Subir arquivo ↑"}
                   </span>
                   <input
@@ -2807,16 +2630,18 @@ export function ArgusWorkbench({
               <textarea
                 value={cvText}
                 onChange={(e) => setCvText(e.target.value)}
-                className="min-h-[110px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
+                className="min-h-[110px] w-full rounded-xl px-3 py-2.5 text-[12px] leading-5 outline-none transition"
+                style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
                 placeholder="Cole o texto completo do seu CV ou use 'Subir arquivo' acima..."
               />
             </div>
             <label className="block">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">Cover letter</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: "var(--muted)" }}>Cover letter</span>
               <textarea
                 value={coverLetterText}
                 onChange={(e) => setCoverLetterText(e.target.value)}
-                className="mt-1 min-h-[80px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-[12px] leading-5 text-slate-700 outline-none transition focus:border-sky-300 focus:bg-white"
+                className="mt-1 min-h-[80px] w-full rounded-xl px-3 py-2.5 text-[12px] leading-5 outline-none transition"
+                style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
                 placeholder="Cole o parágrafo base da sua cover letter..."
               />
             </label>
@@ -2845,16 +2670,18 @@ export function ArgusWorkbench({
                   setProfileSyncMessage("Falha na conexão.");
                 });
               }}
-              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="rounded-full px-3 py-1 text-[11px] font-semibold transition"
+              style={{ background: "transparent", color: "var(--gold)", border: "1px solid rgba(245,158,11,.3)" }}
             >
               Salvar agora
             </button>
             {profileSyncState !== "checking" && (
-              <p className="text-[10px] text-slate-400">{profileSyncMessage}</p>
+              <p className="text-[10px]" style={{ color: "var(--dim)" }}>{profileSyncMessage}</p>
             )}
           </div>
         </div>
       </aside>
+      </div>
     </div>
   );
 }
