@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useT } from "@/lib/i18n/context";
 import { trackedSources } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ const liveDiscoveryLinks: Record<string, string> = {
 };
 
 export default function SourcesPage() {
+  const t = useT();
   const liveSources    = trackedSources.filter((s) => /live/i.test(s.status));
   const pendingSources = trackedSources.filter((s) => !/live/i.test(s.status));
   const [jdText, setJdText]         = useState("");
@@ -36,7 +38,7 @@ export default function SourcesPage() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Sources</p>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
           <h1 className="text-2xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
-            Portais de vagas — discovery e intake
+            {t("sources.subtitle")}
           </h1>
           <div className="flex gap-2">
             <span className="rounded-full px-3 py-1 text-[12px] font-semibold" style={{ background: "rgba(16,185,129,.15)", color: "#10b981", border: "1px solid rgba(16,185,129,.3)" }}>
@@ -56,7 +58,7 @@ export default function SourcesPage() {
           {/* Live — discovery automático */}
           <section>
             <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "#10b981" }}>
-              Discovery automático
+              {t("sources.autoDiscovery")}
             </p>
             <div className="space-y-2">
               {liveSources.map((source) => (
@@ -80,7 +82,7 @@ export default function SourcesPage() {
                       className="rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition hover:opacity-80"
                       style={{ background: "var(--gold)", color: "#000" }}
                     >
-                      Buscar vagas
+                      {t("sources.openDiscovery")}
                     </Link>
                     <a
                       href={source.url}
@@ -100,7 +102,7 @@ export default function SourcesPage() {
           {/* Catalogadas — acesso rápido + intake */}
           <section>
             <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
-              Catalogadas — acesso direto ao portal
+              {t("sources.catalogued")}
             </p>
             <div className="space-y-1.5">
               {pendingSources.map((source) => (
@@ -131,7 +133,7 @@ export default function SourcesPage() {
                         : { background: "transparent", color: "var(--muted)", border: "1px solid var(--border)" }
                       }
                     >
-                      {activeSource === source.company ? "× Fechar" : "Intake"}
+                      {activeSource === source.company ? t("sources.close") : t("sources.intake")}
                     </button>
                     <a
                       href={source.url}
@@ -156,12 +158,12 @@ export default function SourcesPage() {
               Intake rápido
             </p>
             <h2 className="mt-1 text-[15px] font-semibold" style={{ color: "var(--text)" }}>
-              {activeSource ? `Vaga de ${activeSource}` : "Cole qualquer JD aqui"}
+              {activeSource ? `Vaga de ${activeSource}` : t("sources.pasteAnyJD")}
             </h2>
             <p className="mt-1 text-[12px]" style={{ color: "var(--dim)" }}>
               {activeSource
                 ? `Abra o portal da ${activeSource}, encontre a vaga e cole o texto completo abaixo.`
-                : "Funciona com qualquer portal — mesmo desorganizado. Selecione uma empresa acima ou cole direto."}
+                : t("sources.pasteAnyJDDesc")}
             </p>
 
             {/* Link do portal ativo */}
@@ -206,7 +208,7 @@ export default function SourcesPage() {
                 className="flex-1 rounded-full py-2.5 text-center text-[13px] font-semibold transition hover:opacity-80"
                 style={{ background: "var(--gold)", color: "#000" }}
               >
-                {jdText.trim() ? "Processar no CC →" : "Ir para Control Center"}
+                {jdText.trim() ? t("sources.processInCC") : t("sources.goToCC")}
               </Link>
               {jdText.trim() && (
                 <button
@@ -215,7 +217,7 @@ export default function SourcesPage() {
                   className="rounded-full px-4 py-2.5 text-[12px] font-semibold transition"
                   style={{ color: "var(--muted)", border: "1px solid var(--border)" }}
                 >
-                  Limpar
+                  {t("sources.clear")}
                 </button>
               )}
             </div>
@@ -229,13 +231,13 @@ export default function SourcesPage() {
 
           {/* Como funciona — guia inline */}
           <div className="rounded-2xl p-4" style={{ background: "var(--surf)", border: "1px solid var(--border)" }}>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Como usar</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>{t("sources.howToUse")}</p>
             <div className="mt-3 space-y-2.5">
               {[
-                { n: "01", text: "Para portais live, clique em 'Buscar vagas' — o discovery roda automático." },
-                { n: "02", text: "Para os outros, clique em '↗ Portal' para abrir, encontre a vaga e volte aqui." },
-                { n: "03", text: "Cole o texto completo da vaga no campo ao lado e clique em 'Processar no CC'." },
-                { n: "04", text: "O Argus estrutura, calcula o score e cria a mensagem para o recruiter em segundos." },
+                { n: "01", text: t("sources.step01") },
+                { n: "02", text: t("sources.step02") },
+                { n: "03", text: t("sources.step03") },
+                { n: "04", text: t("sources.step04") },
               ].map((step) => (
                 <div key={step.n} className="flex gap-3">
                   <span className="mt-0.5 shrink-0 text-[10px] font-bold" style={{ color: "var(--dim)" }}>{step.n}</span>

@@ -10,7 +10,7 @@ type ActionState = {
 
 const idleState: ActionState = {
   tone: "idle",
-  message: "Persistir o preview no banco ou disparar um email de teste.",
+  message: "",
 };
 
 export function DigestActions() {
@@ -27,7 +27,7 @@ export function DigestActions() {
           preview?: { subject?: string };
         };
 
-        if (!response.ok) throw new Error(payload.error ?? "Falha na operação");
+        if (!response.ok) throw new Error(payload.error ?? t("digests.operationFailed"));
 
         setStatus({
           tone: "success",
@@ -48,7 +48,7 @@ export function DigestActions() {
   return (
     <div className="rounded-[24px] p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
       <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
-        Testes operacionais
+        {t("digests.opsTests")}
       </p>
       <p
         className="mt-2 text-[12px] leading-5"
@@ -58,7 +58,7 @@ export function DigestActions() {
                  "var(--dim)",
         }}
       >
-        {status.message}
+        {status.message || t("digests.opsTestsHint")}
       </p>
       <div className="mt-4 flex gap-2">
         <button

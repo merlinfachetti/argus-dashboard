@@ -1,11 +1,13 @@
 import { LoginForm } from "@/components/login-form";
 import { isAuthConfigured } from "@/lib/auth";
+import { t as i18n } from "@/lib/i18n/strings";
 
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ next?: string }>;
 }) {
+  const t = (key: string) => i18n(key, "en");
   const authConfigured = isAuthConfigured();
   const params = await searchParams;
   const nextPath =
@@ -21,10 +23,10 @@ export default async function LoginPage({
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: "var(--muted)" }}>
-              Private access
+              {t("login.privateAccess")}
             </p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
-              Argus Intelligence
+              {t("login.appName")}
             </h1>
           </div>
         </div>
@@ -32,16 +34,14 @@ export default async function LoginPage({
         {/* Card */}
         <div className="rounded-[28px] p-7" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
           <p className="text-[13px] leading-6" style={{ color: "var(--dim)" }}>
-            {authConfigured
-              ? "Use a senha privada definida para a aplicação. O acesso fica protegido por sessão."
-              : "Configure ARGUS_ACCESS_PASSWORD e ARGUS_SESSION_SECRET para ativar a proteção."}
+            {authConfigured ? t("login.description") : t("login.configureEnv")}
           </p>
           <LoginForm authConfigured={authConfigured} nextPath={nextPath} />
         </div>
 
         {/* Status */}
         <p className="mt-4 text-center text-[11px]" style={{ color: "var(--dim)" }}>
-          Auth {authConfigured ? "✓ configurado" : "⚠ pendente de configuração"}
+          {authConfigured ? t("login.authConfigured") : t("login.authPending")}
         </p>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useT } from "@/lib/i18n/context";
 import type { CandidateProfile } from "@/lib/profile";
 
 interface ProfileEditorProps {
@@ -14,11 +15,13 @@ function TagEditor({
   values,
   onChange,
   placeholder,
+  tagHelp,
 }: {
   label: string;
   values: string[];
   onChange: (next: string[]) => void;
   placeholder: string;
+  tagHelp: string;
 }) {
   const [input, setInput] = useState("");
 
@@ -55,12 +58,13 @@ function TagEditor({
           style={{ color: "var(--text)" }}
         />
       </div>
-      <p className="mt-1 text-[10px]" style={{ color: "var(--dim)" }}>Enter ou vírgula para adicionar · × para remover</p>
+      <p className="mt-1 text-[10px]" style={{ color: "var(--dim)" }}>{tagHelp}</p>
     </div>
   );
 }
 
 export function ProfileEditor({ profile }: ProfileEditorProps) {
+  const t = useT();
   const [name, setName] = useState(profile.name);
   const [headline, setHeadline] = useState(profile.headline);
   const [location, setLocation] = useState(profile.location);
@@ -88,15 +92,15 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
       const payload = await res.json() as { error?: string };
       if (!res.ok) {
         setSaveState("error");
-        setSaveMsg(payload.error ?? "Erro ao salvar");
+        setSaveMsg(payload.error ?? t("profile.saveError"));
       } else {
         setSaveState("saved");
-        setSaveMsg("Perfil salvo — match será recalculado nas próximas análises.");
+        setSaveMsg(t("profile.savedMsg"));
         setTimeout(() => setSaveState("idle"), 3000);
       }
     } catch {
       setSaveState("error");
-      setSaveMsg("Falha na conexão");
+      setSaveMsg(t("profile.connectionError"));
     }
   }, [name, headline, location, availability, summary, languages, coreStack, targetRoles, cvText, coverLetterText]);
 
@@ -104,13 +108,13 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
     <div className="space-y-6">
       {/* Identidade */}
       <section className="rounded-2xl p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Identidade</p>
+        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>{t("profile.identity")}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {[
-            { label: "Nome", value: name, set: setName },
-            { label: "Headline", value: headline, set: setHeadline },
-            { label: "Localização", value: location, set: setLocation },
-            { label: "Disponibilidade", value: availability, set: setAvailability },
+            { label: t("profile.name"), value: name, set: setName },
+            { label: t("profile.headline"), value: headline, set: setHeadline },
+            { label: t("profile.location"), value: location, set: setLocation },
+            { label: t("profile.availability"), value: availability, set: setAvailability },
           ].map(({ label, value, set }) => (
             <label key={label} className="block">
               <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>{label}</span>
@@ -124,7 +128,7 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
           ))}
         </div>
         <label className="mt-3 block">
-          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>Resumo profissional</span>
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>{t("profile.proSummary")}</span>
           <textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
@@ -137,38 +141,38 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
 
       {/* Stack + Roles + Idiomas */}
       <section className="rounded-2xl p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Competências & alvos</p>
+        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>{t("profile.skillsTargets")}</p>
         <div className="space-y-4">
-          <TagEditor label="Core Stack" values={coreStack} onChange={setCoreStack} placeholder="TypeScript, React..." />
-          <TagEditor label="Roles-alvo" values={targetRoles} onChange={setTargetRoles} placeholder="Senior Engineer, Tech Lead..." />
-          <TagEditor label="Idiomas" values={languages} onChange={setLanguages} placeholder="English, Portuguese..." />
+          <TagEditor label="Core Stack" values={coreStack} onChange={setCoreStack} placeholder="TypeScript, React..." tagHelp={t("profile.tagHelp")} />
+          <TagEditor label="Target Roles" values={targetRoles} onChange={setTargetRoles} placeholder="Senior Engineer, Tech Lead..." tagHelp={t("profile.tagHelp")} />
+          <TagEditor label={t("job.languages")} values={languages} onChange={setLanguages} placeholder="English, Portuguese..." tagHelp={t("profile.tagHelp")} />
         </div>
       </section>
 
       {/* Documentos */}
       <section className="rounded-2xl p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
-        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Documentos</p>
+        <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>{t("profile.documents")}</p>
         <div className="space-y-3">
           <label className="block">
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>CV (texto completo)</span>
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>{t("profile.cvFullText")}</span>
             <textarea
               value={cvText}
               onChange={(e) => setCvText(e.target.value)}
               rows={8}
               className="w-full rounded-xl px-3 py-2.5 text-[12px] leading-5 outline-none transition"
               style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
-              placeholder="Cole o texto completo do seu CV..."
+              placeholder={t("profile.cvPlaceholder")}
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>Cover letter (parágrafo base)</span>
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>{t("profile.coverBase")}</span>
             <textarea
               value={coverLetterText}
               onChange={(e) => setCoverLetterText(e.target.value)}
               rows={4}
               className="w-full rounded-xl px-3 py-2.5 text-[12px] leading-5 outline-none transition"
               style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
-              placeholder="Parágrafo de apresentação base..."
+              placeholder={t("profile.coverPlaceholder")}
             />
           </label>
         </div>
@@ -183,7 +187,7 @@ export function ProfileEditor({ profile }: ProfileEditorProps) {
           className="rounded-full px-6 py-2.5 text-[13px] font-bold transition hover:opacity-80 disabled:opacity-50"
           style={{ background: "var(--gold)", color: "#000" }}
         >
-          {saveState === "saving" ? "Salvando..." : "Salvar perfil"}
+          {saveState === "saving" ? t("profile.saving") : t("profile.saveProfile")}
         </button>
         {saveMsg && (
           <p className="text-[12px]" style={{ color: saveState === "error" ? "#ef4444" : "#10b981" }}>

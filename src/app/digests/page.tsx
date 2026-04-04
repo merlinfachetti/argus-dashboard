@@ -2,11 +2,13 @@ import Link from "next/link";
 import { DigestActions } from "@/components/digest-actions";
 import { PageHero } from "@/components/page-hero";
 import { buildDailyDigestPreview } from "@/lib/daily-digest";
+import { t as i18n } from "@/lib/i18n/strings";
 
 export const dynamic = "force-dynamic";
 
 
 export default async function DigestsPage() {
+  const t = (key: string) => i18n(key, "en");
   const digest = await buildDailyDigestPreview();
 
   return (
@@ -15,11 +17,11 @@ export default async function DigestsPage() {
         variant="minimal"
         eyebrow="Digests"
         title="Morning digest — radar as daily operating routine."
-        description="Preview do que será consolidado amanhã cedo, status do envio por email e controle do cron."
+        description={t("digests.description")}
         metrics={[
-          { label: "Itens", value: `${digest.items.length}`, tone: "accent" },
-          { label: "Alta prioridade", value: `${digest.topPriorityCount}`, tone: "emerald" },
-          { label: "Fila de ação", value: `${digest.actionQueueCount}`, tone: "light" },
+          { label: t("digests.items"), value: `${digest.items.length}`, tone: "accent" },
+          { label: t("digests.highPriority"), value: `${digest.topPriorityCount}`, tone: "emerald" },
+          { label: t("digests.actionQueue"), value: `${digest.actionQueueCount}`, tone: "light" },
           { label: "Mode", value: "Digest", tone: "dark" },
         ]}
         actions={
@@ -29,14 +31,14 @@ export default async function DigestsPage() {
               className="rounded-full px-4 py-2 text-[13px] font-semibold transition"
               style={{ background: "transparent", color: "var(--muted)", border: "1px solid var(--border)" }}
             >
-              Ver ops
+              {t("digests.viewOps")}
             </Link>
             <Link
               href="/jobs"
               className="rounded-full px-4 py-2 text-[13px] font-semibold transition"
               style={{ background: "transparent", color: "var(--dim)", border: "1px solid var(--border)" }}
             >
-              Voltar para jobs
+              {t("digests.backToJobs")}
             </Link>
           </>
         }
@@ -84,7 +86,7 @@ export default async function DigestsPage() {
               ))
             ) : (
               <div className="rounded-2xl px-5 py-6 text-[13px] leading-6" style={{ background: "var(--surf)", border: "1px dashed var(--border)", color: "var(--dim)" }}>
-                Assim que o banco estiver conectado e o radar tiver vagas, o preview do digest aparece aqui automaticamente.
+                {t("digests.emptyState")}
               </div>
             )}
           </div>
@@ -103,7 +105,7 @@ export default async function DigestsPage() {
               Email delivery
             </p>
             <h2 className="mt-2 text-[15px] font-semibold" style={{ color: "var(--text)" }}>
-              {digest.emailConfigured ? "Resend configurado" : "Envio pendente de configuração"}
+              {digest.emailConfigured ? t("digests.emailConfigured") : t("digests.emailPending")}
             </h2>
             <p className="mt-2 text-[12px] leading-6" style={{ color: "var(--dim)" }}>
               Configure <code style={{ background: "var(--surf)", padding: "1px 6px", borderRadius: "4px", fontSize: "11px", color: "var(--muted)" }}>RESEND_API_KEY</code>,{" "}
@@ -123,7 +125,7 @@ export default async function DigestsPage() {
               Scheduler
             </p>
             <h2 className="mt-2 text-[15px] font-semibold" style={{ color: "var(--text)" }}>
-              {digest.cronConfigured ? "Cron mapeado na Vercel" : "Cron ainda não encontrado"}
+              {digest.cronConfigured ? t("digests.cronMapped") : t("digests.cronNotFound")}
             </h2>
             <p className="mt-2 text-[12px] leading-6" style={{ color: "var(--dim)" }}>
               A rota usa <code style={{ background: "var(--surf)", padding: "1px 6px", borderRadius: "4px", fontSize: "11px", color: "var(--muted)" }}>CRON_SECRET</code> e roda diariamente em UTC sem expor o endpoint.
@@ -135,7 +137,7 @@ export default async function DigestsPage() {
               Profile source
             </p>
             <h2 className="mt-2 text-[15px] font-semibold" style={{ color: "var(--text)" }}>
-              {digest.profileSource === "database" ? "Perfil vindo do banco" : "Fallback no perfil base"}
+              {digest.profileSource === "database" ? t("digests.profileDB") : t("digests.profileFallback")}
             </h2>
             <p className="mt-2 text-[12px] leading-6" style={{ color: "var(--dim)" }}>
               O digest respeita o perfil persistido no servidor, não só o estado local.

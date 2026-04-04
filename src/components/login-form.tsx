@@ -25,9 +25,7 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
     }
 
     if (!authConfigured) {
-      setError(
-        "Auth privada ainda nao configurada. Defina as variaveis de ambiente primeiro.",
-      );
+      setError(t("login.authNotConfigured"));
       return;
     }
 
@@ -63,7 +61,7 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
         window.location.href = payload.redirectTo ?? "/control-center";
       }, 760);
     } catch {
-      setError("Falha inesperada ao autenticar.");
+      setError(t("login.authFailure"));
       setIsSubmitting(false);
     }
   }
@@ -75,7 +73,7 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
       <form className="mt-6 grid gap-3" onSubmit={handleSubmit}>
         <label className="grid gap-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
-            Senha de acesso
+            {t("login.passwordLabel")}
           </span>
           <input
             type="password"
@@ -83,7 +81,7 @@ export function LoginForm({ authConfigured, nextPath }: LoginFormProps) {
             onChange={(event) => setPassword(event.target.value)}
             className="h-11 rounded-2xl px-4 text-[13px] outline-none transition"
             style={{ background: "var(--surf)", border: "1px solid var(--border)", color: "var(--text)" }}
-            placeholder="Senha privada do Argus"
+            placeholder={t("login.placeholder")}
           />
         </label>
 
@@ -137,23 +135,23 @@ function getPasswordStrength(password: string) {
 
   if (score <= 2) {
     return {
-      label: "Senha fraca",
+      label: "Weak password",
       width: "34%",
-      message: "Ja funciona como hint inicial, mas vale deixar mais robusta para transmitir mais confianca.",
+      message: "Works as an initial hint, but could be more robust.",
     };
   }
 
   if (score <= 4) {
     return {
-      label: "Senha mediana",
+      label: "Medium password",
       width: "68%",
-      message: "Ja esta melhor estruturada. Com mais variacao e comprimento, a leitura fica forte.",
+      message: "Better structured. More variation and length would make it strong.",
     };
   }
 
   return {
-    label: "Senha forte",
+    label: "Strong password",
     width: "100%",
-    message: "Boa composicao. O sinal desta senha esta consistente para o portal privado.",
+    message: "Good composition. Signal is consistent for the private portal.",
   };
 }

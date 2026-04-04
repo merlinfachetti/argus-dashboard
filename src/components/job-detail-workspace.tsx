@@ -230,9 +230,9 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
           Job Detail
         </p>
-        <h2 className="mt-2 text-2xl font-semibold" style={{ color: "var(--text)" }}>Vaga não encontrada</h2>
+        <h2 className="mt-2 text-2xl font-semibold" style={{ color: "var(--text)" }}>{t("job.notFound")}</h2>
         <p className="mt-2 text-[13px] leading-6" style={{ color: "var(--dim)" }}>
-          Esta vaga não apareceu no radar persistido nem no estado local. Volte ao explorer.
+          {t("job.notFoundHint")}
         </p>
         <div className="mt-5 flex gap-2.5">
           <Link
@@ -240,7 +240,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
             className="rounded-full px-4 py-2 text-[13px] font-semibold transition"
             style={{ background: "transparent", color: "var(--muted)", border: "1px solid var(--border)" }}
           >
-            Voltar para jobs
+            {t("digests.backToJobs")}
           </Link>
           <Link
             href="/control-center"
@@ -273,7 +273,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
           <div className="flex flex-col gap-4">
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: "var(--gold)" }}>
-                Vaga em foco
+                {t("job.inFocus")}
               </p>
               <h1 className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
                 {job.title}
@@ -322,11 +322,11 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
                 className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-[13px] font-bold transition hover:opacity-80"
                 style={{ background: "var(--gold)", color: "#000" }}
               >
-                Aplicar na vaga ↗
+                {t("job.apply")}
               </a>
             ) : (
               <span className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px]" style={{ color: "var(--dim)", border: "1px solid var(--border)" }}>
-                Sem link de aplicação
+                {t("job.noLink")}
               </span>
             )}
             <Link
@@ -334,7 +334,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
               className="rounded-full px-4 py-2 text-[12px] font-semibold transition"
               style={{ background: "transparent", color: "var(--muted)", border: "1px solid var(--border)" }}
             >
-              Analisar no CC
+              {t("job.analyzeInCC")}
             </Link>
             <button
               type="button"
@@ -384,7 +384,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
               Resumo
             </p>
-            <p className="mt-3 text-[13px] leading-7" style={{ color: "var(--muted)" }}>{job.summary || "Sem resumo disponível."}</p>
+            <p className="mt-3 text-[13px] leading-7" style={{ color: "var(--muted)" }}>{job.summary || t("job.noSummary")}</p>
             {job.skills.length > 0 && (
               <div className="mt-4">
                 <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Skills</p>
@@ -410,7 +410,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
               { label: t("job.seniority"), value: job.seniority },
               { label: t("job.workModel"), value: job.workModel },
               { label: t("job.contract"), value: job.employmentType },
-              { label: t("job.languages"), value: job.languages.join(", ") || "Não detectados" },
+              { label: t("job.languages"), value: job.languages.join(", ") || t("job.notDetected") },
               { label: t("job.origin"), value: job.intakeMode },
             ].map((item) => (
               <div key={item.label} className="rounded-2xl px-4 py-3.5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
@@ -454,11 +454,11 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-[24px] p-5" style={{ background: "var(--card)", border: "1px solid rgba(16,185,129,.25)" }}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "#10b981" }}>
-                Por que combina
+                {t("job.whyMatch")}
               </p>
               <div className="mt-3 space-y-2">
                 {analysis.strengths.length === 0 ? (
-                  <p className="text-[13px]" style={{ color: "var(--dim)" }}>Nenhum ponto de força identificado.</p>
+                  <p className="text-[13px]" style={{ color: "var(--dim)" }}>{t("cc.noStrengths")}</p>
                 ) : (
                   analysis.strengths.map((s) => (
                     <div key={s} className="flex items-start gap-2.5 rounded-xl px-3.5 py-2.5" style={{ background: "var(--surf)", border: "1px solid rgba(16,185,129,.2)" }}>
@@ -471,11 +471,11 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
             </div>
             <div className="rounded-[24px] p-5" style={{ background: "var(--card)", border: "1px solid rgba(245,158,11,.25)" }}>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "#f59e0b" }}>
-                Gaps a endereçar
+                {t("job.gapsToAddress")}
               </p>
               <div className="mt-3 space-y-2">
                 {analysis.risks.length === 0 ? (
-                  <p className="text-[13px]" style={{ color: "var(--dim)" }}>Nenhum gap crítico identificado.</p>
+                  <p className="text-[13px]" style={{ color: "var(--dim)" }}>{t("job.noGaps")}</p>
                 ) : (
                   analysis.risks.map((r) => (
                     <div key={r} className="flex items-start gap-2.5 rounded-xl px-3.5 py-2.5" style={{ background: "var(--surf)", border: "1px solid rgba(245,158,11,.2)" }}>
@@ -491,13 +491,13 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
           {/* Próximo passo */}
           <div className="flex items-center justify-between gap-3 rounded-2xl px-5 py-4" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>Próximo passo</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>{t("job.nextStep")}</p>
               <p className="mt-1 text-[13px] font-medium" style={{ color: "var(--text)" }}>
                 {analysis.score >= 80
-                  ? "Alta prioridade — enviar mensagem e aplicar hoje."
+                  ? t("job.highPriority")
                   : analysis.score >= 65
-                  ? "Boa oportunidade — revisar gaps e customizar mensagem."
-                  : "Compatibilidade parcial — avaliar se vale o esforço."}
+                  ? t("job.goodOpportunity")
+                  : t("job.partialMatch")}
               </p>
             </div>
             {job.sourceUrl && (
@@ -543,7 +543,7 @@ export function JobDetailWorkspace({ jobId, profile }: JobDetailWorkspaceProps) 
           </p>
           <div className="space-y-2">
             {job.history.length === 0 ? (
-              <p className="text-[13px]" style={{ color: "var(--dim)" }}>Sem histórico ainda.</p>
+              <p className="text-[13px]" style={{ color: "var(--dim)" }}>{t("job.noHistory")}</p>
             ) : (
               job.history.map((entry, i) => (
                 <div
