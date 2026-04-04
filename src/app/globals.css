@@ -1,19 +1,60 @@
 @import "tailwindcss";
 
+/* ─── Argus V3 — Design tokens ──────────────────────────────────────────────── */
 :root {
-  --background: #f4f6f9;
-  --foreground: #08111f;
-  --surface: rgba(255, 255, 255, 0.82);
-  --surface-strong: rgba(255, 255, 255, 0.96);
-  --line: rgba(15, 23, 42, 0.07);
-  --sky: #38bdf8;
-  --ember: #f97316;
-  --ink: #08111f;
-  --font-sans:
-    "Suisse Intl", "Avenir Next", "Segoe UI", "Helvetica Neue", Helvetica, Arial,
-    sans-serif;
-  --font-mono:
-    "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  /* Core palette — dark mode (default) */
+  --bg:        #06101f;
+  --surf:      #0d1b2e;
+  --card:      #111f35;
+  --card-alt:  #162640;
+  --border:    #1e304a;
+  --border-l:  #243d5a;
+
+  /* Brand */
+  --gold:      #f59e0b;
+  --gold-dim:  #78350f;
+  --blue:      #3b82f6;
+  --blue-dim:  #1e3a5f;
+  --emerald:   #10b981;
+  --emerald-dim:#064e3b;
+  --red:       #ef4444;
+  --red-dim:   #7f1d1d;
+  --violet:    #8b5cf6;
+  --slate:     #64748b;
+
+  /* Text */
+  --text:      #e2e8f0;
+  --muted:     #94a3b8;
+  --dim:       #475569;
+
+  /* Surfaces */
+  --background:  var(--bg);
+  --foreground:  var(--text);
+  --surface:     var(--surf);
+  --surface-card: var(--card);
+  --line:        var(--border);
+
+  /* Typography */
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+/* ─── Light mode (preparado — ativar via classe .light na <html>) ────────────── */
+:root.light {
+  --bg:        #f0f4f8;
+  --surf:      #ffffff;
+  --card:      #ffffff;
+  --card-alt:  #f8fafc;
+  --border:    #e2e8f0;
+  --border-l:  #cbd5e1;
+  --text:      #0f172a;
+  --muted:     #475569;
+  --dim:       #94a3b8;
+  --background:  var(--bg);
+  --foreground:  var(--text);
+  --surface:     var(--surf);
+  --surface-card: var(--card);
+  --line:        var(--border);
 }
 
 @theme inline {
@@ -23,41 +64,24 @@
   --font-mono: var(--font-mono);
 }
 
-* {
+/* ─── Base reset ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
 html {
   scroll-behavior: smooth;
+  color-scheme: dark;
 }
 
 body {
   min-height: 100vh;
-  /* Background: neutral cool-white com acentos sutis — coerente com cards brancos e header dark */
-  background:
-    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(56, 189, 248, 0.07), transparent),
-    radial-gradient(ellipse 60% 30% at 100% 60%, rgba(249, 115, 22, 0.04), transparent),
-    linear-gradient(180deg, #f0f4f8 0%, #f4f6f9 40%, #f1f5f9 100%);
-  color: var(--foreground);
+  background-color: var(--bg);
+  color: var(--text);
   font-family: var(--font-sans);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-}
-
-/* Grid texture — muito sutil, só no topo */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  opacity: 0.18;
-  background-image:
-    linear-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.5), transparent 60%);
-  pointer-events: none;
 }
 
 a {
@@ -65,39 +89,50 @@ a {
   text-decoration: none;
 }
 
-.argus-shell {
-  position: relative;
+/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--border-l); }
+::-webkit-scrollbar-thumb:hover { background: var(--slate); }
+
+::selection { background: rgba(245, 158, 11, 0.2); }
+
+/* ─── Argus utility classes ─────────────────────────────────────────────────── */
+.argus-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
-.argus-glass {
-  background: var(--surface);
-  backdrop-filter: blur(24px);
+.argus-surface {
+  background: var(--surf);
+  border: 1px solid var(--border);
 }
 
-::selection {
-  background: rgba(14, 165, 233, 0.18);
+.argus-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-/* Scrollbar refinada */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
+/* Stage badge colours */
+.stage-radar    { background: rgba(100,116,139,.15); color: #94a3b8; border: 1px solid rgba(100,116,139,.25); }
+.stage-interest { background: rgba(59,130,246,.15);  color: #3b82f6; border: 1px solid rgba(59,130,246,.25); }
+.stage-applied  { background: rgba(139,92,246,.15);  color: #8b5cf6; border: 1px solid rgba(139,92,246,.25); }
+.stage-interview{ background: rgba(245,158,11,.15);  color: #f59e0b; border: 1px solid rgba(245,158,11,.25); }
+.stage-offered  { background: rgba(16,185,129,.15);  color: #10b981; border: 1px solid rgba(16,185,129,.25); }
+.stage-rejected { background: rgba(239,68,68,.15);   color: #ef4444; border: 1px solid rgba(239,68,68,.25); }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* Score colours */
+.score-high { color: #10b981; }
+.score-mid  { color: #f59e0b; }
+.score-low  { color: #ef4444; }
 
-::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.14);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(15, 23, 42, 0.22);
-}
-
-/* Auth reveal animation — mantida intacta */
+/* ─── Auth reveal animation ──────────────────────────────────────────────────── */
 .auth-reveal {
   position: fixed;
   inset: 0;
@@ -114,15 +149,13 @@ a {
   width: 12rem;
   aspect-ratio: 1;
   border-radius: 999px;
-  background:
-    radial-gradient(
-      circle,
-      rgba(255, 255, 255, 0.98) 0%,
-      rgba(224, 242, 254, 0.96) 28%,
-      rgba(125, 211, 252, 0.9) 48%,
-      rgba(14, 165, 233, 0.42) 66%,
-      rgba(14, 165, 233, 0) 84%
-    );
+  background: radial-gradient(
+    circle,
+    rgba(245, 158, 11, 0.9) 0%,
+    rgba(180, 83, 9, 0.7) 40%,
+    rgba(245, 158, 11, 0.2) 70%,
+    transparent 90%
+  );
   transform: translate(-50%, -50%) scale(0.08);
   filter: blur(8px);
   animation: auth-reveal-bloom 760ms cubic-bezier(0.2, 0.84, 0.2, 1) forwards;
@@ -132,32 +165,29 @@ a {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    circle at center,
-    rgba(240, 249, 255, 0.52),
-    rgba(255, 255, 255, 0.92) 68%,
-    rgba(255, 255, 255, 1) 100%
-  );
+  background: radial-gradient(circle at center, rgba(6, 16, 31, 0.0), rgba(6, 16, 31, 0.8) 100%);
   opacity: 0;
   animation: auth-reveal-wash 760ms ease-out forwards;
 }
 
 @keyframes auth-reveal-bloom {
-  0% {
-    transform: translate(-50%, -50%) scale(0.08);
-    opacity: 0.12;
-  }
-  45% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(16);
-    opacity: 1;
-  }
+  0%   { transform: translate(-50%, -50%) scale(0.08); opacity: 0.12; }
+  45%  { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(16); opacity: 1; }
 }
 
 @keyframes auth-reveal-wash {
-  0% { opacity: 0; }
-  48% { opacity: 0.25; }
+  0%   { opacity: 0; }
+  48%  { opacity: 0.1; }
   100% { opacity: 1; }
+}
+
+/* ─── Animate in ─────────────────────────────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.3s ease both;
 }
