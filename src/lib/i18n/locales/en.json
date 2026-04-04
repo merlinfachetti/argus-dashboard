@@ -317,6 +317,7 @@
   "sync.syncingCvCover": "Syncing CV and cover letter to server...",
   "sync.syncProfileError": "Failed to sync profile to server",
   "sync.syncStatusError": "Failed to sync status, keeping local change",
+  "sync.loadingProfile": "Syncing profile…",
   "sync.verifyError": "Failed to verify persisted documents",
   "sync.viewAll": "View all",
   "verdict.goodMatch": "Good match",

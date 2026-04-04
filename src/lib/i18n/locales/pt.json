@@ -317,6 +317,7 @@
   "sync.syncingCvCover": "Sincronizando CV e cover letter no servidor...",
   "sync.syncProfileError": "Falha ao sincronizar perfil no servidor",
   "sync.syncStatusError": "Falha ao sincronizar status, mantendo alteração local",
+  "sync.loadingProfile": "Sincronizando perfil…",
   "sync.verifyError": "Falha ao verificar documentos persistidos",
   "sync.viewAll": "Ver todas",
   "verdict.goodMatch": "Boa aderência",
