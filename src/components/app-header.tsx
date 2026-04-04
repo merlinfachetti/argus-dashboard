@@ -66,13 +66,13 @@ export function AppHeader() {
           <Image
             src="/logo-argus.png"
             alt="Argus"
-            width={32}
-            height={32}
+            width={44}
+            height={44}
             style={{
-              width: "32px",
-              height: "32px",
+              width: "44px",
+              height: "44px",
               objectFit: "contain",
-              filter: "drop-shadow(0 0 8px rgba(245,158,11,0.5))",
+              filter: "drop-shadow(0 0 10px rgba(245,158,11,0.55))",
               flexShrink: 0,
             }}
             priority
