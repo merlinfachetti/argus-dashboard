@@ -20,12 +20,12 @@ type PageHeroProps = {
 
 function metricToneStyle(tone: HeroMetric["tone"] = "light"): CSSProperties {
   const map: Record<NonNullable<HeroMetric["tone"]>, CSSProperties> = {
-    dark:    { background: "#0f172a", color: "#f8fafc", border: "1px solid #1e293b" },
-    accent:  { background: "#f0f9ff", color: "#0f172a", border: "1px solid #bae6fd" },
-    emerald: { background: "#f0fdf4", color: "#0f172a", border: "1px solid #bbf7d0" },
-    amber:   { background: "#fffbeb", color: "#0f172a", border: "1px solid #fde68a" },
-    rose:    { background: "#fff1f2", color: "#0f172a", border: "1px solid #fecdd3" },
-    light:   { background: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" },
+    dark:    { background: "rgba(245,158,11,.15)", color: "var(--gold)", border: "1px solid rgba(245,158,11,.3)" },
+    accent:  { background: "rgba(59,130,246,.1)", color: "#60a5fa", border: "1px solid rgba(59,130,246,.3)" },
+    emerald: { background: "rgba(16,185,129,.1)", color: "#10b981", border: "1px solid rgba(16,185,129,.3)" },
+    amber:   { background: "rgba(245,158,11,.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,.3)" },
+    rose:    { background: "rgba(239,68,68,.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,.3)" },
+    light:   { background: "rgba(148,163,184,.08)", color: "var(--text)", border: "1px solid var(--border)" },
   };
   return map[tone];
 }
@@ -33,23 +33,23 @@ function metricToneStyle(tone: HeroMetric["tone"] = "light"): CSSProperties {
 // Variante padrão — para páginas operacionais com aside
 function DefaultHero({ eyebrow, title, description, metrics, actions, aside }: PageHeroProps) {
   return (
-    <section className="relative overflow-hidden rounded-[36px] border border-slate-200/60 bg-white/80 shadow-[0_24px_80px_rgba(15,23,42,0.07)] backdrop-blur-sm">
+    <section className="relative overflow-hidden rounded-[36px]" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
       {/* Background accent */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(56,189,248,0.07),transparent_40%),radial-gradient(circle_at_100%_100%,rgba(249,115,22,0.05),transparent_40%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(245,158,11,0.04),transparent_40%),radial-gradient(circle_at_100%_100%,rgba(59,130,246,0.03),transparent_40%)]" />
 
       <div className="relative grid gap-0 xl:grid-cols-[1fr_340px]">
         {/* Left — content */}
-        <div className="border-r border-slate-200/60 p-5 sm:p-7 xl:p-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+        <div className="p-5 sm:p-7 xl:p-10" style={{ borderRight: "1px solid var(--border)" }}>
+          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ background: "rgba(148,163,184,.08)", color: "var(--muted)", border: "1px solid var(--border)" }}>
             {eyebrow}
           </div>
 
-          <h1 className="mt-5 max-w-2xl text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-[2.2rem] sm:leading-[1.1]">
+          <h1 className="mt-5 max-w-2xl text-3xl font-semibold tracking-[-0.03em] sm:text-[2.2rem] sm:leading-[1.1]" style={{ color: "var(--text)" }}>
             {title}
           </h1>
 
           {description && (
-            <p className="mt-3 max-w-xl text-[15px] leading-7 text-slate-500">
+            <p className="mt-3 max-w-xl text-[15px] leading-7" style={{ color: "var(--dim)" }}>
               {description}
             </p>
           )}
@@ -80,8 +80,8 @@ function DefaultHero({ eyebrow, title, description, metrics, actions, aside }: P
 
         {/* Right — aside */}
         {aside && (
-          <div className="flex flex-col bg-gradient-to-b from-slate-950 to-slate-900 p-8 text-white xl:rounded-r-[36px]">
-            <div className="pointer-events-none absolute right-0 top-0 h-full w-[340px] bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.12),transparent_40%),radial-gradient(circle_at_bottom,rgba(249,115,22,0.08),transparent_40%)] xl:rounded-r-[36px]" />
+          <div className="flex flex-col p-8 xl:rounded-r-[36px]" style={{ background: "var(--surf)", color: "var(--text)" }}>
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-[340px] bg-[radial-gradient(circle_at_top,rgba(245,158,11,0.06),transparent_40%),radial-gradient(circle_at_bottom,rgba(59,130,246,0.04),transparent_40%)] xl:rounded-r-[36px]" />
             <div className="relative flex-1">{aside}</div>
           </div>
         )}
@@ -93,17 +93,17 @@ function DefaultHero({ eyebrow, title, description, metrics, actions, aside }: P
 // Variante minimal — sem aside, para páginas de conteúdo simples
 function MinimalHero({ eyebrow, title, description, metrics, actions }: PageHeroProps) {
   return (
-    <section className="border-b border-slate-200/60 pb-5">
-      <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+    <section className="pb-5" style={{ borderBottom: "1px solid var(--border)" }}>
+      <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ background: "rgba(148,163,184,.08)", color: "var(--muted)", border: "1px solid var(--border)" }}>
         {eyebrow}
       </div>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="max-w-2xl text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+          <h1 className="max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl" style={{ color: "var(--text)" }}>
             {title}
           </h1>
           {description && (
-            <p className="mt-2 max-w-xl text-[14px] leading-7 text-slate-500">
+            <p className="mt-2 max-w-xl text-[14px] leading-7" style={{ color: "var(--dim)" }}>
               {description}
             </p>
           )}
@@ -137,12 +137,12 @@ function MinimalHero({ eyebrow, title, description, metrics, actions }: PageHero
 // Variante compact — apenas eyebrow + título + ações numa linha
 function CompactHero({ eyebrow, title, actions, metrics }: PageHeroProps) {
   return (
-    <section className="flex flex-col gap-4 border-b border-slate-200/60 pb-6 sm:flex-row sm:items-center sm:justify-between">
+    <section className="flex flex-col gap-4 pb-6 sm:flex-row sm:items-center sm:justify-between" style={{ borderBottom: "1px solid var(--border)" }}>
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: "var(--muted)" }}>
           {eyebrow}
         </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
           {title}
         </h1>
       </div>
