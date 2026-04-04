@@ -26,13 +26,15 @@ export default async function DigestsPage() {
           <>
             <Link
               href="/ops"
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50"
+              className="rounded-full px-4 py-2 text-[13px] font-semibold transition"
+              style={{ background: "transparent", color: "var(--muted)", border: "1px solid var(--border)" }}
             >
               Ver ops
             </Link>
             <Link
               href="/jobs"
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="rounded-full px-4 py-2 text-[13px] font-semibold transition"
+              style={{ background: "transparent", color: "var(--dim)", border: "1px solid var(--border)" }}
             >
               Voltar para jobs
             </Link>
@@ -42,45 +44,46 @@ export default async function DigestsPage() {
 
       <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[1fr_300px]">
         {/* Preview do digest */}
-        <article className="rounded-[28px] border border-slate-200/60 bg-white/90 p-6 shadow-[0_16px_50px_rgba(15,23,42,0.05)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+        <article className="rounded-[28px] p-6" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
             Subject
           </p>
-          <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+          <h2 className="mt-2 text-xl font-semibold tracking-tight" style={{ color: "var(--text)" }}>
             {digest.subject}
           </h2>
-          <p className="mt-3 text-[13px] leading-6 text-slate-500">{digest.intro}</p>
-          <p className="mt-1 text-[13px] leading-6 text-slate-500">{digest.summary}</p>
+          <p className="mt-3 text-[13px] leading-6" style={{ color: "var(--dim)" }}>{digest.intro}</p>
+          <p className="mt-1 text-[13px] leading-6" style={{ color: "var(--dim)" }}>{digest.summary}</p>
 
           <div className="mt-5 space-y-2.5">
             {digest.items.length > 0 ? (
               digest.items.map((item) => (
                 <article
                   key={item.id}
-                  className="rounded-2xl border border-slate-200/60 bg-slate-50/60 p-4"
+                  className="rounded-2xl p-4"
+                  style={{ background: "var(--surf)", border: "1px solid var(--border)" }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="text-[14px] font-semibold text-slate-950">{item.title}</h3>
-                      <p className="mt-0.5 text-[12px] text-slate-500">
+                      <h3 className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>{item.title}</h3>
+                      <p className="mt-0.5 text-[12px]" style={{ color: "var(--dim)" }}>
                         {item.company} · {item.location}
                       </p>
-                      <p className="mt-2 text-[13px] leading-6 text-slate-600">{item.reason}</p>
+                      <p className="mt-2 text-[13px] leading-6" style={{ color: "var(--muted)" }}>{item.reason}</p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <div className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[13px] font-bold text-sky-800">
+                      <div className="rounded-full px-3 py-1 text-[13px] font-bold" style={{ background: "rgba(59,130,246,.1)", color: "#60a5fa", border: "1px solid rgba(59,130,246,.3)" }}>
                         {item.score}%
                       </div>
-                      <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                      <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--muted)" }}>
                         {item.verdict}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-slate-400">{item.status}</p>
+                      <p className="mt-0.5 text-[11px]" style={{ color: "var(--dim)" }}>{item.status}</p>
                     </div>
                   </div>
                 </article>
               ))
             ) : (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-6 text-[13px] leading-6 text-slate-400">
+              <div className="rounded-2xl px-5 py-6 text-[13px] leading-6" style={{ background: "var(--surf)", border: "1px dashed var(--border)", color: "var(--dim)" }}>
                 Assim que o banco estiver conectado e o radar tiver vagas, o preview do digest aparece aqui automaticamente.
               </div>
             )}
@@ -90,53 +93,51 @@ export default async function DigestsPage() {
         {/* Sidebar de status */}
         <div className="space-y-3">
           <article
-            className={[
-              "rounded-[24px] border p-5 shadow-[0_12px_40px_rgba(15,23,42,0.04)]",
-              digest.emailConfigured
-                ? "border-emerald-200/60 bg-gradient-to-b from-emerald-50/50 to-white"
-                : "border-slate-200/60 bg-white/90",
-            ].join(" ")}
+            className="rounded-[24px] p-5"
+            style={digest.emailConfigured
+              ? { background: "var(--card)", border: "1px solid rgba(16,185,129,.3)" }
+              : { background: "var(--card)", border: "1px solid var(--border)" }
+            }
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
               Email delivery
             </p>
-            <h2 className="mt-2 text-[15px] font-semibold text-slate-950">
+            <h2 className="mt-2 text-[15px] font-semibold" style={{ color: "var(--text)" }}>
               {digest.emailConfigured ? "Resend configurado" : "Envio pendente de configuração"}
             </h2>
-            <p className="mt-2 text-[12px] leading-6 text-slate-500">
-              Configure <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">RESEND_API_KEY</code>,{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">ARGUS_DIGEST_FROM_EMAIL</code> e{" "}
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">ARGUS_DIGEST_TO_EMAIL</code>.
+            <p className="mt-2 text-[12px] leading-6" style={{ color: "var(--dim)" }}>
+              Configure <code style={{ background: "var(--surf)", padding: "1px 6px", borderRadius: "4px", fontSize: "11px", color: "var(--muted)" }}>RESEND_API_KEY</code>,{" "}
+              <code style={{ background: "var(--surf)", padding: "1px 6px", borderRadius: "4px", fontSize: "11px", color: "var(--muted)" }}>ARGUS_DIGEST_FROM_EMAIL</code> e{" "}
+              <code style={{ background: "var(--surf)", padding: "1px 6px", borderRadius: "4px", fontSize: "11px", color: "var(--muted)" }}>ARGUS_DIGEST_TO_EMAIL</code>.
             </p>
           </article>
 
           <article
-            className={[
-              "rounded-[24px] border p-5 shadow-[0_12px_40px_rgba(15,23,42,0.04)]",
-              digest.cronConfigured
-                ? "border-emerald-200/60 bg-gradient-to-b from-emerald-50/50 to-white"
-                : "border-slate-200/60 bg-white/90",
-            ].join(" ")}
+            className="rounded-[24px] p-5"
+            style={digest.cronConfigured
+              ? { background: "var(--card)", border: "1px solid rgba(16,185,129,.3)" }
+              : { background: "var(--card)", border: "1px solid var(--border)" }
+            }
           >
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
               Scheduler
             </p>
-            <h2 className="mt-2 text-[15px] font-semibold text-slate-950">
+            <h2 className="mt-2 text-[15px] font-semibold" style={{ color: "var(--text)" }}>
               {digest.cronConfigured ? "Cron mapeado na Vercel" : "Cron ainda não encontrado"}
             </h2>
-            <p className="mt-2 text-[12px] leading-6 text-slate-500">
-              A rota usa <code className="rounded bg-slate-100 px-1 py-0.5 text-[11px]">CRON_SECRET</code> e roda diariamente em UTC sem expor o endpoint.
+            <p className="mt-2 text-[12px] leading-6" style={{ color: "var(--dim)" }}>
+              A rota usa <code style={{ background: "var(--surf)", padding: "1px 6px", borderRadius: "4px", fontSize: "11px", color: "var(--muted)" }}>CRON_SECRET</code> e roda diariamente em UTC sem expor o endpoint.
             </p>
           </article>
 
-          <article className="rounded-[24px] border border-slate-200/60 bg-white/90 p-5 shadow-[0_12px_40px_rgba(15,23,42,0.04)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+          <article className="rounded-[24px] p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
               Profile source
             </p>
-            <h2 className="mt-2 text-[15px] font-semibold text-slate-950">
+            <h2 className="mt-2 text-[15px] font-semibold" style={{ color: "var(--text)" }}>
               {digest.profileSource === "database" ? "Perfil vindo do banco" : "Fallback no perfil base"}
             </h2>
-            <p className="mt-2 text-[12px] leading-6 text-slate-500">
+            <p className="mt-2 text-[12px] leading-6" style={{ color: "var(--dim)" }}>
               O digest respeita o perfil persistido no servidor, não só o estado local.
             </p>
           </article>

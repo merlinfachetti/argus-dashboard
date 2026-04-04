@@ -46,17 +46,17 @@ export function DigestActions() {
   }
 
   return (
-    <div className="rounded-[24px] border border-slate-200/60 bg-white p-5 shadow-[0_8px_32px_rgba(15,23,42,0.04)]">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+    <div className="rounded-[24px] p-5" style={{ background: "var(--card)", border: "1px solid var(--border)" }}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--muted)" }}>
         Testes operacionais
       </p>
       <p
-        className={[
-          "mt-2 text-[12px] leading-5",
-          status.tone === "error" ? "text-rose-600" :
-          status.tone === "success" ? "text-emerald-700" :
-          "text-slate-500",
-        ].join(" ")}
+        className="mt-2 text-[12px] leading-5"
+        style={{
+          color: status.tone === "error" ? "#ef4444" :
+                 status.tone === "success" ? "#10b981" :
+                 "var(--dim)",
+        }}
       >
         {status.message}
       </p>
@@ -65,7 +65,8 @@ export function DigestActions() {
           type="button"
           disabled={isPending}
           onClick={() => runAction("/api/digests/today")}
-          className="flex-1 rounded-full border border-slate-200 bg-white py-2 text-[12px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+          className="flex-1 rounded-full py-2 text-[12px] font-semibold transition disabled:opacity-50"
+          style={{ background: "transparent", color: "var(--muted)", border: "1px solid var(--border)" }}
         >
           {t("digests.persist")}
         </button>
@@ -73,7 +74,8 @@ export function DigestActions() {
           type="button"
           disabled={isPending}
           onClick={() => runAction("/api/digests/send")}
-          className="flex-1 rounded-full border border-slate-900 bg-white py-2 text-[12px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:opacity-50"
+          className="flex-1 rounded-full py-2 text-[12px] font-semibold transition disabled:opacity-50"
+          style={{ background: "transparent", color: "var(--gold)", border: "1px solid rgba(245,158,11,.3)" }}
         >
           {t("digests.sendTest")}
         </button>
